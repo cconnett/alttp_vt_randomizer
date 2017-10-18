@@ -23,7 +23,7 @@ class RandomAssumed extends Filler {
 		$this->fillItemsInLocations($dungeon, $randomized_order_locations, $required);
 
 		// random junk fill
-		$gt_locations = $this->world->getRegion('Ganons Tower')->getEmptyLocations()->randomCollection(mt_rand2(0, 15));
+		$gt_locations = $this->world->getRegion('Ganons Tower')->getEmptyLocations()->randomCollection(mt_rand(0, 15));
 		$extra = $this->shuffleItems($extra);
 		$trash = array_splice($extra, 0, $gt_locations->count());
 		$this->fastFillItemsInLocations($trash, $gt_locations);
@@ -42,24 +42,38 @@ class RandomAssumed extends Filler {
 	protected function fillItemsInLocations($fill_items, $locations, $base_assumed_items = []) {
 		$remaining_fill_items = new Items($fill_items);
 		Log::debug(sprintf("Filling %s items in %s locations", $remaining_fill_items->count(),
-			$locations->getEmptyLocations()->count()));
+                           $locations->getEmptyLocations()->count()));
 
 		if ($remaining_fill_items->count() > $locations->getEmptyLocations()->count()) {
-			throw new \Exception("Trying to fill more items than available locations.");
-		}
+            throw new \Exception("Trying to fill more items than available locations.");
+        }
+        $remaining_fill_items = $remaining_fill_items->merge($base_assumed_items);
 
-		foreach ($fill_items as $key => $item) {
-			$assumed_items = $this->world->collectItems($remaining_fill_items->removeItem($item->getName())->merge($base_assumed_items));
-
-			$fillable_locations = $locations->filter(function($location) use ($item, $assumed_items) {
-				return !$location->hasItem() && $location->canFill($item, $assumed_items);
-			});
-
-			if ($fillable_locations->count() == 0) {
+        // The items to fill are already in a shuffled order.
+        foreach ($fill_items as $key => $item) {
+            // Assume that Link has already collected:
+            // 1. All unplaced items.
+            // 2. All placed items that are iteratively reachable starting with
+            //    $base_assumed_items.
+            //
+            // The one we're currently placing is not part of that.
+            $assumed_items = $this->world->collectItems(
+                $remaining_fill_items->removeItem($item->getName()));
+            // Step through canidate locations and place the item in the
+            // first one reachable with the items we assumed in the
+            // previous step.
+            $fill_location = null;
+            foreach($locations as $location) {
+                if (!$location->hasItem() &&
+                    $location->canFill($item, $assumed_items)) {
+                    $fill_location = $location;
+                    break;
+                }
+			}
+			if ($fill_location === null) {
 				throw new \Exception(sprintf('No Available Locations: "%s"', $item->getNiceName()));
 			}
-
-			$fill_location = $fillable_locations->first();
+			Log::debug(sprintf("Placing Item: %s in %s", $item->getNiceName(), $fill_location->getName()));
 
 			$fill_location->setItem($item);
 		}
