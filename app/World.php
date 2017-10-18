@@ -500,30 +500,46 @@ class World {
 		return $this->collectable_locations;
 	}
 
-	/**
-	 * Collect the items in the world, you may pass in a set of pre-collected items.
-	 *
-	 * @param ItemCollection $collected precollected items for consideration in out collecting
-	 *
-	 * @return ItemCollection
-	 */
-	public function collectItems(ItemCollection $collected = null) {
+    /**
+     * Collect the items in the world, you may pass in a set of pre-collected items.
+     *
+     * @param ItemCollection $collected precollected items for consideration in out collecting
+     *
+     * @return ItemCollection
+     */
+    public function collectItems(ItemCollection $collected = null) {
+        // Start with a provided collection, or default to an empty one.
 		$my_items = $collected ?? new ItemCollection;
+<<<<<<< HEAD
+=======
+        // "Collectable locations" are simply non-medallion (mire/tr),
+        // non-fountain locations. Grab all those that currently have
+        // items assigned.
+		$my_items = $my_items->merge($this->pre_collected_items);
+>>>>>>> Add comments to collectItems function.
 		$available_locations = $this->getCollectableLocations()->filter(function($location) {
 			return $location->hasItem();
 		});
 
+        // Walk through topological ranks of the reachablility graph.
 		do {
-			$search_locations = $available_locations->filter(function($location) use ($my_items) {
-				return $location->canAccess($my_items);
-			});
+            // Determine the locations currently reachable with $my_items.
+			$reachable_locations = $available_locations->filter(
+                function($location) use ($my_items) {
+                    return $location->canAccess($my_items);
+                });
 
-			$available_locations = $available_locations->diff($search_locations);
+            // Remove locations reachable in this iteration from the pool.
+			$available_locations = $available_locations->diff($reachable_locations);
 
-			$found_items = $search_locations->getItems();
+            // Determine what items we found in this rank.
+			$found_items = $reachable_locations->getItems();
+            // Add them to our items.
 			$my_items = $found_items->merge($my_items);
+            // Go until we find no new items in a rank.
 		} while ($found_items->count() > 0);
 
+        // This is everything I could collect from the current world.
 		return $my_items;
 	}
 
