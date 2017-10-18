@@ -380,7 +380,7 @@ class World {
 		do {
 			// make sure we had something before going to the next round
 			if (!empty($location_round[$longest_item_chain])) {
-				$longest_item_chain++;				
+				$longest_item_chain++;
 			}
 			$location_round[$longest_item_chain] = [];
 			$available_locations = $shadow_world->getCollectableLocations()->filter(function($location) use ($my_items) {
