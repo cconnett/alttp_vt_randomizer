@@ -206,7 +206,7 @@ class Region {
 	 *
 	 * @return bool
 	 */
-	public function isRegionItem(Item $item) : bool {
+	public function isRegionItem(Item $item) {
 		return in_array($item, $this->region_items);
 	}
 

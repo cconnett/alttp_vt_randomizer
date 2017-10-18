@@ -85,7 +85,7 @@ class Rom {
 	 *
 	 * @return bool
 	 */
-	public function checkMD5() : bool {
+	public function checkMD5() {
 		return $this->getMD5() === static::HASH;
 	}
 
@@ -94,7 +94,7 @@ class Rom {
 	 *
 	 * @return string
 	 */
-	public function getMD5() : string {
+	public function getMD5() {
 		return hash_file('md5', $this->tmp_file);
 	}
 
@@ -2038,7 +2038,7 @@ class Rom {
 	 *
 	 * @return bool
 	 */
-	public function save($output_location) : bool {
+	public function save($output_location) {
 		return copy($this->tmp_file, $output_location);
 	}
 
@@ -2119,7 +2119,7 @@ class Rom {
 	 *
 	 * @return int
 	 */
-	private function charToCreditsHex($char) : int {
+	private function charToCreditsHex($char) {
 		if (preg_match('/[a-z]/', $char)) {
 			return ord($char) - 0x47;
 		}
