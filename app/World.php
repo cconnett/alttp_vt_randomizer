@@ -17,7 +17,6 @@ class World {
 	protected $locations;
 	protected $win_condition;
 	protected $collectable_locations;
-	protected $pre_collected_items;
 
 	/**
 	 * Create a new world and initialize all of the Regions within it
@@ -34,7 +33,6 @@ class World {
 		$this->variation = $variation;
 		$this->logic = $logic;
 		$this->goal = $goal;
-		$this->pre_collected_items = new ItemCollection;
 
 		$this->regions = [
 			'Light World' => new Region\LightWorld($this),
@@ -203,41 +201,6 @@ class World {
 	}
 
 	/**
-	 * Get the collection for pre-collected items
-	 *
-	 * @return ItemCollection
-	 */
-	public function getPreCollectedItems() : ItemCollection {
-		return $this->pre_collected_items;
-	}
-
-	/**
-	 * Set the collection for pre-collected items
-	 *
-	 * @param ItemCollection $items collection of items that have been pre-collected
-	 *
-	 * @return $this
-	 */
-	public function setPreCollectedItems(ItemCollection $items) : self {
-		$this->pre_collected_items = $items;
-
-		return $this;
-	}
-
-	/**
-	 * Add a pre-collected Item
-	 *
-	 * @param Item $item collection of items that have been pre-collected
-	 *
-	 * @return $this
-	 */
-	public function addPreCollectedItem(Item $item) : self {
-		$this->pre_collected_items->addItem($item);
-
-		return $this;
-	}
-
-	/**
 	 * Get a copy of this world with items in locations.
 	 *
 	 * @return static
@@ -247,8 +210,6 @@ class World {
 		foreach ($this->locations as $name => $location) {
 			$copy->locations[$name]->setItem($location->getItem());
 		}
-
-		$copy->setPreCollectedItems($this->pre_collected_items->copy());
 
 		return $copy;
 	}
@@ -329,9 +290,6 @@ class World {
 		$required_locations_sphere = [];
 		$reverse_location_sphere = array_reverse($location_sphere, true);
 		foreach ($reverse_location_sphere as $sphere_level => $sphere) {
-			if ($sphere_level == 0) {
-				continue;
-			}
 			Log::debug("playthrough SPHERE: $sphere_level");
 			foreach ($sphere as $location) {
 				Log::debug(sprintf("playthrough Check: %s :: %s", $location->getName(),
@@ -348,7 +306,7 @@ class World {
 					continue;
 				}
 
-				if (!$shadow_world->getWinCondition()($collectable_locations->getItems())) {
+				if ($pulled_item instanceof Item\Key || !$shadow_world->getWinCondition()($collectable_locations->getItems())) {
 					// put item back
 					$location->setItem($this->locations[$location->getName()]->getItem());
 					$required_locations->addItem($location);
@@ -416,7 +374,7 @@ class World {
 		}
 
 		// RUN PLAYTHROUGH of locations found above
-		$my_items = $shadow_world->pre_collected_items;
+		$my_items = new ItemCollection;
 		$location_order = [];
 		$location_round = [];
 		$longest_item_chain = 1;
@@ -450,18 +408,6 @@ class World {
 		} while ($found_items->count() > 0);
 
 		$ret = ['longest_item_chain' => count($location_round)];
-		if (count($shadow_world->pre_collected_items)) {
-			$i = 0;
-			foreach ($shadow_world->pre_collected_items as $item) {
-				if ($item instanceof Item\Upgrade\Arrow
-					|| $item instanceof Item\Upgrade\Bomb) {
-					continue;
-				}
-
-				$location = sprintf("Equipment Slot %s", ++$i);
-				$ret[0]['Equiped'][$location] = $item->getNiceName();
-			}
-		}
 		foreach ($location_round as $round => $locations) {
 			if (!count($locations)) {
 				$ret['longest_item_chain']--;
@@ -544,41 +490,52 @@ class World {
 	 * @return LocationCollection
 	 */
 	public function getCollectableLocations() {
-		if (!$this->collectable_locations) {
-			$this->collectable_locations = $this->locations->filter(function($location) {
-				return !is_a($location, Location\Medallion::class)
-					&& !is_a($location, Location\Fountain::class);
-			});
-		}
+        if (!$this->collectable_locations) {
+            $this->collectable_locations = $this->locations->filter(function($location) {
+                return !is_a($location, Location\Medallion::class)
+                    && !is_a($location, Location\Fountain::class);
+            });
+        }
 
-		return $this->collectable_locations;
-	}
+        return $this->collectable_locations;
+    }
 
-	/**
-	 * Collect the items in the world, you may pass in a set of pre-collected items.
-	 *
-	 * @param ItemCollection $collected precollected items for consideration in out collecting
-	 *
-	 * @return ItemCollection
-	 */
-	public function collectItems(ItemCollection $collected = null) {
+    /**
+     * Collect the items in the world, you may pass in a set of pre-collected items.
+     *
+     * @param ItemCollection $collected precollected items for consideration in out collecting
+     *
+     * @return ItemCollection
+     */
+    public function collectItems(ItemCollection $collected = null) {
+        // Start with a provided collection, or default to an empty one.
 		$my_items = $collected ?? new ItemCollection;
-		$my_items = $my_items->merge($this->pre_collected_items);
+        // "Collectable locations" are simply non-medallion (mire/tr),
+        // non-fountain locations. Grab all those that currently have
+        // items assigned.
 		$available_locations = $this->getCollectableLocations()->filter(function($location) {
 			return $location->hasItem();
 		});
 
+        // Walk through topological ranks of the reachablility graph.
 		do {
-			$search_locations = $available_locations->filter(function($location) use ($my_items) {
-				return $location->canAccess($my_items);
-			});
+            // Determine the locations currently reachable with $my_items.
+			$reachable_locations = $available_locations->filter(
+                function($location) use ($my_items) {
+                    return $location->canAccess($my_items);
+                });
 
-			$available_locations = $available_locations->diff($search_locations);
+            // Remove locations reachable in this iteration from the pool.
+			$available_locations = $available_locations->diff($reachable_locations);
 
-			$found_items = $search_locations->getItems();
+            // Determine what items we found in this rank.
+			$found_items = $reachable_locations->getItems();
+            // Add them to our items.
 			$my_items = $found_items->merge($my_items);
+            // Go until we find no new items in a rank.
 		} while ($found_items->count() > 0);
 
+        // This is everything I could collect from the current world.
 		return $my_items;
 	}
 
@@ -603,14 +560,8 @@ class World {
 	 */
 	public function getLocationSpheres() {
 		$sphere = 0;
-		$location_sphere = [0 => new LocationCollection];
-		$my_items = $this->pre_collected_items;
-		$i = 0;
-		foreach ($my_items as $item) {
-			$location = new Location(sprintf("Equipment Slot %s", ++$i), null, null);
-			$location->setItem($item);
-			$location_sphere[0]->addItem($location);
-		}
+		$location_sphere = [];
+		$my_items = new ItemCollection;
 		$found_locations = new LocationCollection;
 		do {
 			$sphere++;
