@@ -104,7 +104,7 @@ class Randomizer {
 	 *
 	 * @return $this
 	 */
-	public function makeSeed(int $rng_seed = null) {
+	public function makeSeed($rng_seed = null) {
 		$rng_seed = $rng_seed ?: random_int(1, 999999999); // cryptographic pRNG for seeding
 		$this->rng_seed = $rng_seed % 1000000000;
 		mt_srand($rng_seed);

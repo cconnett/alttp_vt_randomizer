@@ -114,11 +114,11 @@ class Region {
 	/**
 	 * Initalize the logic for the Region
 	 *
-	 * @param string $type the ruleset to apply to Locations
+	 * @param $type the ruleset to apply to Locations
 	 *
 	 * @return $this
 	 */
-	public function init(string $type = 'NoMajorGlitches') {
+	public function init($type = 'NoMajorGlitches') {
 		return call_user_func([$this, 'init' . $type]);
 	}
 
@@ -187,7 +187,7 @@ class Region {
 	 *
 	 * @return bool
 	 */
-	public function canFill(Item $item) : bool {
+	public function canFill(Item $item) {
 		if (($item instanceof Item\Key
 			|| $item instanceof Item\BigKey
 			|| ($this->world->config('region.mapsInDungeons', true) && $item instanceof Item\Map)
@@ -222,11 +222,11 @@ class Region {
 	/**
 	 * Get Location in this Region by name
 	 *
-	 * @param string $name name of the Location
+	 * @param $name name of the Location
 	 *
 	 * @return Location
 	 */
-	public function getLocation(string $name) {
+	public function getLocation($name) {
 		return $this->locations[$name];
 	}
 

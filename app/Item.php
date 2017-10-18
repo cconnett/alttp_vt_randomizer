@@ -17,13 +17,13 @@ class Item {
 	/**
 	 * Get the Item by name
 	 *
-	 * @param string $name Name of Item
+	 * @param $name Name of Item
 	 *
 	 * @throws Exception if the Item doesn't exist
 	 *
 	 * @return Item
 	 */
-	static public function get(string $name) {
+	static public function get($name) {
 		$items = static::all();
 		if (isset($items[$name])) {
 			return $items[$name];
@@ -35,13 +35,13 @@ class Item {
 	/**
 	 * Get the Item by nice name
 	 *
-	 * @param string $name Name of Item
+	 * @param $name Name of Item
 	 *
 	 * @throws Exception if the Item doesn't exist
 	 *
 	 * @return Item
 	 */
-	static public function getNice(string $name) {
+	static public function getNice($name) {
 		$items = static::all();
 
 		foreach ($items as $item) {
@@ -282,8 +282,8 @@ class Item {
 	/**
 	 * Create a new Item
 	 *
-	 * @param string $name Unique name of item
-	 * @param string $nice_name Well formatted name for item
+	 * @param $name Unique name of item
+	 * @param $nice_name Well formatted name for item
 	 * @param array $bytes data to write to Location addresses
 	 * @param array|null $address Addresses in ROM to write back Location data if set
 	 *

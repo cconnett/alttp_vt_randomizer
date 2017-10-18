@@ -21,10 +21,10 @@ class World {
 	/**
 	 * Create a new world and initialize all of the Regions within it
 	 *
-	 * @param string $difficulty difficulty from config to apply to randomization
-	 * @param string $logic Ruleset to use when deciding if Locations can be reached
-	 * @param string $goal Goal of the game
-	 * @param string $variation modifications to difficulty
+	 * @param $difficulty difficulty from config to apply to randomization
+	 * @param $logic Ruleset to use when deciding if Locations can be reached
+	 * @param $goal Goal of the game
+	 * @param $variation modifications to difficulty
 	 *
 	 * @return void
 	 */
@@ -305,7 +305,8 @@ class World {
 					continue;
 				}
 
-				if (!$shadow_world->getWinCondition()($collectable_locations->getItems())) {
+                $func = $shadow_world->getWinCondition();
+				if (!$func($collectable_locations->getItems())) {
 					// put item back
 					$location->setItem($this->locations[$location->getName()]->getItem());
 					$required_locations->addItem($location);
@@ -452,23 +453,23 @@ class World {
 	/**
 	 * Get config value based on the currently set rules
 	 *
-	 * @param string $key dot notation key of config
+	 * @param $key dot notation key of config
 	 * @param mixed|null $default value to return if $key is not found
 	 *
 	 * @return mixed
 	 */
-	public function config(string $key, $default = null) {
+	public function config($key, $default = null) {
 		return config("alttp.{$this->difficulty}.variations.{$this->variation}.$key", config("alttp.{$this->difficulty}.$key", $default));
 	}
 
 	/**
 	 * Get a region by Key name
 	 *
-	 * @param string $name Name of region to return
+	 * @param $name Name of region to return
 	 *
 	 * @return Region|null
 	 */
-	public function getRegion(string $name) {
+	public function getRegion($name) {
 		return $this->regions[$name] ?? null;
 	}
 
@@ -578,11 +579,11 @@ class World {
 	/**
 	 * Get Location in this world by name
 	 *
-	 * @param string $name name of the Location
+	 * @param $name name of the Location
 	 *
 	 * @return Location
 	 */
-	public function getLocation(string $name) {
+	public function getLocation($name) {
 		return $this->locations[$name];
 	}
 

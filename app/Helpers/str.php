@@ -29,7 +29,7 @@ function mb_str_pad($input, $pad_length, $pad_string = ' ', $pad_type = STR_PAD_
  *
  * @return string
  */
-function mb_wordwrap(string $str, int $width = 75, string $break = "\n", bool $cut = false) : string {
+function mb_wordwrap(string $str, $width = 75, $break = "\n", $cut = false) : string {
 	if (mb_strlen($str) === strlen($str)) {
 		return wordwrap($str, $width, $break, $cut);
 	}

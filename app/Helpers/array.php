@@ -24,7 +24,7 @@ function mt_shuffle(array $array) {
  *
  * @return bool
  */
-function ksortr(array &$array, int $sort_flags = SORT_REGULAR) {
+function ksortr(array &$array, $sort_flags = SORT_REGULAR) {
 	if (!is_array($array)) {
 		return false;
 	}

@@ -49,11 +49,11 @@ class Rom {
 	/**
 	 * Create a new wrapper
 	 *
-	 * @param string $source_location location of source ROM to edit
+	 * @param $source_location location of source ROM to edit
 	 *
 	 * @return void
 	 */
-	public function __construct(string $source_location = null) {
+	public function __construct($source_location = null) {
 		if ($source_location !== null && !is_readable($source_location)) {
 			throw new \Exception('Source ROM not readable');
 		}
@@ -74,7 +74,7 @@ class Rom {
 	 * @return $this
 	 *
 	 */
-	public function resize(int $size = null) : self {
+	public function resize($size = null) : self {
 		ftruncate($this->rom, $size ?? static::SIZE);
 
 		return $this;
@@ -128,11 +128,11 @@ class Rom {
 	/**
 	 * Set the Low Health Beep Speed
 	 *
-	 * @param string $setting name (0x00: off, 0x20: normal, 0x40: half, 0x80: quarter)
+	 * @param $setting name (0x00: off, 0x20: normal, 0x40: half, 0x80: quarter)
 	 *
 	 * @return $this
 	 */
-	public function setHeartBeepSpeed(string $setting) : self {
+	public function setHeartBeepSpeed($setting) : self {
 		switch ($setting) {
 			case 'off':
 				$byte = 0x00;
@@ -156,11 +156,11 @@ class Rom {
 	/**
 	 * Set the Rupoor value to take rupees
 	 *
-	 * @param int $value
+	 * @param $value
 	 *
 	 * @return $this
 	 */
-	public function setRupoorValue(int $value = 10) : self {
+	public function setRupoorValue($value = 10) : self {
 		$this->write(0x180036, pack('v*', $value));
 
 		return $this;
@@ -169,11 +169,11 @@ class Rom {
 	/**
 	 * Set Cane of Byrna Cave spike floor damage
 	 *
-	 * @param int $dmg_value (0x08: 1 Heart, 0x02: 1/4 Heart)
+	 * @param $dmg_value (0x08: 1 Heart, 0x02: 1/4 Heart)
 	 *
 	 * @return $this
 	 */
-	public function setByrnaCaveSpikeDamage(int $dmg_value = 0x08) : self {
+	public function setByrnaCaveSpikeDamage($dmg_value = 0x08) : self {
 		$this->write(0x180168, pack('C*', $dmg_value));
 
 		return $this;
@@ -182,13 +182,13 @@ class Rom {
 	/**
 	 * Set Cane of Byrna Cave and Misery Mire spike room Byrna usage
 	 *
-	 * @param int $normal normal magic usage
-	 * @param int $half half magic usage
-	 * @param int $quarter quarter magic usage
+	 * @param $normal normal magic usage
+	 * @param $half half magic usage
+	 * @param $quarter quarter magic usage
 	 *
 	 * @return $this
 	 */
-	public function setCaneOfByrnaSpikeCaveUsage(int $normal = 0x04, int $half = 0x02, int $quarter = 0x01) : self {
+	public function setCaneOfByrnaSpikeCaveUsage($normal = 0x04, $half = 0x02, $quarter = 0x01) : self {
 		$this->write(0x18016B, pack('C*', $normal, $half, $quarter));
 
 		return $this;
@@ -197,13 +197,13 @@ class Rom {
 	/**
 	 * Set Cane of Byrna Cave and Misery Mire spike room Cape usage
 	 *
-	 * @param int $normal normal magic usage
-	 * @param int $half half magic usage
-	 * @param int $quarter quarter magic usage
+	 * @param $normal normal magic usage
+	 * @param $half half magic usage
+	 * @param $quarter quarter magic usage
 	 *
 	 * @return $this
 	 */
-	public function setCapeSpikeCaveUsage(int $normal = 0x04, int $half = 0x08, int $quarter = 0x10) : self {
+	public function setCapeSpikeCaveUsage($normal = 0x04, $half = 0x08, $quarter = 0x10) : self {
 		$this->write(0x18016E, pack('C*', $normal, $half, $quarter));
 
 		return $this;
@@ -212,12 +212,12 @@ class Rom {
 	/**
 	 * Set mode for HUD clock
 	 *
-	 * @param string $mode off|stopwatch|countdown-stop|countdown-continue
+	 * @param $mode off|stopwatch|countdown-stop|countdown-continue
 	 * @param bool $restart wether to restart the timer
 	 *
 	 * @return $this;
 	 */
-	public function setClockMode(string $mode = 'off', bool $restart = false) : self {
+	public function setClockMode($mode = 'off', $restart = false) : self {
 		switch ($mode) {
 			case 'stopwatch':
 				$bytes = [0x02, 0x01];
@@ -248,11 +248,11 @@ class Rom {
 	/**
 	 * Set starting time for HUD clock
 	 *
-	 * @param int $seconds time in seconds
+	 * @param $seconds time in seconds
 	 *
 	 * @return $this;
 	 */
-	public function setStartingTime(int $seconds = 0) : self {
+	public function setStartingTime($seconds = 0) : self {
 		$this->write(0x18020C, pack('l*', $seconds * 60));
 
 		return $this;
@@ -261,11 +261,11 @@ class Rom {
 	/**
 	 * Set time adjustment for collecting Red Clock Item
 	 *
-	 * @param int $seconds time in seconds
+	 * @param $seconds time in seconds
 	 *
 	 * @return $this;
 	 */
-	public function setRedClock(int $seconds = 0) : self {
+	public function setRedClock($seconds = 0) : self {
 		$this->write(0x180200, pack('l*', $seconds * 60));
 
 		return $this;
@@ -274,11 +274,11 @@ class Rom {
 	/**
 	 * Set time adjustment for collecting Blue Clock Item
 	 *
-	 * @param int $seconds time in seconds
+	 * @param $seconds time in seconds
 	 *
 	 * @return $this;
 	 */
-	public function setBlueClock(int $seconds = 0) : self {
+	public function setBlueClock($seconds = 0) : self {
 		$this->write(0x180204, pack('l*', $seconds * 60));
 
 		return $this;
@@ -287,11 +287,11 @@ class Rom {
 	/**
 	 * Set time adjustment for collecting Green Clock Item
 	 *
-	 * @param int $seconds time in seconds
+	 * @param $seconds time in seconds
 	 *
 	 * @return $this;
 	 */
-	public function setGreenClock(int $seconds = 0) : self {
+	public function setGreenClock($seconds = 0) : self {
 		$this->write(0x180208, pack('l*', $seconds * 60));
 
 		return $this;
@@ -300,11 +300,11 @@ class Rom {
 	/**
 	 * Set the starting Max Arrows
 	 *
-	 * @param int $max
+	 * @param $max
 	 *
 	 * @return $this
 	 */
-	public function setMaxArrows(int $max = 30) : self {
+	public function setMaxArrows($max = 30) : self {
 		$this->write(0x180035, pack('C', $max));
 
 		return $this;
@@ -313,11 +313,11 @@ class Rom {
 	/**
 	 * Set the Digging Game Rng
 	 *
-	 * @param int $digs
+	 * @param $digs
 	 *
 	 * @return $this
 	 */
-	public function setDiggingGameRng(int $digs = 15) : self {
+	public function setDiggingGameRng($digs = 15) : self {
 		$this->write(0x180020, pack('C', $digs));
 		$this->write(0xEFD95, pack('C', $digs));
 
@@ -327,11 +327,11 @@ class Rom {
 	/**
 	 * Set the starting Max Bombs
 	 *
-	 * @param int $max
+	 * @param $max
 	 *
 	 * @return $this
 	 */
-	public function setMaxBombs(int $max = 10) : self {
+	public function setMaxBombs($max = 10) : self {
 		$this->write(0x180034, pack('C', $max));
 
 		return $this;
@@ -368,11 +368,11 @@ class Rom {
 	/**
 	 * Set the number of goal items to collect
 	 *
-	 * @param int $goal
+	 * @param $goal
 	 *
 	 * @return $this
 	 */
-	public function setGoalRequiredCount(int $goal = 0) : self {
+	public function setGoalRequiredCount($goal = 0) : self {
 		$this->write(0x180167, pack('C', $goal));
 
 		return $this;
@@ -381,11 +381,11 @@ class Rom {
 	/**
 	 * Set the goal item icon
 	 *
-	 * @param string $goal_icon
+	 * @param $goal_icon
 	 *
 	 * @return $this
 	 */
-	public function setGoalIcon(string $goal_icon = 'triforce') : self {
+	public function setGoalIcon($goal_icon = 'triforce') : self {
 		switch ($goal_icon) {
 			case 'triforce':
 				$byte = pack('S*', 0x280E);
@@ -403,12 +403,12 @@ class Rom {
 	/**
 	 * Set Progressive Sword limit and item after limit is reached
 	 *
-	 * @param int $limit max number to receive
-	 * @param int $item item byte to collect once limit is collected
+	 * @param $limit max number to receive
+	 * @param $item item byte to collect once limit is collected
 	 *
 	 * @return $this
 	 */
-	public function setLimitProgressiveSword(int $limit = 4, int $item = 0x36) : self {
+	public function setLimitProgressiveSword($limit = 4, $item = 0x36) : self {
 		$this->write(0x180090, pack('C*', $limit, $item));
 
 		return $this;
@@ -417,12 +417,12 @@ class Rom {
 	/**
 	 * Set Progressive Shield limit and item after limit is reached
 	 *
-	 * @param int $limit max number to receive
-	 * @param int $item item byte to collect once limit is collected
+	 * @param $limit max number to receive
+	 * @param $item item byte to collect once limit is collected
 	 *
 	 * @return $this
 	 */
-	public function setLimitProgressiveShield(int $limit = 3, int $item = 0x36) : self {
+	public function setLimitProgressiveShield($limit = 3, $item = 0x36) : self {
 		$this->write(0x180092, pack('C*', $limit, $item));
 
 		return $this;
@@ -431,12 +431,12 @@ class Rom {
 	/**
 	 * Set Progressive Armor limit and item after limit is reached
 	 *
-	 * @param int $limit max number to receive
-	 * @param int $item item byte to collect once limit is collected
+	 * @param $limit max number to receive
+	 * @param $item item byte to collect once limit is collected
 	 *
 	 * @return $this
 	 */
-	public function setLimitProgressiveArmor(int $limit = 2, int $item = 0x36) : self {
+	public function setLimitProgressiveArmor($limit = 2, $item = 0x36) : self {
 		$this->write(0x180094, pack('C*', $limit, $item));
 
 		return $this;
@@ -445,12 +445,12 @@ class Rom {
 	/**
 	 * Set Bottle limit and item after limit is reached
 	 *
-	 * @param int $limit max number to receive
-	 * @param int $item item byte to collect once limit is collected
+	 * @param $limit max number to receive
+	 * @param $item item byte to collect once limit is collected
 	 *
 	 * @return $this
 	 */
-	public function setLimitBottle(int $limit = 4, int $item = 0x36) : self {
+	public function setLimitBottle($limit = 4, $item = 0x36) : self {
 		$this->write(0x180096, pack('C*', $limit, $item));
 
 		return $this;
@@ -459,11 +459,11 @@ class Rom {
 	/**
 	 * Set Ganon to Invincible. 'dungeons' will require all dungeon bosses are dead to be able to damage Ganon.
 	 *
-	 * @param string $setting
+	 * @param $setting
 	 *
 	 * @return $this
 	 */
-	public function setGanonInvincible(string $setting = 'no') : self {
+	public function setGanonInvincible($setting = 'no') : self {
 		switch ($setting) {
 			case 'crystals':
 				$byte = pack('C*', 0x03);
@@ -488,11 +488,11 @@ class Rom {
 	/**
 	 * Set the opening Uncle text to a custom value
 	 *
-	 * @param string $string Uncle text can be 3 lines of 14 characters each
+	 * @param $string Uncle text can be 3 lines of 14 characters each
 	 *
 	 * @return $this
 	 */
-	public function setUncleTextString(string $string) : self {
+	public function setUncleTextString($string) : self {
 		$offset = 0x180500;
 
 		$converter = new Dialog;
@@ -506,11 +506,11 @@ class Rom {
 	/**
 	 * Set the opening Ganon 1 text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setGanon1TextString(string $string) : self {
+	public function setGanon1TextString($string) : self {
 		$offset = 0x180600;
 
 		$converter = new Dialog;
@@ -524,11 +524,11 @@ class Rom {
 	/**
 	 * Set the opening Ganon 2 text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setGanon2TextString(string $string) : self {
+	public function setGanon2TextString($string) : self {
 		$offset = 0x180700;
 
 		$converter = new Dialog;
@@ -542,11 +542,11 @@ class Rom {
 	/**
 	 * Set the opening Ganon 1 text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setGanon1InvincibleTextString(string $string) : self {
+	public function setGanon1InvincibleTextString($string) : self {
 		$offset = 0x181100;
 
 		$converter = new Dialog;
@@ -560,11 +560,11 @@ class Rom {
 	/**
 	 * Set the opening Ganon 2 text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setGanon2InvincibleTextString(string $string) : self {
+	public function setGanon2InvincibleTextString($string) : self {
 		$offset = 0x181200;
 
 		$converter = new Dialog;
@@ -579,11 +579,11 @@ class Rom {
 	/**
 	 * Set the Triforce text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setTriforceTextString(string $string) : self {
+	public function setTriforceTextString($string) : self {
 		$offset = 0x180400;
 
 		$converter = new Dialog;
@@ -597,11 +597,11 @@ class Rom {
 	/**
 	 * Set the Blind text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setBlindTextString(string $string) : self {
+	public function setBlindTextString($string) : self {
 		$offset = 0x180800;
 
 		$converter = new Dialog;
@@ -615,11 +615,11 @@ class Rom {
 	/**
 	 * Set the Tavern Man text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setTavernManTextString(string $string) : self {
+	public function setTavernManTextString($string) : self {
 		$offset = 0x180C00;
 
 		$converter = new Dialog;
@@ -633,11 +633,11 @@ class Rom {
 	/**
 	 * Set Sahasrahla before item collection text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setSahasrahla1TextString(string $string) : self {
+	public function setSahasrahla1TextString($string) : self {
 		$offset = 0x180A00;
 
 		$converter = new Dialog;
@@ -651,11 +651,11 @@ class Rom {
 	/**
 	 * Set Sahasrahla after item collection text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setSahasrahla2TextString(string $string) : self {
+	public function setSahasrahla2TextString($string) : self {
 		$offset = 0x180B00;
 
 		$converter = new Dialog;
@@ -669,11 +669,11 @@ class Rom {
 	/**
 	 * Set Bomb Shop before crystals 5 & 6 text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setBombShop1TextString(string $string) : self {
+	public function setBombShop1TextString($string) : self {
 		$offset = 0x180E00;
 
 		$converter = new Dialog;
@@ -687,11 +687,11 @@ class Rom {
 	/**
 	 * Set Bomb Shop after crystals 5 & 6 text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setBombShop2TextString(string $string) : self {
+	public function setBombShop2TextString($string) : self {
 		$offset = 0x180D00;
 
 		$converter = new Dialog;
@@ -705,11 +705,11 @@ class Rom {
 	/**
 	 * Set the Pyramid Fairy text to a custom value
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setPyramidFairyTextString(string $string) : self {
+	public function setPyramidFairyTextString($string) : self {
 		$offset = 0x180900;
 
 		$converter = new Dialog;
@@ -723,11 +723,11 @@ class Rom {
 	/**
 	 * Set the Altar text to a custom value
 	 *
-	 * @param string $string Altar text can be 3 lines of 14 characters each
+	 * @param $string Altar text can be 3 lines of 14 characters each
 	 *
 	 * @return $this
 	 */
-	public function setPedestalTextbox(string $string) : self {
+	public function setPedestalTextbox($string) : self {
 		$offset = 0x180300;
 
 		$converter = new Dialog;
@@ -741,11 +741,11 @@ class Rom {
 	/**
 	 * Set the Bombos Tablet (no upgraded sword) text to a custom value
 	 *
-	 * @param string $string Bombos text can be 3 lines of 14 characters each
+	 * @param $string Bombos text can be 3 lines of 14 characters each
 	 *
 	 * @return $this
 	 */
-	public function setBombosTextbox(string $string) : self {
+	public function setBombosTextbox($string) : self {
 		$offset = 0x181000;
 
 		$converter = new Dialog;
@@ -759,11 +759,11 @@ class Rom {
 	/**
 	 * Set the Ether Tablet (no upgraded sword) text to a custom value
 	 *
-	 * @param string $string Ether text can be 3 lines of 14 characters each
+	 * @param $string Ether text can be 3 lines of 14 characters each
 	 *
 	 * @return $this
 	 */
-	public function setEtherTextbox(string $string) : self {
+	public function setEtherTextbox($string) : self {
 		$offset = 0x180F00;
 
 		$converter = new Dialog;
@@ -778,11 +778,11 @@ class Rom {
 	 * Set the King's Return credits to a custom value
 	 * Original: the return of the king
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setKingsReturnCredits(string $string) : self {
+	public function setKingsReturnCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 22), 22, ' ', STR_PAD_BOTH);
 		$offset = 0x76928;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -796,11 +796,11 @@ class Rom {
 	 * Set the Sanctuary credits to a custom value
 	 * Original: the loyal priest
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setSanctuaryCredits(string $string) : self {
+	public function setSanctuaryCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 16), 16, ' ', STR_PAD_BOTH);
 		$offset = 0x76964;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -814,11 +814,11 @@ class Rom {
 	 * Set the Kakariko Town credits to a custom value
 	 * Original: sahasralah's homecoming
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setKakarikoTownCredits(string $string) : self {
+	public function setKakarikoTownCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 23), 23, ' ', STR_PAD_BOTH);
 		$offset = 0x76997;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -832,11 +832,11 @@ class Rom {
 	 * Set the Desert Palace credits to a custom value
 	 * Original: vultures rule the desert
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setDesertPalaceCredits(string $string) : self {
+	public function setDesertPalaceCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 24), 24, ' ', STR_PAD_BOTH);
 		$offset = 0x769D4;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -850,11 +850,11 @@ class Rom {
 	 * Set the Mountain Tower credits to a custom value
 	 * Original: the bully makes a friend
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setMountainTowerCredits(string $string) : self {
+	public function setMountainTowerCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 24), 24, ' ', STR_PAD_BOTH);
 		$offset = 0x76A12;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -868,11 +868,11 @@ class Rom {
 	 * Set the Links House credits to a custom value
 	 * Original: your uncle recovers
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setLinksHouseCredits(string $string) : self {
+	public function setLinksHouseCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 19), 19, ' ', STR_PAD_BOTH);
 		$offset = 0x76A52;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -886,11 +886,11 @@ class Rom {
 	 * Set the Zora credits text to a custom value
 	 * Original: finger webs for sale
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setZoraCredits(string $string) : self {
+	public function setZoraCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 20), 20, ' ', STR_PAD_BOTH);
 		$offset = 0x76A85;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -904,11 +904,11 @@ class Rom {
 	 * Set the Magic Shop credits text to a custom value
 	 * Original: the witch and assistant
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setMagicShopCredits(string $string) : self {
+	public function setMagicShopCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 23), 23, ' ', STR_PAD_BOTH);
 		$offset = 0x76AC5;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -922,11 +922,11 @@ class Rom {
 	 * Set the Woodsmans Hut credits text to a custom value
 	 * Original: twin lumberjacks
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setWoodsmansHutCredits(string $string) : self {
+	public function setWoodsmansHutCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 16), 16, ' ', STR_PAD_BOTH);
 		$offset = 0x76AFC;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -940,11 +940,11 @@ class Rom {
 	 * Set the Flute Boy credits to a custom value
 	 * Original: ocarina boy plays again
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setFluteBoyCredits(string $string) : self {
+	public function setFluteBoyCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 23), 23, ' ', STR_PAD_BOTH);
 		$offset = 0x76B34;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -958,11 +958,11 @@ class Rom {
 	 * Set the Wishing Well credits to a custom value
 	 * Original: venus. queen of faeries
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setWishingWellCredits(string $string) : self {
+	public function setWishingWellCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 23), 23, ' ', STR_PAD_BOTH);
 		$offset = 0x76B71;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -976,11 +976,11 @@ class Rom {
 	 * Set the Swordsmiths credits to a custom value
 	 * Original: the dwarven swordsmiths
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setSwordsmithsCredits(string $string) : self {
+	public function setSwordsmithsCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 23), 23, ' ', STR_PAD_BOTH);
 		$offset = 0x76BAC;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -994,11 +994,11 @@ class Rom {
 	 * Set the Bug-Catching Kid credits to a custom value
 	 * Original: the bug-catching kid
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setBugCatchingKidCredits(string $string) : self {
+	public function setBugCatchingKidCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 20), 20, ' ', STR_PAD_BOTH);
 		$offset = 0x76BDF;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -1012,11 +1012,11 @@ class Rom {
 	 * Set the Death Mountain credits to a custom value
 	 * Original: the lost old man
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setDeathMountainCredits(string $string) : self {
+	public function setDeathMountainCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 16), 16, ' ', STR_PAD_BOTH);
 		$offset = 0x76C19;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -1030,11 +1030,11 @@ class Rom {
 	 * Set the Lost Woods credits to a custom value
 	 * Original: the forest thief
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setLostWoodsCredits(string $string) : self {
+	public function setLostWoodsCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 16), 16, ' ', STR_PAD_BOTH);
 		$offset = 0x76C51;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -1048,11 +1048,11 @@ class Rom {
 	 * Set the Altar credits to a custom value
 	 * Original: and the master sword
 	 *
-	 * @param string $string
+	 * @param $string
 	 *
 	 * @return $this
 	 */
-	public function setAltarCredits(string $string) : self {
+	public function setAltarCredits($string) : self {
 		$write_string = str_pad(substr($string, 0, 20), 20, ' ', STR_PAD_BOTH);
 		$offset = 0x76C81;
 		foreach ($this->convertCredits($write_string) as $byte) {
@@ -1126,11 +1126,11 @@ class Rom {
 	/**
 	 * Set the Seed Type
 	 *
-	 * @param string $setting name
+	 * @param $setting name
 	 *
 	 * @return $this
 	 */
-	public function setRandomizerSeedType(string $setting) : self {
+	public function setRandomizerSeedType($setting) : self {
 		switch ($setting) {
 			case 'OverworldGlitches':
 				$byte = 0x02;
@@ -1154,11 +1154,11 @@ class Rom {
 	/**
 	 * Set the Game Type
 	 *
-	 * @param string $setting name
+	 * @param $setting name
 	 *
 	 * @return $this
 	 */
-	public function setGameType(string $setting) : self {
+	public function setGameType($setting) : self {
 		switch ($setting) {
 			case 'Plandomizer':
 				$byte = 0x01;
@@ -1179,11 +1179,11 @@ class Rom {
 	/**
 	 * Set the Plandomizer Author
 	 *
-	 * @param string $name name of author
+	 * @param $name name of author
 	 *
 	 * @return $this
 	 */
-	public function setPlandomizerAuthor(string $name) : self {
+	public function setPlandomizerAuthor($name) : self {
 		$this->write(0x180220, substr($name, 0, 31));
 
 		return $this;
@@ -1192,11 +1192,11 @@ class Rom {
 	/**
 	 * Set the Tournament Type
 	 *
-	 * @param string $setting name
+	 * @param $setting name
 	 *
 	 * @return $this
 	 */
-	public function setTournamentType(string $setting) : self {
+	public function setTournamentType($setting) : self {
 		switch ($setting) {
 			case 'standard':
 				$bytes = [0x01, 0x00];
@@ -1251,11 +1251,11 @@ class Rom {
 	/**
 	 * Set the sprite that spawns when a stunned Enemy is killed
 	 *
-	 * @param int $sprite id of sprite to drop (0xD9 green rupee)
+	 * @param $sprite id of sprite to drop (0xD9 green rupee)
 	 *
 	 * @return $this
 	 */
-	public function setStunnedSpritePrize(int $sprite = 0xD9) : self {
+	public function setStunnedSpritePrize($sprite = 0xD9) : self {
 		$this->write(0x37993, pack('C*', $sprite));
 
 		return $this;
@@ -1264,11 +1264,11 @@ class Rom {
 	/**
 	 * Set the sprite that spawns when powdered sprite that usually spawns a faerie is powdered.
 	 *
-	 * @param int $sprite id of sprite to drop
+	 * @param $sprite id of sprite to drop
 	 *
 	 * @return $this
 	 */
-	public function setPowderedSpriteFairyPrize(int $sprite = 0xE3) : self {
+	public function setPowderedSpriteFairyPrize($sprite = 0xE3) : self {
 		$this->write(0x36DD0, pack('C*', $sprite));
 
 		return $this;
@@ -1277,13 +1277,13 @@ class Rom {
 	/**
 	 * Set pull tree prizes
 	 *
-	 * @param int $low id of sprite to drop (0xD9 green rupee)
-	 * @param int $mid id of sprite to drop (0xDA blue rupee)
-	 * @param int $high id of sprite to drop (0xDB red rupee)
+	 * @param $low id of sprite to drop (0xD9 green rupee)
+	 * @param $mid id of sprite to drop (0xDA blue rupee)
+	 * @param $high id of sprite to drop (0xDB red rupee)
 	 *
 	 * @return $this
 	 */
-	public function setPullTreePrizes(int $low = 0xD9, int $mid = 0xDA, int $high = 0xDB) : self {
+	public function setPullTreePrizes($low = 0xD9, $mid = 0xDA, $high = 0xDB) : self {
 		$this->write(0xEFBD4, pack('C*', $low, $mid, $high));
 
 		return $this;
@@ -1293,12 +1293,12 @@ class Rom {
 	/**
 	 * Set rupee crab, first and final prizes
 	 *
-	 * @param int $main id of sprite to drop (0xD9 green rupee)
-	 * @param int $final id of sprite to drop (0xDB red rupee)
+	 * @param $main id of sprite to drop (0xD9 green rupee)
+	 * @param $final id of sprite to drop (0xDB red rupee)
 	 *
 	 * @return $this
 	 */
-	public function setRupeeCrabPrizes(int $main = 0xD9, int $final = 0xDB) : self {
+	public function setRupeeCrabPrizes($main = 0xD9, $final = 0xDB) : self {
 		$this->write(0x329C8, pack('C*', $main));
 		$this->write(0x329C4, pack('C*', $final));
 
@@ -1308,11 +1308,11 @@ class Rom {
 	/**
 	 * Set fish save prize
 	 *
-	 * @param int $prize id of sprite to drop (0xDB red rupee)
+	 * @param $prize id of sprite to drop (0xDB red rupee)
 	 *
 	 * @return $this
 	 */
-	public function setFishSavePrize(int $prize = 0xDB) : self {
+	public function setFishSavePrize($prize = 0xDB) : self {
 		$this->write(0xE82CC, pack('C*', $prize));
 
 		return $this;
@@ -1348,11 +1348,11 @@ class Rom {
 	/**
 	 * Adjust some settings for hard mode
 	 *
-	 * @param int $level how hard to make it, higher should be harder
+	 * @param $level how hard to make it, higher should be harder
 	 *
 	 * @return $this
 	 */
-	public function setHardMode(int $level = 0) : self {
+	public function setHardMode($level = 0) : self {
 		$this->setBelowGanonChest(false);
 		$this->setCaneOfByrnaSpikeCaveUsage();
 		$this->setCapeSpikeCaveUsage();
@@ -1408,11 +1408,11 @@ class Rom {
 	/**
 	 * Set the cost of Blue Shields in shops (shop sprite: 0x08).
 	 *
-	 * @param int $cost
+	 * @param $cost
 	 *
 	 * @return $this
 	 */
-	public function setShopBlueShieldCost(int $cost = 50) : self {
+	public function setShopBlueShieldCost($cost = 50) : self {
 		$cost_digits = str_split($cost);
 		if ($cost > 999) {
 			$this->write(0xF73D2, pack('C*', 0xFC, 0xFF)); // reposition gfx
@@ -1446,11 +1446,11 @@ class Rom {
 	/**
 	 * Set the cost of Red Shields in shops (shop sprite: ??).
 	 *
-	 * @param int $cost
+	 * @param $cost
 	 *
 	 * @return $this
 	 */
-	public function setShopRedShieldCost(int $cost = 500) : self {
+	public function setShopRedShieldCost($cost = 500) : self {
 		$cost_digits = str_split($cost);
 		if ($cost > 999) {
 			$this->write(0xF73FA, pack('C*', 0xFC, 0xFF)); // reposition gfx
@@ -1489,7 +1489,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setSmithyQuickItemGive(bool $enable = true) : self {
+	public function setSmithyQuickItemGive($enable = true) : self {
 		$this->write(0x180029, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1502,7 +1502,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setPyramidFairyChests(bool $enable = true) : self {
+	public function setPyramidFairyChests($enable = true) : self {
 		$this->write(0x1FC16, $enable
 			? pack('C*', 0xB1, 0xC6, 0xF9, 0xC9, 0xC6, 0xF9)
 			: pack('C*', 0xA8, 0xB8, 0x3D, 0xD0, 0xB8, 0x3D));
@@ -1517,7 +1517,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setHammerTablet(bool $enable = false) : self {
+	public function setHammerTablet($enable = false) : self {
 		$this->write(0x180044, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1530,7 +1530,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setCatchableFairies(bool $enable = true) : self {
+	public function setCatchableFairies($enable = true) : self {
 		$this->write(0x34FD6, pack('C*', $enable ? 0xF0 : 0x80));
 
 		return $this;
@@ -1543,7 +1543,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setCatchableBees(bool $enable = true) : self {
+	public function setCatchableBees($enable = true) : self {
 		$this->write(0xF5D73, pack('C*', $enable ? 0xF0 : 0x80));
 		$this->write(0xF5F10, pack('C*', $enable ? 0xF0 : 0x80));
 
@@ -1557,7 +1557,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setBelowGanonChest(bool $enable = true) : self {
+	public function setBelowGanonChest($enable = true) : self {
 		// convert telepathic tile to chest and place it
 		$this->write(0x50563, $enable ? pack('C*', 0xC5, 0x76) : pack('C*', 0x3F, 0x14));
 		// lock door to under ganon
@@ -1575,7 +1575,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setWishingWellChests(bool $enable = false) : self {
+	public function setWishingWellChests($enable = false) : self {
 		// set item table to proper room
 		$this->write(0xE9AE, $enable ? pack('C*', 0x14, 0x01) : pack('C*', 0x05, 0x00));
 		$this->write(0xE9CF, $enable ? pack('C*', 0x14, 0x01) : pack('C*', 0x3D, 0x01));
@@ -1601,7 +1601,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setWishingWellUpgrade(bool $enable = false) : self {
+	public function setWishingWellUpgrade($enable = false) : self {
 		$this->write(0x348DB, pack('C*', $enable ? 0x0C : 0x2A));
 		$this->write(0x348EB, pack('C*', $enable ? 0x04 : 0x05));
 
@@ -1615,7 +1615,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setOpenMode(bool $enable = true) : self {
+	public function setOpenMode($enable = true) : self {
 		$this->write(0x180032, pack('C*', $enable ? 0x01 : 0x00));
 		$this->setSewersLampCone(!$enable);
 		$this->setLightWorldLampCone(false);
@@ -1631,7 +1631,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setMapMode(bool $require_map = false) : self {
+	public function setMapMode($require_map = false) : self {
 		$this->write(0x18003B, pack('C*', $require_map ? 0x01 : 0x00));
 
 		return $this;
@@ -1644,7 +1644,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setCompassMode(bool $show_count = false) : self {
+	public function setCompassMode($show_count = false) : self {
 		$this->write(0x18003C, pack('C*', $show_count ? 0x01 : 0x00));
 
 		return $this;
@@ -1657,7 +1657,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setFreeItemTextMode(bool $enable = true) : self {
+	public function setFreeItemTextMode($enable = true) : self {
 		$this->write(0x18016A, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1670,7 +1670,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setSwordlessMode(bool $enable = false) : self {
+	public function setSwordlessMode($enable = false) : self {
 		$this->write(0x18003F, pack('C*', $enable ? 0x01 : 0x00)); // Hammer Ganon
 		$this->write(0x180040, pack('C*', $enable ? 0x01 : 0x00)); // Open Curtains
 		$this->write(0x180041, pack('C*', $enable ? 0x01 : 0x00)); // Swordless Medallions
@@ -1688,7 +1688,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setSewersLampCone(bool $enable = true) : self {
+	public function setSewersLampCone($enable = true) : self {
 		$this->write(0x180038, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1701,7 +1701,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setLightWorldLampCone(bool $enable = true) : self {
+	public function setLightWorldLampCone($enable = true) : self {
 		$this->write(0x180039, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1714,7 +1714,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setDarkWorldLampCone(bool $enable = true) : self {
+	public function setDarkWorldLampCone($enable = true) : self {
 		$this->write(0x18003A, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1727,7 +1727,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setMirrorlessSaveAndQuitToLightWorld(bool $enable = true) : self {
+	public function setMirrorlessSaveAndQuitToLightWorld($enable = true) : self {
 		$this->write(0x1800A0, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1740,7 +1740,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setSaveAndQuitFromBossRoom(bool $enable = false) : self {
+	public function setSaveAndQuitFromBossRoom($enable = false) : self {
 		$this->write(0x180042, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1753,7 +1753,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setSwampWaterLevel(bool $enable = true) : self {
+	public function setSwampWaterLevel($enable = true) : self {
 		$this->write(0x1800A1, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1766,7 +1766,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setPreAgahnimDarkWorldDeathInDungeon(bool $enable = true) : self {
+	public function setPreAgahnimDarkWorldDeathInDungeon($enable = true) : self {
 		$this->write(0x1800A2, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1779,7 +1779,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setWorldOnAgahnimDeath(bool $enable = true) : self {
+	public function setWorldOnAgahnimDeath($enable = true) : self {
 		$this->write(0x1800A3, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1792,7 +1792,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function setLockAgahnimDoorInEscape(bool $enable = true) : self {
+	public function setLockAgahnimDoorInEscape($enable = true) : self {
 		$this->write(0x180169, pack('C*', $enable ? 0x01 : 0x00));
 
 		return $this;
@@ -1801,11 +1801,11 @@ class Rom {
 	/**
 	 * Set the Ganon Warp Phase and Agahnim BB mode
 	 *
-	 * @param string $setting name
+	 * @param $setting name
 	 *
 	 * @return $this
 	 */
-	public function setGanonAgahnimRng(string $setting = 'table') : self {
+	public function setGanonAgahnimRng($setting = 'table') : self {
 		switch ($setting) {
 			case 'none':
 				$byte = 0x01;
@@ -1824,11 +1824,11 @@ class Rom {
 	/**
 	 * Write the seed identifier
 	 *
-	 * @param string $seed identifier for this seed
+	 * @param $seed identifier for this seed
 	 *
 	 * @return $this
 	 */
-	public function setSeedString(string $seed) : self {
+	public function setSeedString($seed) : self {
 		$this->write(0x7FC0, substr($seed, 0, 21));
 
 		return $this;
@@ -1878,11 +1878,11 @@ class Rom {
 	 * t - Minor Trolling (Swapped around levers, etc)
 	 * T - Major Trolling (Forced-guess softlocks, impossible seed, etc)
 	 *
-	 * @param int $flags byte of flags to set
+	 * @param $flags byte of flags to set
 	 *
 	 * @return $this
 	 */
-	public function setWarningFlags(int $flags) : self {
+	public function setWarningFlags($flags) : self {
 		$this->write(0x180212, pack('C*', $flags));
 
 		return $this;
@@ -1895,7 +1895,7 @@ class Rom {
 	 *
 	 * @return $this
 	 */
-	public function muteMusic(bool $enable = true) : self {
+	public function muteMusic($enable = true) : self {
 		$tracks_by_volume = [
 			0x00 => [0xD373B, 0xD375B, 0xD90F8],
 			0x14 => [0xDA710, 0xDA7A4, 0xDA7BB, 0xDA7D2],
@@ -2034,24 +2034,24 @@ class Rom {
 	/**
 	 * Save the changes to this output file
 	 *
-	 * @param string $output_location location on the filesystem to write the new ROM.
+	 * @param $output_location location on the filesystem to write the new ROM.
 	 *
 	 * @return bool
 	 */
-	public function save(string $output_location) : bool {
+	public function save($output_location) : bool {
 		return copy($this->tmp_file, $output_location);
 	}
 
 	/**
 	 * Write packed data at the given offset
 	 *
-	 * @param int $offset location in the ROM to begin writing
-	 * @param string $data data to write to the ROM
+	 * @param $offset location in the ROM to begin writing
+	 * @param $data data to write to the ROM
 	 * @param bool $log write this write to the log
 	 *
 	 * @return $this
 	 */
-	public function write(int $offset, string $data, bool $log = true) : self {
+	public function write($offset, $data, $log = true) : self {
 		if ($log) {
 			$this->write_log[] = [$offset => array_values(unpack('C*', $data))];
 		}
@@ -2073,12 +2073,12 @@ class Rom {
 	/**
 	 * Read data from the ROM file into an array
 	 *
-	 * @param int $offset location in the ROM to begin reading
-	 * @param int $length data to read
+	 * @param $offset location in the ROM to begin reading
+	 * @param $length data to read
 	 * // TODO: this should probably always be an array, or a new Bytes object
 	 * @return array
 	 */
-	public function read(int $offset, int $length = 1) {
+	public function read($offset, $length = 1) {
 		fseek($this->rom, $offset);
 		$unpacked = unpack('C*', fread($this->rom, $length));
 		return count($unpacked) == 1 ? $unpacked[1] : array_values($unpacked);
@@ -2099,11 +2099,11 @@ class Rom {
 	/**
 	 * Convert string to byte array for Credits that can be written to ROM
 	 *
-	 * @param string $string string to convert
+	 * @param $string string to convert
 	 *
 	 * @return array
 	 */
-	public function convertCredits(string $string) : array {
+	public function convertCredits($string) : array {
 		$byte_array = [];
 		foreach (str_split(strtolower($string)) as $char) {
 			$byte_array[] = $this->charToCreditsHex($char);
@@ -2115,11 +2115,11 @@ class Rom {
 	/**
 	 * Convert character to byte for ROM in Credits Sequence
 	 *
-	 * @param string $string character to convert
+	 * @param $string character to convert
 	 *
 	 * @return int
 	 */
-	private function charToCreditsHex(string $char) : int {
+	private function charToCreditsHex($char) : int {
 		if (preg_match('/[a-z]/', $char)) {
 			return ord($char) - 0x47;
 		}

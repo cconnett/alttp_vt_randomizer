@@ -7,12 +7,12 @@ class Dialog {
 	/**
 	 * Convert string to byte array for Dialog Box that can be written to ROM
 	 *
-	 * @param string $string string to convert
+	 * @param $string string to convert
 	 * @param int $max_bytes maximum bytes to return
 	 *
 	 * @return array
 	 */
-	public function convertDialog(string $string, $max_bytes = 256) {
+	public function convertDialog($string, $max_bytes = 256) {
 		$new_string = [];
 		$lines = explode("\n", mb_strtoupper($string));
 		$i = 0;
@@ -58,14 +58,14 @@ class Dialog {
 	/**
 	 * Convert string to byte array for Compressed Dialog Box that can be written to ROM
 	 *
-	 * @param string $string string to convert
+	 * @param $string string to convert
 	 * @param bool $pause whether to pause for input
 	 * @param int $max_bytes maximum bytes to return
 	 * @param int $wrap if greater than 0 wrap lines to this value
 	 *
 	 * @return array
 	 */
-	public function convertDialogCompressed(string $string, $pause = true, $max_bytes = 2046, $wrap = 14) {
+	public function convertDialogCompressed($string, $pause = true, $max_bytes = 2046, $wrap = 14) {
 		$pad_out = false;
 		$new_string = [0xFB];
 		$lines = explode("\n", mb_strtoupper($string));
@@ -178,7 +178,7 @@ class Dialog {
 	/**
 	 * Convert character to byte for ROM
 	 *
-	 * @param string $string character to convert
+	 * @param $string character to convert
 	 * E5E7=<1/4 heart>
 	 * E6E7=<1/2 heart>
 	 * E8E9=<3/4 heart>
