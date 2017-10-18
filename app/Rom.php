@@ -213,7 +213,7 @@ class Rom {
 	 * Set mode for HUD clock
 	 *
 	 * @param $mode off|stopwatch|countdown-stop|countdown-continue
-	 * @param bool $restart wether to restart the timer
+	 * @param $restart wether to restart the timer
 	 *
 	 * @return $this;
 	 */
@@ -1077,7 +1077,7 @@ class Rom {
 	/**
 	 * Enable/Disable the SRAM Trace function
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1485,7 +1485,7 @@ class Rom {
 	/**
 	 * Set Smithy Quick Item Give mode. I.E. just gives an item if you rescue him with no sword bogarting
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1498,7 +1498,7 @@ class Rom {
 	/**
 	 * Set Pyramid Fountain to have 2 chests
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1513,7 +1513,7 @@ class Rom {
 	/**
 	 * Enable Hammer activates tablets
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1526,7 +1526,7 @@ class Rom {
 	/**
 	 * Enable/Disable ability to bug net catch Fairy
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1539,7 +1539,7 @@ class Rom {
 	/**
 	 * Enable/Disable ability to bug net catch Bee (also makes them attack you?)
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1553,7 +1553,7 @@ class Rom {
 	/**
 	 * Set space directly below Ganon to have a chest
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1571,7 +1571,7 @@ class Rom {
 	/**
 	 * Place 2 chests in Waterfall of Wishing Fairy.
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1597,7 +1597,7 @@ class Rom {
 	/**
 	 * Enable/Disable Waterfall of Wishing Fairy's ability to upgrade items.
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1611,7 +1611,7 @@ class Rom {
 	/**
 	 * Set Game in Open Mode. (Post rain state with Escape undone)
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1627,7 +1627,7 @@ class Rom {
 	/**
 	 * Enable maps to show crystals on overworld map
 	 *
-	 * @param bool $require_map switch on or off
+	 * @param $require_map switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1640,7 +1640,7 @@ class Rom {
 	/**
 	 * Enable compass to show dungeon count
 	 *
-	 * @param bool $show_count switch on or off
+	 * @param $show_count switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1653,7 +1653,7 @@ class Rom {
 	/**
 	 * Enable text box to show with free roaming items
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1666,7 +1666,7 @@ class Rom {
 	/**
 	 * Enable swordless mode
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1684,7 +1684,7 @@ class Rom {
 	/**
 	 * Enable lampless light cone in Sewers
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1697,7 +1697,7 @@ class Rom {
 	/**
 	 * Enable lampless light cone in Light World Dungeons
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1710,7 +1710,7 @@ class Rom {
 	/**
 	 * Enable lampless light cone in Dark World Dungeons
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1723,7 +1723,7 @@ class Rom {
 	/**
 	 * Enable/Disable the ROM Hack that doesn't leave Link stranded in DW
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1736,7 +1736,7 @@ class Rom {
 	/**
 	 * Enable/Disable ability to Save and Quit from Boss room after item collection.
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1749,7 +1749,7 @@ class Rom {
 	/**
 	 * Enable/Disable the ROM Hack that drains the Swamp on transition
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1762,7 +1762,7 @@ class Rom {
 	/**
 	 * Enable/Disable the ROM Hack that sends Link to Real DW on death in DW dungeon if AG1 is not dead
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1775,7 +1775,7 @@ class Rom {
 	/**
 	 * Enable/Disable World on Agahnim Death
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1788,7 +1788,7 @@ class Rom {
 	/**
 	 * Enable/Disable locking Hyrule Castle Door to AG1 during escape
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -1891,7 +1891,7 @@ class Rom {
 	/**
 	 * Mute all audio tracks.
 	 *
-	 * @param bool $enable switch on or off
+	 * @param $enable switch on or off
 	 *
 	 * @return $this
 	 */
@@ -2047,7 +2047,7 @@ class Rom {
 	 *
 	 * @param $offset location in the ROM to begin writing
 	 * @param $data data to write to the ROM
-	 * @param bool $log write this write to the log
+	 * @param $log write this write to the log
 	 *
 	 * @return $this
 	 */

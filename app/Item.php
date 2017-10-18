@@ -56,13 +56,13 @@ class Item {
 	/**
 	 * Get the Item by byte
 	 *
-	 * @param int $byte byte of Item
+	 * @param $byte byte of Item
 	 *
 	 * @throws Exception if the Item doesn't exist
 	 *
 	 * @return Item
 	 */
-	static public function getWithByte(int $byte) {
+	static public function getWithByte($byte) {
 		foreach (static::all() as $item) {
 			if ($item->bytes[0] == $byte) {
 				return $item;

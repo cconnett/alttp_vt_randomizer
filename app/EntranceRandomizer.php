@@ -19,11 +19,11 @@ class EntranceRandomizer extends Randomizer {
 	/**
 	 * Create a new EntranceRandomizer
 	 *
-	 * @param string $difficulty difficulty from config to apply to randomization
-	 * @param string $logic Ruleset to use when deciding if Locations can be reached
-	 * @param string $goal Goal of the game
-	 * @param string $variation modifications to difficulty
-	 * @param string $variation how the entrances are shuffled
+	 * @param $difficulty difficulty from config to apply to randomization
+	 * @param $logic Ruleset to use when deciding if Locations can be reached
+	 * @param $goal Goal of the game
+	 * @param $variation modifications to difficulty
+	 * @param $variation how the entrances are shuffled
 	 *
 	 * @return void
 	 */
@@ -49,7 +49,7 @@ class EntranceRandomizer extends Randomizer {
 		}
 	}
 
-	public function makeSeed(int $rng_seed = null) {
+	public function makeSeed($rng_seed = null) {
 		$rng_seed = $rng_seed ?: random_int(1, 999999999); // cryptographic pRNG for seeding
 		$this->rng_seed = $rng_seed % 1000000000;
 		mt_srand($rng_seed);

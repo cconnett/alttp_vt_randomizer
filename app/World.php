@@ -243,7 +243,7 @@ class World {
 	 * sphere we put it back (and mark the location as required). We repeat this process until all spheres have been
 	 * pruned. We then take that list of locations with items and run a playthrough of them so we know collection order.
 	 *
-	 * @param bool $walkthrough include the play order
+	 * @param $walkthrough include the play order
 	 *
 	 * @return array
 	 */

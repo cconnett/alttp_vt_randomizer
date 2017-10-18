@@ -17,7 +17,7 @@ class Location {
 	/**
 	 * Create a new Location
 	 *
-	 * @param string $name Unique name of location
+	 * @param $name Unique name of location
 	 * @param array $address Addresses in ROM to write to
 	 * @param array|null $bytes data to write back to Item addresses if set
 	 * @param Region|null $region Region that this Location belongs to
@@ -58,7 +58,7 @@ class Location {
 	 *
 	 * @param Item $item Item we are testing for placement
 	 * @param ItemCollection $items Items that can be collected
-	 * @param bool $check_access also test access
+	 * @param $check_access also test access
 	 *
 	 * @return bool
 	 */

@@ -18,7 +18,7 @@ class Sprite {
 	/**
 	 * Get the Sprite by name
 	 *
-	 * @param string $name Name of Sprite
+	 * @param $name Name of Sprite
 	 *
 	 * @throws Exception if the Sprite doesn't exist
 	 *
@@ -36,7 +36,7 @@ class Sprite {
 	/**
 	 * Get the Sprite by byte
 	 *
-	 * @param int $byte byte of Sprite
+	 * @param $byte byte of Sprite
 	 *
 	 * @throws Exception if the Sprite doesn't exist
 	 *
@@ -335,8 +335,8 @@ class Sprite {
 	/**
 	 * Create a new Sprite
 	 *
-	 * @param string $name Unique name of item
-	 * @param string $nice_name Well formatted name for item
+	 * @param $name Unique name of item
+	 * @param $nice_name Well formatted name for item
 	 * @param array $bytes data to write to Location addresses
 	 * @param array|null $address Addresses in ROM to write back Location data if set
 	 *
@@ -391,11 +391,11 @@ class Sprite {
 	 * @author Zarby89
 	 *
 	 * @param array $sprite byte array of gfx data
-	 * @param int $pos position in stream to pull 8x8 from
+	 * @param $pos position in stream to pull 8x8 from
 	 *
 	 * @return array
 	 */
-	static public function load8x8(array $sprite, int $pos = 0) {
+	static public function load8x8(array $sprite, $pos = 0) {
 		//pos = 32 bytes to read per 8x8 tiles, will return an array of 64bytes
 		$positions = [0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01];
 		$temp_array = [];
@@ -421,11 +421,11 @@ class Sprite {
 	 * @author Zarby89
 	 *
 	 * @param array $sprite byte array of gfx data
-	 * @param int $pos position in stream to pull 8x8 from
+	 * @param $pos position in stream to pull 8x8 from
 	 *
 	 * @return array
 	 */
-	static public function load16x16(array $sprite, int $pos = 0) {
+	static public function load16x16(array $sprite, $pos = 0) {
 		//pos 0x40 = head facing down, pos 0x4C0 = body facing down
 		$temp_array = array_fill(0, 16, []);
 		$top_left = static::load8x8($sprite, $pos );

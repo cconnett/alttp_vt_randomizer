@@ -42,10 +42,10 @@ class Randomizer {
 	/**
 	 * Create a new Randomizer
 	 *
-	 * @param string $difficulty difficulty from config to apply to randomization
-	 * @param string $logic Ruleset to use when deciding if Locations can be reached
-	 * @param string $goal Goal of the game
-	 * @param string $variation modifications to difficulty
+	 * @param $difficulty difficulty from config to apply to randomization
+	 * @param $logic Ruleset to use when deciding if Locations can be reached
+	 * @param $goal Goal of the game
+	 * @param $variation modifications to difficulty
 	 *
 	 * @return void
 	 */
@@ -497,7 +497,7 @@ class Randomizer {
 	/**
 	 * Get config value based on the currently set difficulty/variation
 	 *
-	 * @param string $key dot notation key of config
+	 * @param $key dot notation key of config
 	 * @param mixed|null $default value to return if $key is not found
 	 *
 	 * @return mixed
