@@ -507,15 +507,13 @@ class World {
      *
      * @return ItemCollection
      */
-    public function collectItems(ItemCollection $collected = null) {
+    public function collectItems(ItemCollection $collected = null, $filled_locations = null) {
         // Start with a provided collection, or default to an empty one.
 		$my_items = $collected ?? new ItemCollection;
         // "Collectable locations" are simply non-medallion (mire/tr),
         // non-fountain locations. Grab all those that currently have
         // items assigned.
-		$available_locations = $this->getCollectableLocations()->filter(function($location) {
-			return $location->hasItem();
-		});
+		$available_locations = $filled_locations;
 
         // Walk through topological ranks of the reachablility graph.
 		do {

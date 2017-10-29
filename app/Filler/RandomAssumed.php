@@ -49,6 +49,9 @@ class RandomAssumed extends Filler {
         }
         $remaining_fill_items = $remaining_fill_items->merge($base_assumed_items);
 
+        $filled_locations = $this->world->getCollectableLocations()->filter(function($location) {
+			return $location->hasItem();
+		});
         // The items to fill are already in a shuffled order.
         foreach ($fill_items as $key => $item) {
             // Assume that Link has already collected:
@@ -58,7 +61,8 @@ class RandomAssumed extends Filler {
             //
             // The one we're currently placing is not part of that.
             $assumed_items = $this->world->collectItems(
-                $remaining_fill_items->removeItem($item->getName()));
+                $remaining_fill_items->removeItem($item->getName()),
+                $filled_locations);
             // Step through canidate locations and place the item in the
             // first one reachable with the items we assumed in the
             // previous step.
@@ -75,6 +79,7 @@ class RandomAssumed extends Filler {
 			}
 			Log::debug(sprintf("Placing Item: %s in %s", $item->getNiceName(), $fill_location->getName()));
 			$fill_location->setItem($item);
+            $filled_locations->addItem($fill_location);
 		}
 	}
 }
