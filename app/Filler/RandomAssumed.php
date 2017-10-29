@@ -52,7 +52,7 @@ class RandomAssumed extends Filler {
 			return $location->hasItem();
 		});
         // The items to fill are already in a shuffled order.
-        foreach ($fill_items as $key => $item) {
+		foreach ($fill_items as $key => $item) {
             // Assume that Link has already collected:
             // 1. All unplaced items.
             // 2. All placed items that are iteratively reachable starting with
@@ -79,6 +79,8 @@ class RandomAssumed extends Filler {
 			Log::debug(sprintf("Placing Item: %s in %s", $item->getNiceName(), $fill_location->getName()));
 			$fill_location->setItem($item);
             $filled_locations->addItem($fill_location);
+
+            throw new \Exception(sprintf('No Available Locations: "%s"', $item->getNiceName()));
 		}
 	}
 }
