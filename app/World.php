@@ -525,24 +525,20 @@ class World {
 
         // Walk through topological ranks of the reachablility graph.
 		do {
-          $my_items = $found_items->merge($my_items);
-          $reachable_locations = new LocationCollection;
-          $unreachable_locations = new LocationCollection;
-          foreach($available_locations as $location) {
-            if ($location->canAccess($my_items)) {
-              $reachable_locations->addItem($location);
-            } else {
-              $unreachable_locations->addItem($location);
-			}
-          }
-          // Unreachable locations become the available locations for the next pass.
+            // Determine the locations currently reachable with $my_items.
+			$reachable_locations = $available_locations->filter(
+                function($location) use ($my_items) {
+                    return $location->canAccess($my_items);
+                });
 
-          $available_locations = $unreachable_locations;
-          // Determine what items we found in this rank.
-      	  $found_items = $reachable_locations->getItems();
-          // Add them to our items.
-          $my_items = $found_items->merge($my_items);
-          // Go until we find no new items in a rank.
+            // Remove locations reachable in this iteration from the pool.
+			$available_locations = $available_locations->diff($reachable_locations);
+
+            // Determine what items we found in this rank.
+			$found_items = $reachable_locations->getItems();
+            // Add them to our items.
+			$my_items = $found_items->merge($my_items);
+            // Go until we find no new items in a rank.
 		} while ($found_items->count() > 0);
 
         // This is everything I could collect from the current world.
