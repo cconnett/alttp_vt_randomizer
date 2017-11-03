@@ -532,7 +532,8 @@ class World {
                 });
 
             // Remove locations reachable in this iteration from the pool.
-			$available_locations = $available_locations->diff($reachable_locations);
+			$available_locations = $available_locations->diff(
+                $reachable_locations);
 
             // Determine what items we found in this rank.
 			$found_items = $reachable_locations->getItems();

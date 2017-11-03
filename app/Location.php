@@ -10,7 +10,7 @@ class Location {
 	protected $address;
 	protected $bytes;
 	protected $region;
-	protected $requirement_callback;
+	public $requirement_callback;
 	protected $fill_callback;
 	protected $item = null;
 
