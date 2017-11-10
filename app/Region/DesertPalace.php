@@ -101,15 +101,12 @@ class DesertPalace extends Region {
 		});
 
 		$this->can_complete = function($locations, $items) {
-			if (in_array(config('game-mode'), ['open', 'swordless']) && !($items->hasSword() || $items->has('Hammer')
+                                !(in_array(config('game-mode'), ['open', 'swordless']) && !($items->hasSword() || $items->has('Hammer')
 					|| $items->canShootArrows() || $items->has('FireRod') || $items->has('IceRod')
-					|| $items->has('CaneOfByrna') || $items->has('CaneOfSomaria'))) {
-				return false;
-			}
-
-			return $this->canEnter($locations, $items)
+					|| $items->has('CaneOfByrna') || $items->has('CaneOfSomaria'))) &&
+                                    ($this->canEnter($locations, $items)
 				&& $items->canLiftRocks() && $items->canLightTorches()
-				&& $items->has('BigKeyP2') && $items->has('KeyP2');
+                                     && $items->has('BigKeyP2') && $items->has('KeyP2'));
 		};
 
 		$this->locations["Heart Container - Lanmolas"]->setRequirements($this->can_complete)
