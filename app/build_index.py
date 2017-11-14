@@ -8,7 +8,6 @@ import re
 
 import pyparsing as p
 s = p.Suppress
-all_items = [item_line.strip() for item_line in open('items.txt').readlines()]
 
 
 def GetMentionedThings(location_pattern, things, text):
