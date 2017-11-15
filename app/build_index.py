@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import collections
+import pprint
 import os
 import re
 
@@ -82,13 +83,23 @@ def BuildIndex():
       location = location.strip()
       pattern = re.compile(r'\["({})"\]->setRequirements\((.*)'.format(
           re.escape(location)), re.DOTALL | re.MULTILINE)
-      match = pattern.search(source)
+
+      source2 = re.search(r'initNoMajorGlitches.*?/\*\*', source,
+                          re.DOTALL | re.MULTILINE)
+
+      if not source2:
+        continue
+      source3 = source2.group(0)
+      match = pattern.search(source3)
       if match:
         found_location = match.group(1)
         body = match.group(2)
         try:
           print(region, found_location)
-          print(php_expr.parseString(body))
+          ether = php_expr.parseString(body)
+          if 'Ether' in found_location:
+            pprint.pprint(ether.asDict())
+            return
         except p.ParseException as pe:
           errors.append((found_location, body, pe))
 
