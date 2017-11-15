@@ -26,8 +26,10 @@ def WalkSources():
         yield (open(path).read(), path[:-len('.php')])
 
 
-php_expr = p.Forward().setName('expr')
+php_expr = p.Forward()
 p.quotedString.addParseAction(p.removeQuotes)
+
+boolean = p.Literal('true') | 'false'
 item_in_locations = (
     s('$locations->itemInLocations(Item::get(') +
     p.quotedString.copy().setResultsName('item') + s(')') + s(',') + s('[') +
@@ -36,27 +38,39 @@ item_in_locations = (
 
 items_has = (s('$items->has(') + p.quotedString +
              p.Optional(s(',') + p.Word(p.nums)) + s(')')).setResultsName('has')
+locations_has = (s('$locations[') + p.quotedString + s(']->hasItem(Item::get(')
+                 + p.quotedString + s('))')).setResultsName('has')
 region_can_enter = (
     s('$this->world->getRegion(') + p.quotedString +
     s(')->canEnter($locations, $items)')).setResultsName('region')
-function_call = (
-    s('$items->') + p.Word(p.alphas) + s('()')).setResultsName('function')
+method_call = (
+    s('$items->') + p.Word(p.alphas) + s('()')).setResultsName('method_call')
 swordless = p.Literal("config('game-mode') == 'swordless'")
 open_or_swordless = "in_array(config('game-mode'), ['open', 'swordless'])"
 
 is_a = 'is_a($item, Item\\' + p.Word(p.alphas) + '::class)'
-boss_normal_location = p.Literal(
-    "!$this->world->config('region.bossNormalLocation', true)")
-parenthesized_expr = (s('(') + php_expr + s(')'))
-php_atom = (items_has | region_can_enter | function_call | item_in_locations |
-            swordless | open_or_swordless | is_a | boss_normal_location |
-            parenthesized_expr)
-php_literal = p.Group(p.Optional('!') + php_atom).setResultsName('literal')
-php_and = (php_literal + p.ZeroOrMore('&&' + php_literal))
-php_or = (php_and + p.ZeroOrMore('||' + php_and)).setResultsName('ored')
+world_config = (
+    s('$this->world->config(') + p.quotedString + s(',') + boolean + s(')'))
 
-php_expr <<= php_or
+php_block = p.Forward().setName('block')
+php_lambda = (s('function($locations, $items)') + php_block).setName('lambda')
+parenthesized_expr = ('(' + php_expr + ')').setName('parenthesized')
+php_atom = (parenthesized_expr | items_has | locations_has | region_can_enter |
+            method_call | item_in_locations | swordless | open_or_swordless |
+            is_a | world_config | '$this->can_complete' | php_lambda |
+            boolean).setName('atom')
+php_negation = ('!' + php_atom).setName('negation')
+php_literal = (php_atom | php_negation).setName('literal')
+php_and = (php_literal + p.ZeroOrMore('&&' + php_literal)).setResultsName('and')
+php_or = (php_and + p.ZeroOrMore('||' + php_and)).setResultsName('or')
+php_ternary = (php_or + '?' + php_or + ':' + php_or).setResultsName('ternary')
+php_expr <<= (php_ternary | php_or | php_and |
+              php_literal).setName('expression')
+
 php_return = s('return') + php_expr + s(';')
+if_stmt = ('if (' + php_expr + ')' + php_block).setName('if_statment')
+php_stmt = (php_return | if_stmt).setName('statement')
+php_block <<= s('{') + p.OneOrMore(php_stmt) + s('}')
 
 
 def BuildIndex():
@@ -66,18 +80,17 @@ def BuildIndex():
   for source, region in WalkSources():
     for location in open('locations.txt'):
       location = location.strip()
-      pattern = re.compile(
-          r'\["({})"\]->setRequirements\(.*?\{{(.*?)\}}'.format(
-              re.escape(location)), re.DOTALL | re.MULTILINE)
+      pattern = re.compile(r'\["({})"\]->setRequirements\((.*)'.format(
+          re.escape(location)), re.DOTALL | re.MULTILINE)
       match = pattern.search(source)
       if match:
         found_location = match.group(1)
         body = match.group(2)
         try:
           print(region, found_location)
-          print(php_return.parseString(body))
-        except p.ParseException:
-          errors.append((found_location, body))
+          print(php_expr.parseString(body))
+        except p.ParseException as pe:
+          errors.append((found_location, body, pe))
 
       # queue = collections.deque(
       #     GetMentionedThings(pattern, all_items + list(compound_items.keys()),
@@ -91,10 +104,20 @@ def BuildIndex():
       #     if item not in done:
       #       queue.extendleft(compound_items[item])
       #   done.add(item)
-  print('===Errors===')
   print(len(errors))
+  _, columns = os.popen('stty size', 'r').read().split()
   for e in errors:
-    print(e[0], e[1])
+    print('{:<20}\t{}'.format(e[0][:20],
+                              re.sub(r'\s+', ' ', e[1][:int(columns) - 20])))
+  if errors:
+    location, body, pe = errors[0]
+    print(location)
+    lines = body.splitlines()
+    print('\n'.join(lines[:pe.lineno]))
+    print(' ' * pe.col + '^')
+    print(pe)
+    print('\n'.join(lines[pe.lineno:]))
   return index
+
 
 end = BuildIndex()
