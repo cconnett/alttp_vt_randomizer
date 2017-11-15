@@ -31,45 +31,48 @@ php_expr = p.Forward()
 p.quotedString.addParseAction(p.removeQuotes)
 
 boolean = p.Literal('true') | 'false'
-item_in_locations = (
-    s('$locations->itemInLocations(Item::get(') +
-    p.quotedString.copy().setResultsName('item') + s(')') + s(',') + s('[') +
-    p.Group(p.quotedString + p.ZeroOrMore(',' + p.quotedString) + p.Optional(
-        ',')).setResultsName('allowable_locations') + s(']') + s(')'))
+item_in_locations = p.Group(
+    s('$locations->itemInLocations(Item::get(') + p.quotedString('item') +
+    s('), [') + p.Group(p.quotedString + p.ZeroOrMore(',' + p.quotedString) +
+                        p.Optional(','))('allowable_locations') + s('])'))(
+                            'i_in_l')
 
 items_has = (s('$items->has(') + p.quotedString +
-             p.Optional(s(',') + p.Word(p.nums)) + s(')')).setResultsName('has')
-locations_has = (s('$locations[') + p.quotedString + s(']->hasItem(Item::get(')
-                 + p.quotedString + s('))')).setResultsName('has')
-region_can_enter = (
-    s('$this->world->getRegion(') + p.quotedString +
-    s(')->canEnter($locations, $items)')).setResultsName('region')
+             p.Optional(s(',') + p.Word(p.nums)('count')) + s(')'))('has_item')
+locations_has = p.Group(
+    s('$locations[') + p.quotedString('location') + s(']->hasItem(Item::get(') +
+    p.quotedString('item') + s('))'))('location_has')
+region_can_enter = (s('$this->world->getRegion(') + p.quotedString('region') +
+                    s(')->canEnter($locations, $items)'))
 method_call = (
     s('$items->') + p.Word(p.alphas) + s('()')).setResultsName('method_call')
-swordless = p.Literal("config('game-mode') == 'swordless'")
+swordless = "config('game-mode') == 'swordless'"
 open_or_swordless = "in_array(config('game-mode'), ['open', 'swordless'])"
 
-is_a = 'is_a($item, Item\\' + p.Word(p.alphas) + '::class)'
-world_config = (
-    s('$this->world->config(') + p.quotedString + s(',') + boolean + s(')'))
+is_a = s('is_a($item, Item\\') + p.Word(p.alphas) + s('::class)')
+world_config = p.Group(
+    s('$this->world->config(') + p.quotedString('option') + s(',') +
+    boolean('value') + s(')'))
 
 php_block = p.Forward().setName('block')
 php_lambda = (s('function($locations, $items)') + php_block).setName('lambda')
-parenthesized_expr = ('(' + php_expr + ')').setName('parenthesized')
+parenthesized_expr = (s('(') + php_expr + s(')')).setName('parenthesized')
 php_atom = (parenthesized_expr | items_has | locations_has | region_can_enter |
             method_call | item_in_locations | swordless | open_or_swordless |
             is_a | world_config | '$this->can_complete' | php_lambda |
             boolean).setName('atom')
 php_negation = ('!' + php_atom).setName('negation')
-php_literal = (php_atom | php_negation).setName('literal')
-php_and = (php_literal + p.ZeroOrMore('&&' + php_literal)).setResultsName('and')
-php_or = (php_and + p.ZeroOrMore('||' + php_and)).setResultsName('or')
-php_ternary = (php_or + '?' + php_or + ':' + php_or).setResultsName('ternary')
-php_expr <<= (php_ternary | php_or | php_and |
-              php_literal).setName('expression')
+php_literal = (php_negation | php_atom).setName('literal')
+php_and = p.Group(php_literal +
+                  p.ZeroOrMore(s('&&') + php_literal)).setResultsName('and')
+php_or = p.Group(php_and + p.ZeroOrMore(s('||') + php_and)).setResultsName('or')
+php_ternary = p.Group(php_or + s('?') + php_or + s(':') +
+                      php_or).setResultsName('ternary')
+php_expr <<= (php_ternary | php_or).setName('expression')
 
 php_return = s('return') + php_expr + s(';')
-if_stmt = ('if (' + php_expr + ')' + php_block).setName('if_statment')
+if_stmt = p.Group(s('if (') + php_expr + s(')') + php_block).setName(
+    'if_statment')
 php_stmt = (php_return | if_stmt).setName('statement')
 php_block <<= s('{') + p.OneOrMore(php_stmt) + s('}')
 
