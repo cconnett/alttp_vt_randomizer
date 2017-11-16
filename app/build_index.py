@@ -2,7 +2,6 @@
 
 from __future__ import print_function
 import collections
-import pprint
 import os
 import re
 
@@ -27,18 +26,18 @@ def WalkSources():
         yield (open(path).read(), path[:-len('.php')])
 
 
-php_expr = p.Forward()
+p.ParserElement.enablePackrat()
 p.quotedString.addParseAction(p.removeQuotes)
 
-boolean = p.Literal('true') | 'false'
-item_in_locations = p.Group(
+boolean = p.oneOf('true false').setName('boolean')
+item_in_locations = (
     s('$locations->itemInLocations(Item::get(') + p.quotedString('item') +
     s('), [') + p.Group(p.quotedString + p.ZeroOrMore(',' + p.quotedString) +
                         p.Optional(','))('allowable_locations') +
-    s('])')).setName('i_in_l')
+    s('])')).setName('item_in_location')
 
-has_item = (
-    s('$items->has(') + p.quotedString +
+has_item = p.Group(
+    s('$items->has(') + p.quotedString('item') +
     p.Optional(s(',') + p.Word(p.nums)('count')) + s(')')).setName('has_item')
 locations_has = p.Group(
     s('$locations[') + p.quotedString('location') + s(']->hasItem(Item::get(') +
@@ -49,48 +48,57 @@ region_can_enter = (
 method_call = (
     s('$items->') + p.Word(p.alphas) + s('()')).setName('method_call')
 
-swordless = p.Literal("config('game-mode') == 'swordless'").setName('swordless')
-open_or_swordless = p.Literal(
-    "in_array(config('game-mode'), ['open', 'swordless'])").setName(
-        'open/swordless')
-
+game_mode = (p.Literal("config('game-mode') == 'swordless'").setParseAction(
+    p.replaceWith('swordless')) |
+             p.Literal("in_array(config('game-mode'), ['open', 'swordless'])")
+             .setParseAction(p.replaceWith('open/swordless')))
+can_complete = p.Literal('$this->can_complete').setName('can_complete')
 is_a = (
     s('is_a($item, Item\\') + p.Word(p.alphas) + s('::class)')).setName('is_a')
 world_config = p.Group(
     s('$this->world->config(') + p.quotedString('option') + s(',') +
     boolean('value') + s(')')).setName('config option')
 
+php_expr = p.Forward().setName('expression')
 php_block = p.Forward().setName('block')
-php_lambda = (s('function($locations, $items)') + php_block).setName('lambda')
+php_lambda = (
+    can_complete('boss') |
+    (s('function($locations, $items)') + php_block('body'))).setName('lambda')
 parenthesized_expr = (s('(') + php_expr + s(')')).setName('parenthesized')
-php_atom = (parenthesized_expr | has_item | locations_has | region_can_enter |
-            method_call | item_in_locations | swordless | open_or_swordless |
-            is_a | world_config | '$this->can_complete' | php_lambda |
-            boolean).setName('atom')
+php_atom = (has_item('has') | locations_has('lhas') |
+            region_can_enter('region') | method_call('method') |
+            item_in_locations('iil') | game_mode('game_mode') | is_a('is_a') |
+            world_config('world_config') | boolean | php_lambda('lambda') |
+            parenthesized_expr).setName('atom')
 php_negation = ('!' + php_atom).setName('negation')
 php_literal = (php_negation('not') | php_atom).setName('literal')
-php_and = p.Group(php_literal + p.OneOrMore(s('&&') + php_literal))('and_')
-php_clause = php_literal | php_and
-php_or = p.Group(php_clause + p.OneOrMore(s('||') + php_clause))('or_')
+php_and = p.Group(php_literal + p.OneOrMore(s('&&') + php_literal)).setName(
+    'and')
+php_clause = php_and('and') | php_literal
+php_or = p.Group(php_clause + p.OneOrMore(s('||') + php_clause)).setName('or')
 
-php_term = php_clause | php_or
-php_ternary = p.Group(php_term + s('?') + php_term + s(':') +
-                      php_term).setResultsName('ternary')
-php_expr <<= ((php_term | php_ternary) + p.StringEnd()).setName('expression')
+php_term = php_or('or') | php_clause
+php_ternary = p.Group(php_term + s('?') + php_term + s(':') + php_term).setName(
+    'ternary')
+php_expr <<= (php_ternary | php_term)
 
-php_return = s('return') + php_expr + s(';')
-if_stmt = p.Group(s('if (') + php_expr + s(')') + php_block).setName(
-    'if_statment')
-php_stmt = (php_return | if_stmt).setName('statement')
-php_block <<= s('{') + p.OneOrMore(php_stmt) + s('}')
+return_stmt = (s('return') + php_expr + s(';')).setName('return statement')
+if_stmt = p.Group(
+    s('if (') + php_expr('condition') + s(')') + php_block('action')).setName(
+        'if_statment')
+php_stmt = (return_stmt | if_stmt).setName('statement')
+php_block <<= p.Group(s('{') + p.OneOrMore(php_stmt) + s('}'))
+
+locations = [line.strip() for line in open('locations.txt')]
+parsed_location_requirements = {}
 
 
 def BuildIndex():
   """Parse some PHP."""
   errors = []
   index = collections.defaultdict(set)
-  for source, region in WalkSources():
-    for location in open('locations.txt'):
+  for location in locations:
+    for source, _ in WalkSources():
       location = location.strip()
       pattern = re.compile(r'\["({})"\]->setRequirements\((.*)'.format(
           re.escape(location)), re.DOTALL | re.MULTILINE)
@@ -106,27 +114,12 @@ def BuildIndex():
         found_location = match.group(1)
         body = match.group(2)
         try:
-          print(region, found_location)
-          ether = php_expr.parseString(body)
-          if 'Ether' in found_location:
-            pprint.pprint(ether.asDict())
-            return
+          # print(region, found_location)
+          php_expr.parseString(body)
+          break
         except p.ParseException as pe:
           errors.append((found_location, body, pe))
 
-      # queue = collections.deque(
-      #     GetMentionedThings(pattern, all_items + list(compound_items.keys()),
-      #                        source))
-      # done = set()
-      # while queue:
-      #   item = queue.pop()
-      #   if item in all_items:
-      #     index[item].add(location)
-      #   else:
-      #     if item not in done:
-      #       queue.extendleft(compound_items[item])
-      #   done.add(item)
-  print(len(errors))
   _, columns = os.popen('stty size', 'r').read().split()
   for e in errors:
     print('{:<20}\t{}'.format(e[0][:20],
@@ -140,6 +133,5 @@ def BuildIndex():
     print(pe)
     print('\n'.join(lines[pe.lineno:pe.lineno + 3]))
   return index
-
 
 end = BuildIndex()
