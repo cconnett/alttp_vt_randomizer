@@ -1,10 +1,34 @@
 """Build an index for ALTTP project."""
 
 from __future__ import print_function
+
 import os
+import pprint
 import re
+import sys
+import traceback
 
 import php_grammar
+from php_grammar import ToTupleList
+
+
+class Error(Exception):
+  pass
+
+
+
+
+def DisplayPR(pr, level=0):
+  if isinstance(pr, str):
+    return
+  print(('  ' * level) + 'Name: ' + str(pr.getName()))
+  print(('  ' * level) + 'Keys: ' + str(list(pr.keys())))
+  print(('  ' * level) + 'Len : ' + str(len(pr)))
+  for key in pr.keys():
+    if isinstance(pr[key], str):
+      print(('  ' * (level + 1)) + '{}:{}'.format(key, pr[key]))
+    else:
+      DisplayPR(pr[key], level=level + 1)
 
 
 def GetMentionedThings(location_pattern, things, text):
@@ -32,7 +56,7 @@ def BuildIndex():
   """Parse some PHP."""
   errors = []
   for location in locations:
-    for source, _ in WalkSources():
+    for source, region in WalkSources():
       location = location.strip()
       pattern = re.compile(r'\["({})"\]->setRequirements\((.*)'.format(
           re.escape(location)), re.DOTALL | re.MULTILINE)
@@ -47,25 +71,32 @@ def BuildIndex():
       if match:
         found_location = match.group(1)
         body = match.group(2)
-        try:
-          print(found_location)
-          php_grammar.php_expr.parseString(body)
-          break
-        except php_grammar.p.ParseException as pe:
-          errors.append((found_location, body, pe))
+        c_location = re.sub(r'[^a-z]', '', found_location, flags=re.I)
+        c_region = re.sub(r'[^a-z]', '', region, flags=re.I)
+        print('case Locations::{}:'.format(c_location))
+        print('if (!canAccess{}()) {{ return false; }}'.format(c_region))
+        e = php_grammar.php_lambda('root').parseString(body)
+        # pprint.pprint(ToTupleList(e['root']))
+        print(' '.join(php_grammar.ExpandToC(ToTupleList(e[0]))))
+        break
 
   _, columns = os.popen('stty size', 'r').read().split()
-  for e in errors:
-    print('{:<20}\t{}'.format(e[0][:20],
-                              re.sub(r'\s+', ' ', e[1][:int(columns) - 20])))
-  if errors:
-    location, body, pe = errors[0]
-    print(location)
-    lines = body.splitlines()
-    print('\n'.join(lines[:pe.lineno]))
-    print(' ' * pe.col + '^')
-    print(pe)
-    print('\n'.join(lines[pe.lineno:pe.lineno + 3]))
+  for location, body, e in errors:
+    # print('{:<20}\t{}'.format(location[:20],
+    #                           re.sub(r'\s+', ' ', body[:int(columns) - 20])))
+    print('{:<20}\t{}'.format(location[:20], str(e)))
+
+  # if errors:
+  #   location, body, e = errors[0]
+  #   print(location, str(e))
+
+  #   if hasattr(e, 'lineno'):
+  #     lines = body.splitlines()
+  #     print('\n'.join(lines[:e.lineno]))
+  #     print(' ' * e.col + '^')
+  #     print(e)
+  #     print('\n'.join(lines[e.lineno:e.lineno + 3]))
+  # print(len(errors))
 
 
 BuildIndex()
