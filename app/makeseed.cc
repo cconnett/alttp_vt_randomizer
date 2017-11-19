@@ -4,20 +4,19 @@
 #include "items.h"
 #include "locations.h"
 #include "mt_rand.h"
+#include "world.h"
 
 #define ARRAY_LENGTH(array) (sizeof((array)) / sizeof((array)[0]))
 
 using namespace std;
 
-int assignments[Locations::NUM_LOCATIONS];
-
-void setMedallions() {
+void set_medallions(World &world) {
   const int medallions[] = {Items::Ether, Items::Bombos, Items::Quake};
-  assignments[Locations::MiseryMireMedallion] = medallions[mt_rand(0, 2)];
-  assignments[Locations::TurtleRockMedallion] = medallions[mt_rand(0, 2)];
+  world.set_item(Locations::MiseryMireMedallion, medallions[mt_rand(0, 2)]);
+  world.set_item(Locations::TurtleRockMedallion, medallions[mt_rand(0, 2)]);
 }
 
-void fillPrizes() {
+void fill_prizes(World &world) {
   int prizes[] = {
       Items::Crystal1,        Items::Crystal2,         Items::Crystal3,
       Items::Crystal4,        Items::Crystal5,         Items::Crystal6,
@@ -33,15 +32,17 @@ void fillPrizes() {
   };
   mt_shuffle(ARRAY_LENGTH(prizes), prizes);
   for (unsigned int i = 0; i < ARRAY_LENGTH(prize_locations); i++) {
-    assignments[prize_locations[i]] = prizes[i];
+    world.set_item(prize_locations[i], prizes[i]);
   }
 }
 
 void makeseed(int seed) {
   cout << seed << endl;
-  cout << seed << endl;
-  setMedallions();
-  fillPrizes();
+  World world;
+  set_medallions(world);
+  fill_prizes(world);
+
+  // Fill dungeon items. Assume we have all progression items.
 }
 
 int main(int argc, char **argv) {
