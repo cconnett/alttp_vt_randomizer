@@ -43,11 +43,40 @@ cc_library(
 cc_library(
     name = "world",
     srcs = [
-        "world.cc",
+        "world.gen.cc",
         "world.h",
     ],
     deps = [
         ":items",
         ":locations",
+    ],
+)
+
+py_binary(
+    name = "build_index",
+    srcs = ["build_index.py"],
+    data = [
+        "items.txt",
+        "locations.txt",
+        "world.cc",
+    ],
+    deps = [":php_grammar"],
+)
+
+py_library(
+    name = "php_grammar",
+    srcs = ["php_grammar.py"],
+)
+
+genrule(
+    name = "world-generated",
+    srcs = glob(["**/*.php"]),
+    outs = ["world.gen.cc"],
+    cmd = "$(location :build_index) > $(OUTS)",
+    tools = [
+        "items.txt",
+        "locations.txt",
+        "world.cc",
+        ":build_index",
     ],
 )

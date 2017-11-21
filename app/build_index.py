@@ -3,10 +3,7 @@
 from __future__ import print_function
 
 import os
-import pprint
 import re
-import sys
-import traceback
 
 import php_grammar
 from php_grammar import ToTupleList
@@ -14,8 +11,6 @@ from php_grammar import ToTupleList
 
 class Error(Exception):
   pass
-
-
 
 
 def DisplayPR(pr, level=0):
@@ -71,32 +66,22 @@ def BuildIndex():
       if match:
         found_location = match.group(1)
         body = match.group(2)
-        c_location = re.sub(r'[^a-z]', '', found_location, flags=re.I)
-        c_region = re.sub(r'[^a-z]', '', region, flags=re.I)
+        c_location = php_grammar.Smoosh(found_location)
+        c_region = php_grammar.Smoosh(region)
         print('case Locations::{}:'.format(c_location))
-        print('if (!canAccess{}()) {{ return false; }}'.format(c_region))
+        print('if (!this->can_enter(Locations::Regions::{})) {{ '
+              'return false; }}'.format(c_region))
         e = php_grammar.php_lambda('root').parseString(body)
         # pprint.pprint(ToTupleList(e['root']))
         print(' '.join(php_grammar.ExpandToC(ToTupleList(e[0]))))
         break
 
-  _, columns = os.popen('stty size', 'r').read().split()
-  for location, body, e in errors:
-    # print('{:<20}\t{}'.format(location[:20],
-    #                           re.sub(r'\s+', ' ', body[:int(columns) - 20])))
-    print('{:<20}\t{}'.format(location[:20], str(e)))
 
-  # if errors:
-  #   location, body, e = errors[0]
-  #   print(location, str(e))
-
-  #   if hasattr(e, 'lineno'):
-  #     lines = body.splitlines()
-  #     print('\n'.join(lines[:e.lineno]))
-  #     print(' ' * e.col + '^')
-  #     print(e)
-  #     print('\n'.join(lines[e.lineno:e.lineno + 3]))
-  # print(len(errors))
-
-
+header, footer = re.split(
+    r'^\s*// Generated code goes here\.$',
+    open('world.cc').read(),
+    maxsplit=1,
+    flags=re.DOTALL | re.MULTILINE)
+print(header)
 BuildIndex()
+print(footer)
