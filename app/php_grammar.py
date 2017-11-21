@@ -1,8 +1,8 @@
 """Partial grammar for PHP."""
 
-import pprint
+from __future__ import print_function
+
 import re
-import traceback
 
 import pyparsing as p
 
@@ -13,7 +13,6 @@ class Error(Exception):
 
 s = p.Suppress
 G = p.Group
-
 
 
 p.ParserElement.enablePackrat()

@@ -14,6 +14,7 @@ void World::set_item(int location, int item) {
   this->where_is[item].push_back(location);
   memset(this->reachability_cache, 0, sizeof this->reachability_cache);
 }
+
 bool World::can_reach(int location) {
   if (this->reachability_cache[location]) {
     return this->reachability_cache > 0;
