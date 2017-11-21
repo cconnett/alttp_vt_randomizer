@@ -40,7 +40,7 @@ def WalkSources():
     for filename in files:
       path = os.path.join(root, filename)
       if path.endswith('.php'):
-        yield (open(path).read(), path[:-len('.php')])
+        yield (open(path).read(), path[len('Region/'):-len('.php')])
 
 
 locations = [line.strip() for line in open('locations.txt')]

@@ -24,16 +24,25 @@ bool World::can_reach(int location) {
   this->reachability_cache[location] = -1;
 
   switch (location) {
+    // Generated code goes here.
     default:
-      return false;
+      return true;
   }
 }
+
 int World::num_reachable(int item) {
   int count = 0;
   for (auto i = where_is[item].cbegin(); i != where_is[item].cend(); i++) {
-    if (can_reach(*i)) {
+    if (this->can_reach(*i)) {
       count += 1;
     }
   }
   return count;
+}
+
+bool World::can_enter(int region) {
+  switch (region) {
+    default:
+      return false;
+  }
 }
