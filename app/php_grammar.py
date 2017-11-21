@@ -27,7 +27,7 @@ item_in_locations = G(
 
 # Lookup into item count array.
 has_item = G(
-    s('$items->has(') + p.quotedString('item') +
+    s(p.oneOf('$items $this') + '->has(') + p.quotedString('item') +
     p.Optional(s(',') + p.Word(p.nums)('count')) + s(')')).setName('has_item')
 # Lookup into placement array.
 locations_has = G(
@@ -38,8 +38,8 @@ locations_has = G(
 region_can_enter = (
     s('$this->world->getRegion(') + p.quotedString +
     s(')->canEnter($locations, $items)')).setName('region_can_enter')
-method_call = (
-    s('$items->') + p.Word(p.alphas) + s('()')).setName('method_call')
+method_call = (s(p.oneOf('$items $this') + '->') + p.Word(p.alphas) +
+               s('()')).setName('method_call')
 can_complete = p.Literal('$this->can_complete').setName('can_complete')('boss')
 
 # Reduced to true/false under assumption of open mode.
@@ -56,92 +56,124 @@ world_config = G(
 is_a = (
     s('is_a($item, Item\\') + p.Word(p.alphas) + s('::class)')).setName('is_a')
 
-php_expr = p.Forward()
-php_block = p.Forward()
-php_lambda = (G(can_complete('boss')) |
-              (s('function($locations, $items)') + php_block('body')))
-parenthesized_expr = s('(') + php_expr + s(')')
+php_expr = p.Forward().setName('expression')
+php_block = p.Forward().setName('block')
+php_lambda = (
+    G(can_complete('boss')) |
+    (s('function($locations, $items)') + php_block('body'))).setName('lambda')
+
+parenthesized_expr = (s('(') + php_expr + s(')')).setName('parenthesized')
 php_atom = G(
     has_item('has') | locations_has('lhas') | region_can_enter('region') |
     method_call('method') | item_in_locations('iil') | game_mode('mode') |
     is_a('is_a') | world_config('config') | boolean('boolean') |
-    php_lambda('lambda') | parenthesized_expr)
-php_negation = '!' + php_atom
+    php_lambda('lambda') | parenthesized_expr).setName('atom')
+php_negation = ('!' + php_atom).setName('not')
 php_literal = php_negation('not') | php_atom
-php_and = G(php_literal + p.OneOrMore(s('&&') + php_literal))
+php_and = G(php_literal + p.OneOrMore(s('&&') + php_literal)).setName('and')
 php_clause = php_and('and') | php_literal
-php_or = G(php_clause + p.OneOrMore(s('||') + php_clause))
+php_or = G(php_clause + p.OneOrMore(s('||') + php_clause)).setName('or')
 php_term = php_or('or') | php_clause
-php_ternary = G(php_term + s('?') + php_term + s(':') + php_term)
+php_ternary = G(php_term + s('?') + php_term + s(':') + php_term).setName(
+    'ternary')
 php_expr <<= G(php_ternary('ternary') | php_term)
 
 # These can be nearly copied over nearly in tact.
-return_stmt = s('return') + php_expr('return') + s(';')
-if_stmt = s('if (') + php_expr + s(')') + php_block
+return_stmt = (
+    s('return') + php_expr('return') + s(';')).setName('return statement')
+if_stmt = (s('if (') + php_expr + s(')') + php_block).setName('if statement')
 php_stmt = return_stmt | if_stmt
 php_block <<= s('{') + G(p.OneOrMore(php_stmt)) + s('}')
 
 
-def Smoosh(s):
-  return re.sub(r'[^a-z]', '', s, flags=re.I)
+def ToTupleList(parse_results):
+  if isinstance(parse_results, str):
+    return parse_results
 
-def ToTupleList(pr):
-  if isinstance(pr, str):
-    return pr
-
-  keys = list(pr.keys())
+  keys = list(parse_results.keys())
   if len(keys) > 1:
-    return {key: ToTupleList(pr[key]) for key in keys}
+    return {key: ToTupleList(parse_results[key]) for key in keys}
   elif keys:
-    return (keys[0], ToTupleList(pr[keys[0]]))
-  elif len(pr) == 1:
-    return ToTupleList(pr[0])
+    return (keys[0], ToTupleList(parse_results[keys[0]]))
+  elif len(parse_results) == 1:
+    return ToTupleList(parse_results[0])
   else:
-    return [ToTupleList(e) for e in pr]
+    return [ToTupleList(result) for result in parse_results]
+
+
+item_collection = open('Support/ItemCollection.php').read()
+methods = {}
+
+for name, body in re.findall(
+    r'public function ([A-Za-z]+)\(\) (\{.*?)(?:/\*\*|$)',
+    item_collection,
+    flags=re.DOTALL):
+  try:
+    return_, expr = ToTupleList(php_block.parseString(body))
+    assert return_ == 'return'
+    methods[name] = expr
+  except p.ParseException as e:
+    continue
+
+
+def Smoosh(string):
+  return re.sub(r'[^a-z0-9]', '', string, flags=re.I)
 
 
 def ExpandToC(tup):
-  try:
-    name, value = tup
-  except:
-    import pdb
-    pdb.set_trace()
+  name, value = tup
   if name == 'lambda':
-    yield from ExpandToC(value)
+    for token in ExpandToC(value):
+      yield token
   elif name == 'body':
     for statement in value:
-      yield from ExpandToC(statement)
+      for token in ExpandToC(statement):
+        yield token
   elif name == 'return':
     yield 'return'
-    yield from ExpandToC(value)
+    for token in ExpandToC(value):
+      yield token
     yield ';'
   elif name == 'method':
-    yield value + '()'
+    try:
+      yield '(' + ' '.join(ExpandToC(methods[value])) + ')'
+    except:
+      raise
   elif name == 'has':
     if isinstance(value, tuple):
       _, item_name = value
-      yield '(world.num_reachable(Items::{}) >= 1)'.format(item_name)
+      yield 'this->num_reachable(Items::{}) >= 1'.format(item_name)
     else:
-      yield '(world.num_reachable(Items::{}) >= {})'.format(
+      yield 'this->num_reachable(Items::{}) >= {}'.format(
           value['item'], value['count'])
   elif name == 'and':
-    yield ' && '.join(
-        ' '.join(str(e) for e in ExpandToC(clause)) for clause in value)
+    yield '(' + ' && '.join(' '.join(str(e) for e in ExpandToC(clause))
+                            for clause in value) + ')'
   elif name == 'or':
-    yield ' || '.join(
-        ' '.join(str(e) for e in ExpandToC(term)) for term in value)
+    yield '(' + ' || '.join(' '.join(str(e) for e in ExpandToC(term))
+                            for term in value) + ')'
   elif name == 'ternary':
-    yield '({0[0]}) ? ({0[1]}) : ({0[2]})'.format(value)
+    yield '({condition}) ? ({true}) : ({false})'.format(
+        condition=' '.join(ExpandToC(value[0])),
+        true=' '.join(ExpandToC(value[1])),
+        false=' '.join(ExpandToC(value[2])))
   elif name == 'boss':
-    yield 'return this->can_complete();'
+    pass
+    # yield 'this->can_complete({})'.format('Locations::Regions::' +
+    #                                       Smoosh(value))
   elif name == 'region':
-    yield 'can_access_{}()'.format(Smoosh(value))
+    yield 'this->can_enter({})'.format('Locations::Regions::' + Smoosh(value))
   elif name == 'mode':
     yield value
   elif name == 'lhas':
-    yield 'assignments[{0[location]}] == Items::{0[item]}'.format(value)
+    yield 'assignments[Locations::{location}] == Items::{item}'.format(
+        location=Smoosh(value['location']), item=Smoosh(value['item']))
   elif name == 'iil':
-    yield 'item_in_locations({}, [{}])'.format(value['item'], ', '.join(
-        Smoosh(l) for l in value['allowable_locations']))
+    yield '('
+    for location in value['allowable_locations']:
+      yield 'assignments[Locations::{location}] == {item}'.format(
+          location=Smoosh(location), item='Items::' + Smoosh(value['item']))
+      yield '&&'
+    yield 'false)'
   else:
     raise Error('Unhandled case: {}. Next level: {}'.format(name, value))

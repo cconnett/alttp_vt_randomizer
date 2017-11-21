@@ -235,4 +235,32 @@ enum Locations {
   ZorasLedge,
   NUM_LOCATIONS,  // Must be last
 };
+
+namespace Regions {
+enum Regions {
+  DarkWorldDeathMountainEast,
+  DarkWorldDeathMountainWest,
+  DarkWorldMire,
+  DarkWorldNorthEast,
+  DarkWorldNorthWest,
+  DeathMountainEast,
+  DeathMountainWest,
+  DesertPalace,
+  GanonsTower,
+  IcePalace,
+  LightWorld,
+  MiseryMire,
+  NorthEastDarkWorld,
+  NorthWestDarkWorld,
+  PalaceOfDarkness,
+  SkullWoods,
+  SouthDarkWorld,
+  SwampPalace,
+  ThievesTown,
+  TowerOfHera,
+  TurtleRock,
+  WestDeathMountain,
+
+};
 }
+}  // namespace Locations
