@@ -46,7 +46,6 @@ void makeseed(int seed) {
 }
 
 int main(int argc, char **argv) {
-  int seed;
-  cin >> seed;
+  int seed = 1;
   makeseed(seed);
 }
