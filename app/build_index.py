@@ -49,32 +49,30 @@ items = [line.strip() for line in open('items.txt')]
 
 def BuildIndex():
   """Parse some PHP."""
-  errors = []
-  for location in locations:
-    for source, region in WalkSources():
-      location = location.strip()
-      pattern = re.compile(r'\["({})"\]->setRequirements\((.*)'.format(
-          re.escape(location)), re.DOTALL | re.MULTILINE)
+  pattern = re.compile(r'\$this->(?:locations\["(.*?)"\]|(prize_location))'
+                       r'->setRequirements\((.*)', re.DOTALL | re.MULTILINE)
+  for source, region in WalkSources():
+    print(region)
+    source2 = re.search(r'initNoMajorGlitches.*?/\*\*', source,
+                        re.DOTALL | re.MULTILINE)
 
-      source2 = re.search(r'initNoMajorGlitches.*?/\*\*', source,
-                          re.DOTALL | re.MULTILINE)
-
-      if not source2:
-        continue
-      source3 = source2.group(0)
-      match = pattern.search(source3)
-      if match:
-        found_location = match.group(1)
-        body = match.group(2)
-        c_location = php_grammar.Smoosh(found_location)
-        c_region = php_grammar.Smoosh(region)
-        print('case Locations::{}:'.format(c_location))
-        print('if (!this->can_enter(Locations::Regions::{})) {{ '
-              'return false; }}'.format(c_region))
-        e = php_grammar.php_lambda('root').parseString(body)
-        # pprint.pprint(ToTupleList(e['root']))
-        print(' '.join(php_grammar.ExpandToC(ToTupleList(e[0]))))
-        break
+    if not source2:
+      continue
+    source3 = source2.group(0)
+    match = pattern.search(source3)
+    if match:
+      found_location = match.group(1) or match.group(2)
+      body = match.group(3)
+      c_location = php_grammar.Smoosh(found_location)
+      c_region = php_grammar.Smoosh(region)
+      print(repr(found_location), c_location, c_region)
+      input()
+      print('case Locations::{}:'.format(c_location))
+      print('if (!this->can_enter(Locations::Regions::{})) {{ '
+            'return false; }}'.format(c_region))
+      e = php_grammar.php_lambda('root').parseString(body)
+      # pprint.pprint(ToTupleList(e['root']))
+      print(' '.join(php_grammar.ExpandToC(ToTupleList(e[0]))))
 
 
 header, footer = re.split(
