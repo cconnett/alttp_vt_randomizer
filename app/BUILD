@@ -44,6 +44,7 @@ cc_library(
 cc_library(
     name = "world",
     srcs = [
+        "world.cc",
         "world.gen.cc",
         "world.h",
     ],
@@ -73,11 +74,9 @@ genrule(
     name = "world-generated",
     srcs = glob(["**/*.php"]),
     outs = ["world.gen.cc"],
-    cmd = "$(location :build_index) > $(OUTS)",
+    cmd = "$(location :build_index) | clang-format > $(OUTS)",
     tools = [
-        "items.txt",
-        "locations.txt",
-        "world.cc",
+        "world_template.cc",
         ":build_index",
     ],
 )
