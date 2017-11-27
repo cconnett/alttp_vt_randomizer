@@ -1,0 +1,5 @@
+new_local_repository(
+    name = "untwister",
+    path = "/usr/local/google/home/cjc/untwister/prngs",
+    build_file = "untwister.BUILD",
+)
