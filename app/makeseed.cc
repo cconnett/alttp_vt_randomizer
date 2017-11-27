@@ -30,18 +30,21 @@ void fill_prizes(World &world) {
       Location::ThievesTownPrize,   Location::IcePalacePrize,
       Location::MiseryMirePrize,    Location::TurtleRockPrize,
   };
-  mt_shuffle(ARRAY_LENGTH(prizes), prizes);
-  for (unsigned int i = 0; i < ARRAY_LENGTH(prize_locations); i++) {
+  mt_shuffle<Item>(ARRAY_LENGTH(prizes), prizes);
+  for (uint i = 0; i < ARRAY_LENGTH(prize_locations); i++) {
     world.set_item(prize_locations[i], prizes[i]);
   }
 }
 
 void makeseed(int seed) {
-  cout << seed << endl;
   World world;
   set_medallions(world);
   fill_prizes(world);
 
+  // world.print();
+  cout << "digraph {" << endl;
+  int c = world.num_reachable(Item::Crystal1);
+  cout << "} // " << c << endl;
   // Fill dungeon items. Assume we have all progression items.
 }
 

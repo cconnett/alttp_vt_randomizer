@@ -1,13 +1,25 @@
 #include <cstring>
+#include <iostream>
 #include <vector>
 
 #include "items.h"
 #include "locations.h"
 #include "world.h"
 
+#define ARRAY_LENGTH(array) (sizeof((array)) / sizeof((array)[0]))
+
 using namespace std;
 
-World::World() { memset(reachability_cache, 0, sizeof reachability_cache); }
+World::World() {
+  memset(reachability_cache, 0, sizeof reachability_cache);
+  memset(assignments, 0, sizeof assignments);
+}
+
+void World::print() {
+  for (uint i = 1; i < ARRAY_LENGTH(this->assignments) - 1; i++) {
+    cout << (int)this->assignments[(int)i] << endl;
+  }
+}
 
 void World::set_item(Location location, Item item) {
   this->assignments[(int)location] = item;

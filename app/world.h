@@ -5,6 +5,7 @@ using namespace std;
 class World {
  public:
   World();
+  void print();
 
   // Assign to `location` the item `item`. Invalidate the reachability cache.
   void set_item(Location location, Item item);
