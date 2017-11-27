@@ -11,24 +11,24 @@
 using namespace std;
 
 void set_medallions(World &world) {
-  const int medallions[] = {Items::Ether, Items::Bombos, Items::Quake};
-  world.set_item(Locations::MiseryMireMedallion, medallions[mt_rand(0, 2)]);
-  world.set_item(Locations::TurtleRockMedallion, medallions[mt_rand(0, 2)]);
+  const Item medallions[] = {Item::Ether, Item::Bombos, Item::Quake};
+  world.set_item(Location::MiseryMireMedallion, medallions[mt_rand(0, 2)]);
+  world.set_item(Location::TurtleRockMedallion, medallions[mt_rand(0, 2)]);
 }
 
 void fill_prizes(World &world) {
-  int prizes[] = {
-      Items::Crystal1,        Items::Crystal2,         Items::Crystal3,
-      Items::Crystal4,        Items::Crystal5,         Items::Crystal6,
-      Items::Crystal7,        Items::PendantOfCourage, Items::PendantOfPower,
-      Items::PendantOfWisdom,
+  Item prizes[] = {
+      Item::Crystal1,        Item::Crystal2,         Item::Crystal3,
+      Item::Crystal4,        Item::Crystal5,         Item::Crystal6,
+      Item::Crystal7,        Item::PendantOfCourage, Item::PendantOfPower,
+      Item::PendantOfWisdom,
   };
-  const int prize_locations[] = {
-      Locations::EasternPalacePrize, Locations::DesertPalacePrize,
-      Locations::TowerofHeraPrize,   Locations::PalaceofDarknessPrize,
-      Locations::SwampPalacePrize,   Locations::SkullWoodsPrize,
-      Locations::ThievesTownPrize,   Locations::IcePalacePrize,
-      Locations::MiseryMirePrize,    Locations::TurtleRockPrize,
+  const Location prize_locations[] = {
+      Location::EasternPalacePrize, Location::DesertPalacePrize,
+      Location::TowerofHeraPrize,   Location::PalaceofDarknessPrize,
+      Location::SwampPalacePrize,   Location::SkullWoodsPrize,
+      Location::ThievesTownPrize,   Location::IcePalacePrize,
+      Location::MiseryMirePrize,    Location::TurtleRockPrize,
   };
   mt_shuffle(ARRAY_LENGTH(prizes), prizes);
   for (unsigned int i = 0; i < ARRAY_LENGTH(prize_locations); i++) {
