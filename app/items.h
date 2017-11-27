@@ -1,5 +1,6 @@
-namespace Items {
-enum Items {
+#ifndef ITEM_H
+#define ITEM_H
+enum class Item {
   INVALID,
   Arrow,
   ArrowUpgrade10,
@@ -158,4 +159,4 @@ enum Items {
   TwentyRupees2,
   NUM_ITEMS,  // Must be last
 };
-}
+#endif

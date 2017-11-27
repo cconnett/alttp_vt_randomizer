@@ -1,5 +1,4 @@
-namespace Locations {
-enum Locations {
+enum class Location {
   INVALID,
   AginahsCave,
   Blacksmith,
@@ -12,6 +11,7 @@ enum Locations {
   BottleMerchant,
   Brewery,
   BumperCave,
+  CShapedHouse,
   CastleTowerDarkMaze,
   CastleTowerRoom03,
   Catfish,
@@ -19,7 +19,7 @@ enum Locations {
   CheckerboardCave,
   ChestGame,
   ChickenHouse,
-  CShapedHouse,
+  DarkWorldNorthEastPrize,
   DesertLedge,
   DesertPalaceBigChest,
   DesertPalaceBigKeyChest,
@@ -62,6 +62,7 @@ enum Locations {
   GanonsTowerMiniHelmasaurRoomRight,
   GanonsTowerMoldormChest,
   GanonsTowerPreMoldormChest,
+  GanonsTowerPrize,
   GanonsTowerRandomizerRoomBottomLeft,
   GanonsTowerRandomizerRoomBottomRight,
   GanonsTowerRandomizerRoomTopLeft,
@@ -81,6 +82,7 @@ enum Locations {
   HypeCaveTop,
   HyruleCastleBoomerangChest,
   HyruleCastleMapChest,
+  HyruleCastleTowerPrize,
   HyruleCastleZeldasCell,
   IcePalaceBigChest,
   IcePalaceBigKeyChest,
@@ -98,8 +100,8 @@ enum Locations {
   KakrikoWellMiddle,
   KakrikoWellRight,
   KakrikoWellTop,
-  KingsTomb,
   KingZora,
+  KingsTomb,
   LakeHyliaIsland,
   Library,
   LinksHouse,
@@ -236,31 +238,33 @@ enum Locations {
   NUM_LOCATIONS,  // Must be last
 };
 
-namespace Regions {
-enum Regions {
+enum class Region {
+  INVALID,
   DarkWorldDeathMountainEast,
   DarkWorldDeathMountainWest,
   DarkWorldMire,
   DarkWorldNorthEast,
   DarkWorldNorthWest,
+  DarkWorldSouth,
   DeathMountainEast,
   DeathMountainWest,
   DesertPalace,
+  EasternPalace,
   GanonsTower,
+  HyruleCastleTower,
   IcePalace,
   LightWorld,
+  Mire,
   MiseryMire,
   NorthEastDarkWorld,
   NorthWestDarkWorld,
-  PalaceOfDarkness,
+  PalaceofDarkness,
   SkullWoods,
   SouthDarkWorld,
   SwampPalace,
   ThievesTown,
-  TowerOfHera,
+  TowerofHera,
   TurtleRock,
   WestDeathMountain,
-
+  NUM_REGIONS,  // Must be last
 };
-}
-}  // namespace Locations
