@@ -88,7 +88,6 @@ class NorthEast extends Region {
 		});
 
 
-		if ($this->world->config('region.swordsInPool', true)) {
 			$this->locations["Pyramid Fairy - Left"]->setRequirements(function($locations, $items) {
 				return $items->has('Crystal5') && $items->has('Crystal6') && $items->has('MoonPearl')
 					&& $this->world->getRegion('South Dark World')->canEnter($locations, $items)
@@ -102,7 +101,6 @@ class NorthEast extends Region {
 						&& ($items->has('Hammer')
 							|| ($items->has('MagicMirror') && $items->has('DefeatAgahnim')));
 			});
-		}
 
 		$this->can_enter = function($locations, $items) {
 			return $items->has('DefeatAgahnim')
