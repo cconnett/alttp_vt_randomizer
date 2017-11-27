@@ -36,11 +36,12 @@ locations_has = G(
 
 # Generated global functions (or macros).
 region_can_enter = (
-    s('$this->world->getRegion(') + p.quotedString +
-    s(')->canEnter($locations, $items)')).setName('region_can_enter')
+    ((s('$this->world->getRegion(') + p.quotedString + s(')')) | s('$this')) +
+    s('->canEnter($locations, $items)')).setName('region_can_enter')
 method_call = (s(p.oneOf('$items $this') + '->') + p.Word(p.alphas) +
                s('()')).setName('method_call')
-can_complete = p.Literal('$this->can_complete').setName('can_complete')('boss')
+can_enter_or_complete = (
+    s('$this->') + p.oneOf('can_enter can_complete')).setName('region_method')
 
 # Reduced to true/false under assumption of open mode.
 game_mode = (p.Literal("config('game-mode') == 'swordless'").setParseAction(
@@ -53,21 +54,34 @@ world_config = G(
     boolean('value') + s(')')).setName('config option')
 
 # Item classification: Group items into sets in source code and do class lookup.
-is_a = (
-    s('is_a($item, Item\\') + p.Word(p.alphas) + s('::class)')).setName('is_a')
+is_a = ((s('is_a($item, Item\\') - p.Word(p.alphas) - s('::class)')) |
+        (s('$item instanceof Item\\') - p.Word(p.alphas))).setName('is_a')
+item_ref = s('Item::get(') - p.quotedString - s(')')
+item_is_not = s('$item !=') - item_ref
+item_is_one_of = ((s('in_array($item, [') - G(
+    item_ref + p.ZeroOrMore(s(',') - item_ref) + p.Optional(s(','))) - s('])'))
+                  | (s('$item ==') - item_ref))
+location_def = ((s('$this->locations[') - p.quotedString - s(']')) |
+                p.Literal('$this->prize_location').setParseAction(
+                    p.replaceWith('Prize')))
+can_access = location_def('location') + s('->canAccess($items)')
 
 php_expr = p.Forward().setName('expression')
 php_block = p.Forward().setName('block')
-php_lambda = (
-    G(can_complete('boss')) |
-    (s('function($locations, $items)') + php_block('body'))).setName('lambda')
+php_lambda = G(
+    can_enter_or_complete('region_method_call') |
+    ((s('function($locations, $items)') |
+      s('function($item, $locations, $items)')).setName('func_head') -
+     php_block('body'))).setName('lambda')
 
 parenthesized_expr = (s('(') + php_expr + s(')')).setName('parenthesized')
 php_atom = G(
-    has_item('has') | locations_has('lhas') | region_can_enter('region') |
+    has_item('has') | locations_has('lhas') |
+    region_can_enter('access_to_region') | can_access('access') |
     method_call('method') | item_in_locations('iil') | game_mode('mode') |
-    is_a('is_a') | world_config('config') | boolean('boolean') |
-    php_lambda('lambda') | parenthesized_expr).setName('atom')
+    is_a('is_a') | item_is_not('is_not') | item_is_one_of('item_is_one_of') |
+    world_config('config') | boolean('boolean') | php_lambda('lambda') |
+    parenthesized_expr).setName('atom')
 php_negation = ('!' + php_atom).setName('not')
 php_literal = php_negation('not') | php_atom
 php_and = G(php_literal + p.OneOrMore(s('&&') + php_literal)).setName('and')
@@ -76,14 +90,27 @@ php_or = G(php_clause + p.OneOrMore(s('||') + php_clause)).setName('or')
 php_term = php_or('or') | php_clause
 php_ternary = G(php_term + s('?') + php_term + s(':') + php_term).setName(
     'ternary')
-php_expr <<= G(php_ternary('ternary') | php_term)
+php_expr <<= G(php_ternary('ternary') | php_term).setName('expression')
 
 # These can be nearly copied over nearly in tact.
 return_stmt = (
-    s('return') + php_expr('return') + s(';')).setName('return statement')
-if_stmt = (s('if (') + php_expr + s(')') + php_block).setName('if statement')
-php_stmt = return_stmt | if_stmt
+    s('return') - php_expr('return') - s(';')).setName('return statement')
+if_stmt = (s('if (') - php_expr - s(')') + php_block).setName('if statement')
+php_stmt = (return_stmt | if_stmt).setName('statement')
 php_block <<= s('{') + G(p.OneOrMore(php_stmt)) + s('}')
+
+set_requirements = s('->setRequirements(') - php_lambda('requirements') - s(')')
+set_fill_rules = s('->setFillRules(') - php_lambda('fill_rules') - s(')')
+rider = (set_fill_rules | set_requirements).setName('rider')
+definition = (
+    (G(location_def('location') - G(p.OneOrMore(rider))('riders')) |
+     G(can_enter_or_complete('region_method') - s('=') - php_lambda('rhs')) |
+     s('return $this')) - s(';')).ignore('// ' + p.restOfLine)
+init_no_major_glitches = (s('public function initNoMajorGlitches() {') +
+                          G(p.OneOrMore(definition))('definitions') + s('}'))
+meta_method = (s('public function ') +
+               p.Combine(p.oneOf('can has') + p.Word(p.alphas))('name') +
+               s('()') + php_block('body'))
 
 
 def ToTupleList(parse_results):
@@ -91,89 +118,88 @@ def ToTupleList(parse_results):
     return parse_results
 
   keys = list(parse_results.keys())
-  if len(keys) > 1:
+  #if len(keys) > 1:
+  if keys:
     return {key: ToTupleList(parse_results[key]) for key in keys}
-  elif keys:
-    return (keys[0], ToTupleList(parse_results[keys[0]]))
+  #return (keys[0], ToTupleList(parse_results[keys[0]]))
   elif len(parse_results) == 1:
     return ToTupleList(parse_results[0])
   else:
     return [ToTupleList(result) for result in parse_results]
 
 
-item_collection = open('Support/ItemCollection.php').read()
-methods = {}
+def GetItemCollectionMethods():
+  item_collection = open('Support/ItemCollection.php').read()
+  methods = {}
 
-for name, body in re.findall(
-    r'public function ([A-Za-z]+)\(\) (\{.*?)(?:/\*\*|$)',
-    item_collection,
-    flags=re.DOTALL):
-  try:
-    return_, expr = ToTupleList(php_block.parseString(body))
-    assert return_ == 'return'
-    methods[name] = expr
-  except p.ParseException as e:
-    continue
+  for result in meta_method.searchString(item_collection):
+    b = ToTupleList(result)
+    methods[result['name']] = b['body']
+  return methods
 
 
 def Smoosh(string):
-  return re.sub(r'[^a-z0-9]', '', string, flags=re.I)
+  string = re.sub(r'[^a-z0-9]', '', string, flags=re.I)
+  string = re.sub(r'([a-z])Of([A-Z])', r'\1of\2', string)
+  return string
 
 
-def ExpandToC(tup):
-  name, value = tup
-  if name == 'lambda':
-    for token in ExpandToC(value):
-      yield token
-  elif name == 'body':
-    for statement in value:
-      for token in ExpandToC(statement):
+methods = GetItemCollectionMethods()
+
+region_name_mapping = {
+    'EastDeathMountain': 'DeathMountainEast',
+    'EastDarkWorldDeathMountain': 'DarkWorldDeathMountainEast',
+}
+
+
+def ExpandToC(d):
+  if not d:
+    return
+  if len(d) == 1:
+    name, value = next(iter(d.items()))
+    if name in ('lambda', 'body'):
+      for token in ExpandToC(value):
         yield token
-  elif name == 'return':
-    yield 'return'
-    for token in ExpandToC(value):
-      yield token
-    yield ';'
-  elif name == 'method':
-    try:
-      yield '(' + ' '.join(ExpandToC(methods[value])) + ')'
-    except:
-      raise
-  elif name == 'has':
-    if isinstance(value, tuple):
-      _, item_name = value
-      yield 'this->num_reachable(Items::{}) >= 1'.format(item_name)
+    elif name in ('mode', 'boolean'):
+      yield value
+    elif name == 'return':
+      yield 'return'
+      for token in ExpandToC(value):
+        yield token
+      yield ';'
+    elif name == 'method':
+      yield '(' + ' '.join(ExpandToC(methods[value]['return'])) + ')'
+    elif name == 'region_method_call':
+      yield 'return this->{method_name}(Region::{region});'.format(**value)
+    elif name == 'has':
+      yield 'this->num_reachable(Item::{}) >= {}'.format(
+          value['item'], value.get('count', 1))
+    elif name == 'and':
+      yield '(' + ' && '.join(' '.join(str(e) for e in ExpandToC(clause))
+                              for clause in value) + ')'
+    elif name == 'or':
+      yield '(' + ' || '.join(' '.join(str(e) for e in ExpandToC(term))
+                              for term in value) + ')'
+    elif name == 'ternary':
+      yield '({condition}) ? ({true}) : ({false})'.format(
+          condition=' '.join(ExpandToC(value[0])),
+          true=' '.join(ExpandToC(value[1])),
+          false=' '.join(ExpandToC(value[2])))
+    elif name == 'access_to_region':
+      yield 'this->can_enter({})'.format('Region::' + region_name_mapping.get(
+          Smoosh(value), Smoosh(value)))
+    elif name == 'lhas':
+      yield 'assignments[(int)Location::{location}] == Item::{item}'.format(
+          location=Smoosh(value['location']), item=Smoosh(value['item']))
+    elif name == 'iil':
+      yield '('
+      for location in value['allowable_locations']:
+        yield 'assignments[(int)Location::{location}] == {item}'.format(
+            location=Smoosh(location), item='Item::' + Smoosh(value['item']))
+        yield '&&'
+      yield 'false)'
     else:
-      yield 'this->num_reachable(Items::{}) >= {}'.format(
-          value['item'], value['count'])
-  elif name == 'and':
-    yield '(' + ' && '.join(' '.join(str(e) for e in ExpandToC(clause))
-                            for clause in value) + ')'
-  elif name == 'or':
-    yield '(' + ' || '.join(' '.join(str(e) for e in ExpandToC(term))
-                            for term in value) + ')'
-  elif name == 'ternary':
-    yield '({condition}) ? ({true}) : ({false})'.format(
-        condition=' '.join(ExpandToC(value[0])),
-        true=' '.join(ExpandToC(value[1])),
-        false=' '.join(ExpandToC(value[2])))
-  elif name == 'boss':
-    pass
-    # yield 'this->can_complete({})'.format('Locations::Regions::' +
-    #                                       Smoosh(value))
-  elif name == 'region':
-    yield 'this->can_enter({})'.format('Locations::Regions::' + Smoosh(value))
-  elif name == 'mode':
-    yield value
-  elif name == 'lhas':
-    yield 'assignments[Locations::{location}] == Items::{item}'.format(
-        location=Smoosh(value['location']), item=Smoosh(value['item']))
-  elif name == 'iil':
-    yield '('
-    for location in value['allowable_locations']:
-      yield 'assignments[Locations::{location}] == {item}'.format(
-          location=Smoosh(location), item='Items::' + Smoosh(value['item']))
-      yield '&&'
-    yield 'false)'
+      raise Error('Unhandled case: {}. Next level: {}'.format(name, value))
   else:
-    raise Error('Unhandled case: {}. Next level: {}'.format(name, value))
+    import pdb
+    pdb.set_trace()
