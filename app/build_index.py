@@ -26,15 +26,6 @@ def DisplayPR(pr, level=0):
       DisplayPR(pr[key], level=level + 1)
 
 
-def GetMentionedThings(location_pattern, things, text):
-  match = re.search(location_pattern, text)
-  if match:
-    matched_text = match.group(2)
-    for item in things:
-      if item in matched_text:
-        yield item
-
-
 def WalkSources():
   for root, _, files in os.walk('Region/'):
     for filename in files:
