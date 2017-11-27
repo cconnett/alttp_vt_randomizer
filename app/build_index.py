@@ -43,43 +43,73 @@ def WalkSources():
         yield (open(path).read(), path[len('Region/'):-len('.php')])
 
 
-locations = [line.strip() for line in open('locations.txt')]
-items = [line.strip() for line in open('items.txt')]
-
-
 def BuildIndex():
   """Parse some PHP."""
-  pattern = re.compile(r'\$this->(?:locations\["(.*?)"\]|(prize_location))'
-                       r'->setRequirements\((.*)', re.DOTALL | re.MULTILINE)
+  # By location
+  can_reach = {}
+  fill_rules = {}
+  # By region
+  can_enter = {}
+  can_complete = {}
   for source, region in WalkSources():
-    print(region)
-    source2 = re.search(r'initNoMajorGlitches.*?/\*\*', source,
-                        re.DOTALL | re.MULTILINE)
+    region = php_grammar.Smoosh(region)
+    for e in php_grammar.init_no_major_glitches('root').searchString(source):
+      s = ToTupleList(e.root.definitions)
+      if not isinstance(s, list):
+        s = [s]
+      for entry in s:
+        if entry.get('region_method', None) == 'can_enter':
+          can_enter[region] = entry['rhs']
+        elif entry.get('region_method', None) == 'can_complete':
+          can_complete[region] = entry['rhs']
+        elif entry.get('location', None):
+          location = php_grammar.Smoosh(entry['location'])
+          if location == 'Prize':
+            location = region + location
+          r = entry['riders']
+          if isinstance(r, tuple):
+            r = {r[0]: r[1]}
+          can_reach[location] = r.get('requirements')
+          if can_reach[location]:
+            if can_reach[location].get('region_method_call', None):
+              method_name = can_reach[location]['region_method_call']
+              can_reach[location]['region_method_call'] = {
+                  'method_name': method_name,
+                  'region': region
+              }
+          fill_rules[location] = r.get('fill_rules')
 
-    if not source2:
-      continue
-    source3 = source2.group(0)
-    match = pattern.search(source3)
-    if match:
-      found_location = match.group(1) or match.group(2)
-      body = match.group(3)
-      c_location = php_grammar.Smoosh(found_location)
-      c_region = php_grammar.Smoosh(region)
-      print(repr(found_location), c_location, c_region)
-      input()
-      print('case Locations::{}:'.format(c_location))
-      print('if (!this->can_enter(Locations::Regions::{})) {{ '
-            'return false; }}'.format(c_region))
-      e = php_grammar.php_lambda('root').parseString(body)
-      # pprint.pprint(ToTupleList(e['root']))
-      print(' '.join(php_grammar.ExpandToC(ToTupleList(e[0]))))
+  return can_reach, can_enter, can_complete, fill_rules
 
 
-header, footer = re.split(
-    r'^\s*// Generated code goes here\.$',
-    open('world.cc').read(),
-    maxsplit=1,
-    flags=re.DOTALL | re.MULTILINE)
-print(header)
-BuildIndex()
-print(footer)
+can_reach, can_enter, can_complete, fill_rules = BuildIndex()
+
+
+def CodeFor(methods, namespace='Location::'):
+  for place in sorted(methods.keys()):
+    yield 'case {namespace}{place}:'.format(namespace=namespace, place=place)
+    yield ' '.join(php_grammar.ExpandToC(methods[place]))
+
+
+code = open('world_template.cc').read()
+code = re.sub(
+    r'^.*// <SUB:can_reach>.*$',
+    ' '.join(CodeFor(can_reach)),
+    code,
+    flags=re.MULTILINE)
+code = re.sub(
+    r'^.*// <SUB:can_enter>.*$',
+    ' '.join(CodeFor(can_enter, namespace='Region::')),
+    code,
+    flags=re.MULTILINE)
+code = re.sub(
+    r'^.*// <SUB:can_complete>.*$',
+    ' '.join(CodeFor(can_enter, namespace='Region::')),
+    code,
+    flags=re.MULTILINE)
+code = re.sub(
+    r'^.*// <SUB:fill_rules>.*$',
+    ' '.join(CodeFor(can_enter)),
+    code,
+    flags=re.MULTILINE)
+print(code)
