@@ -21,6 +21,10 @@ void World::print() {
   }
 }
 
+void World::set_medallion(Location location, Item item) {
+  this->assignments[(int)location] = item;
+}
+
 void World::set_item(Location location, Item item) {
   this->assignments[(int)location] = item;
   this->where_is[(int)item].push_back(location);

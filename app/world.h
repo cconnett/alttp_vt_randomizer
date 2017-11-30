@@ -10,6 +10,10 @@ class World {
   // Assign to `location` the item `item`. Invalidate the reachability cache.
   void set_item(Location location, Item item);
 
+  // Assign to `location` the medallion `item`. Don't add it to the where_is
+  // structure to avoid it being seen as collectible.
+  void set_medallion(Location location, Item item);
+
   // Can `location` be reached?
   bool can_reach(Location location);
 
