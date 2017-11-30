@@ -12,8 +12,8 @@ using namespace std;
 
 void set_medallions(World &world) {
   const Item medallions[] = {Item::Ether, Item::Bombos, Item::Quake};
-  world.set_item(Location::MiseryMireMedallion, medallions[mt_rand(0, 2)]);
-  world.set_item(Location::TurtleRockMedallion, medallions[mt_rand(0, 2)]);
+  world.set_medallion(Location::MiseryMireMedallion, medallions[mt_rand(0, 2)]);
+  world.set_medallion(Location::TurtleRockMedallion, medallions[mt_rand(0, 2)]);
 }
 
 void fill_prizes(World &world) {
