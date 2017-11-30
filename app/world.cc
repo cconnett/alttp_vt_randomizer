@@ -2,53 +2,63 @@
 #include <iostream>
 #include <vector>
 
+#include "arraylength.h"
 #include "items.h"
 #include "locations.h"
 #include "world.h"
 
-#define ARRAY_LENGTH(array) (sizeof((array)) / sizeof((array)[0]))
-
 using namespace std;
 
 World::World() {
-  memset(reachability_cache, 0, sizeof reachability_cache);
-  memset(assignments, 0, sizeof assignments);
+  memset(reachability_cache, 0, sizeof(reachability_cache));
+  memset(assignments, 0, sizeof(assignments));
+  memcpy(num_unplaced, INITIAL_UNPLACED, sizeof(INITIAL_UNPLACED));
 }
 
 void World::print() {
-  for (uint i = 1; i < ARRAY_LENGTH(this->assignments) - 1; i++) {
-    cout << (int)this->assignments[(int)i] << endl;
+  for (uint i = 1; i < ARRAY_LENGTH(assignments) - 1; i++) {
+    cout << (int)assignments[(int)i] << endl;
   }
 }
 
-void World::set_medallion(Location location, Item item) {
-  this->assignments[(int)location] = item;
+bool World::has_item(Location location) {
+  return (bool)assignments[(int)location];
 }
 
 void World::set_item(Location location, Item item) {
-  this->assignments[(int)location] = item;
-  this->where_is[(int)item].push_back(location);
-  memset(this->reachability_cache, 0, sizeof this->reachability_cache);
+  assignments[(int)location] = item;
+  where_is[(int)item].push_back(location);
+  num_unplaced[(int)item]--;
+  memset(reachability_cache, 0, sizeof(reachability_cache));
+}
+
+void World::set_medallion(Location location, Item item) {
+  assignments[(int)location] = item;
+}
+
+bool World::can_reach_with_one_fewer_item(Location location, Item item) {
+  num_unplaced[(int)item]--;
+  bool ret = can_reach(location);
+  num_unplaced[(int)item]++;
+  return ret;
 }
 
 bool World::can_reach(Location location) {
-  if (this->reachability_cache[(int)location]) {
-    return this->reachability_cache[(int)location] > 0;
+  if (reachability_cache[(int)location]) {
+    return reachability_cache[(int)location] > 0;
   }
   // Set it to -1 while we calculate reachability so that loops in the graph
   // see it as unreachable.
-  this->reachability_cache[(int)location] = -1;
-  this->reachability_cache[(int)location] = this->uncached_can_reach(location);
-  return this->reachability_cache[(int)location];
+  reachability_cache[(int)location] = -1;
+  reachability_cache[(int)location] = uncached_can_reach(location);
+  return reachability_cache[(int)location];
 }
 
 int World::num_reachable(Item item) {
-  int count = 0;
+  int count = num_unplaced[(int)item];
   for (auto i = where_is[(int)item].cbegin(); i != where_is[(int)item].cend();
        i++) {
-    cout << "'Item " << (int)item << "' -> 'Location " << (int)*i << "';"
-         << endl;
-    if (this->can_reach(*i)) {
+    if (can_reach(*i)) {
       count += 1;
     }
   }
