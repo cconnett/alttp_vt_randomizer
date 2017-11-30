@@ -22,9 +22,6 @@ bool World::can_complete(Region region) {
 }
 
 bool World::uncached_can_reach(Location location) {
-  if (!(bool)this->assignments[(int)location]) {
-    return true;
-  }
   switch (location) {
     // <SUB:can_reach>
     default:

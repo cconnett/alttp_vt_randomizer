@@ -2,7 +2,7 @@ cc_binary(
     name = "makeseed",
     srcs = ["makeseed.cc"],
     deps = [
-        ":item_groups",
+        ":arraylength",
         ":items",
         ":locations",
         ":mt_rand",
@@ -20,6 +20,11 @@ cc_library(
 )
 
 cc_library(
+    name = "arraylength",
+    srcs = ["arraylength.h"],
+)
+
+cc_library(
     name = "locations",
     srcs = [
         "locations.h",
@@ -29,16 +34,10 @@ cc_library(
 cc_library(
     name = "items",
     srcs = [
+        "items.cc",
         "items.h",
     ],
-)
-
-cc_library(
-    name = "item_groups",
-    srcs = [
-        "item_groups.cc",
-    ],
-    deps = [":items"],
+    deps = [":arraylength"],
 )
 
 cc_library(
@@ -74,7 +73,7 @@ genrule(
     name = "world-generated",
     srcs = glob(["**/*.php"]),
     outs = ["world.gen.cc"],
-    cmd = "$(location :build_index) | clang-format > $(OUTS)",
+    cmd = "$(location :build_index) > $(OUTS)",
     tools = [
         "world_template.cc",
         ":build_index",

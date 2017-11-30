@@ -7,6 +7,8 @@ class World {
   World();
   void print();
 
+  bool has_item(Location location);
+
   // Assign to `location` the item `item`. Invalidate the reachability cache.
   void set_item(Location location, Item item);
 
@@ -16,6 +18,9 @@ class World {
 
   // Can `location` be reached?
   bool can_reach(Location location);
+  // Can `location` be reached if there is one fewer unplaced `item` in the
+  // world (for testing graph validity if the item would be placed in location).
+  bool can_reach_with_one_fewer_item(Location location, Item item);
 
   // How many instances of `item` can be reached?
   int num_reachable(Item item);
@@ -29,6 +34,7 @@ class World {
  private:
   Item assignments[(int)Location::NUM_LOCATIONS];
   vector<Location> where_is[(int)Item::NUM_ITEMS];
+  int num_unplaced[(int)Item::NUM_ITEMS];
 
   // 1 = Reachable
   // 0 = Unknown
