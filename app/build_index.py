@@ -93,14 +93,14 @@ code = re.sub(
     ' '.join(CodeFor(can_enter, namespace='Region::')),
     code,
     flags=re.MULTILINE)
-code = re.sub(
-    r'^.*// <SUB:can_complete>.*$',
-    ' '.join(CodeFor(can_enter, namespace='Region::')),
-    code,
-    flags=re.MULTILINE)
-code = re.sub(
-    r'^.*// <SUB:fill_rules>.*$',
-    ' '.join(CodeFor(can_enter)),
-    code,
-    flags=re.MULTILINE)
+# code = re.sub(
+#     r'^.*// <SUB:can_complete>.*$',
+#     ' '.join(CodeFor(can_complete, namespace='Region::')),
+#     code,
+#     flags=re.MULTILINE)
+# code = re.sub(
+#     r'^.*// <SUB:fill_rules>.*$',
+#     ' '.join(CodeFor(fill_rules)),
+#     code,
+#     flags=re.MULTILINE)
 print(code)
