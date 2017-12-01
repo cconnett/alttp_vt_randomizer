@@ -6,6 +6,7 @@ class World {
  public:
   World();
   void print();
+  void compact_print();
 
   bool has_item(Location location);
 

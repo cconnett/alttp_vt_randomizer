@@ -23,10 +23,10 @@ World::World() {
   assignments[(int)Location::PyramidFairySword] = Item::BottleWithGreenPotion;
 }
 
-void World::print() {
+void World::compact_print() {
   int col = 0;
   for (uint i = 1; i < ARRAY_LENGTH(assignments); i++) {
-    cout << setw(4) << (int)assignments[(int)i];
+    cout << setw(4) << (int)assignments[i];
     if (++col >= 13) {
       cout << endl;
       col = 0;
@@ -40,6 +40,13 @@ void World::print() {
     }
   }
   cout << "Empty: " << num_empty << endl;
+}
+
+void World::print() {
+  for (uint i = 1; i < ARRAY_LENGTH(assignments); i++) {
+    cout << LOCATION_NAMES[i] << " = " << ITEM_NAMES[(int)assignments[i]]
+         << endl;
+  }
 }
 
 bool World::has_item(Location location) {
