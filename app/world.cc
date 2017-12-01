@@ -15,6 +15,12 @@ World::World() {
   memset(reachability_cache, 0, sizeof(reachability_cache));
   memset(assignments, 0, sizeof(assignments));
   memcpy(num_unplaced, INITIAL_UNPLACED, sizeof(INITIAL_UNPLACED));
+
+  assignments[(int)Location::HyruleCastleTowerPrize] = Item::DefeatAgahnim;
+  assignments[(int)Location::GanonsTowerPrize] = Item::DefeatAgahnim2;
+  assignments[(int)Location::DarkWorldNorthEastPrize] = Item::DefeatGanon;
+  assignments[(int)Location::PyramidFairyBow] = Item::BottleWithGreenPotion;
+  assignments[(int)Location::PyramidFairySword] = Item::BottleWithGreenPotion;
 }
 
 void World::print() {
