@@ -38,7 +38,7 @@ void fill_items_in_locations(World &world, const Item *items, size_t n,
   for (uint i = 0; i < n; i++) {
     for (auto l = locations; l < (locations + (uint)Location::NUM_LOCATIONS);
          l++) {
-      if (!world.has_item(*l) &&
+      if (!world.has_item(*l) && world.can_fill(*l, items[i]) &&
           world.can_reach_with_one_fewer_item(*l, items[i])) {
         world.set_item(*l, items[i]);
         break;
