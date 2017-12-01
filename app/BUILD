@@ -57,8 +57,6 @@ py_binary(
     name = "build_index",
     srcs = ["build_index.py"],
     data = [
-        "items.txt",
-        "locations.txt",
         "world.cc",
     ],
     deps = [":php_grammar"],
