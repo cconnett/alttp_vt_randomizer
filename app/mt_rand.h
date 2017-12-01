@@ -1,6 +1,7 @@
 #include <vector>
 
 uint mt_rand(uint low, uint high);
+void php_srand(int seed);
 
 template <typename T>
 void mt_shuffle(size_t n, T *array) {
