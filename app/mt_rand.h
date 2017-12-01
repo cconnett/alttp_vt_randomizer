@@ -17,14 +17,14 @@ void mt_shuffle(T *array, size_t n) {
 template <typename T>
 std::vector<T> mt_sample(T *population, size_t popsize, size_t k) {
   assert(k <= popsize);
-  std::vector<T> original, ret;
+  std::vector<T> urn, ret;
   for (uint i = 0; i < popsize; i++) {
-    original.push_back(population[i]);
+    urn.push_back(population[i]);
   }
   while (k-- > 0) {
-    uint pos = mt_rand(0, original.size());
-    ret.push_back(original[pos]);
-    original.erase(original.begin() + pos);
+    uint pos = mt_rand(0, urn.size() - 1);
+    ret.push_back(urn[pos]);
+    urn.erase(urn.begin() + pos);
   }
   return ret;
 }
