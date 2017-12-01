@@ -4,10 +4,9 @@
 
 PHP_mt19937 generator;
 
-int scale(int n, int min, int max) {
-  return (int)(min + (max - min + 1.0) * (((double)n) / (1 << 31)));
+int scale(uint n, uint min, uint max) {
+  return min + (uint)((max - min + 1.0) * (((double)n) / (uint)0x7fffffff));
 }
 
-void php_srand(int seed) { generator.seed(seed); }
-
 uint mt_rand(uint min, uint max) { return scale(generator.random(), min, max); }
+void php_srand(int seed) { generator.seed(seed); }
