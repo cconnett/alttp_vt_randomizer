@@ -49,63 +49,115 @@ void fill_items_in_locations(World &world, const Item *items, size_t n,
 
 void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
                                   Location *locations) {
+  Location *next = locations - 1;
   for (uint i = 0; i < n; i++) {
-    if (!world.has_item(*locations)) {
-      world.set_item(*locations, items[i]);
-      locations++;
-    }
+    while (world.has_item(*++next))
+      ;
+    world.set_item(*next, items[i]);
   }
 }
 
-void makeseed(int seed) {
+World makeseed(int seed) {
   World world;
+  world.print();
+  getchar();
   php_srand(seed);
 
   set_medallions(world);
+  world.print();
+  getchar();
   fill_prizes(world);
 
   // Shuffle locations.
   Location locations[(int)Location::NUM_LOCATIONS];
-  for (uint i = 0; i < (int)Location::NUM_LOCATIONS; i++) {
+  for (uint i = 1; i < (int)Location::NUM_LOCATIONS; i++) {
     locations[i] = (Location)i;
   }
   mt_shuffle(locations + 1, (size_t)Location::NUM_LOCATIONS - 1);
 
+  world.print();
+  getchar();
   // Fill dungeon items.
   fill_items_in_locations(world, DUNGEON_ITEMS, ARRAY_LENGTH(DUNGEON_ITEMS),
-                          locations);
+                          locations + 1);
 
   // Random junk fill in Ganon's tower.
-  Location ganons_tower[ARRAY_LENGTH(GANONS_TOWER)];
+  Location ganons_tower_empty[ARRAY_LENGTH(GANONS_TOWER)];
   size_t num_empty_gt_locations = 0;
   for (uint i = 0; i < ARRAY_LENGTH(GANONS_TOWER); i++) {
     if (!world.has_item(GANONS_TOWER[i])) {
-      ganons_tower[num_empty_gt_locations++] = GANONS_TOWER[i];
+      ganons_tower_empty[num_empty_gt_locations++] = GANONS_TOWER[i];
     }
   }
   int gt_junk = mt_rand(0, 15);
-  vector<Location> gt_locations =
-      mt_sample(ganons_tower, num_empty_gt_locations, gt_junk);
+  vector<Location> gt_trash_locations =
+      mt_sample(ganons_tower_empty, num_empty_gt_locations, gt_junk);
 
   Item extra[ARRAY_LENGTH(TRASH_ITEMS)];
   memcpy(extra, TRASH_ITEMS, sizeof(extra));
   mt_shuffle(extra, ARRAY_LENGTH(extra));
-  fast_fill_items_in_locations(world, extra, ARRAY_LENGTH(extra),
-                               gt_locations.data());
-  // Proceeding from the back of locations, take the empty ones.  Shuffle the
-  // advancement items. fiil advancement items into the reversed locations.
-  // Filter down to the empty locations again. Shuffle them again, then ffiil
-  // nice, and ffiil trash. Done.
+  world.print();
+  getchar();
+  fast_fill_items_in_locations(world, extra, gt_trash_locations.size(),
+                               gt_trash_locations.data());
+
+  // 1. Proceeding from the back of locations and take the empty ones.
+  Location empty_locations[(int)Location::NUM_LOCATIONS];
+  for (int num_empty = 0, locations_offset = (int)Location::NUM_LOCATIONS - 1;
+       locations_offset > 0; locations_offset--) {
+    if (!world.has_item(locations[locations_offset])) {
+      empty_locations[num_empty++] = locations[locations_offset];
+    }
+  }
+  // 2. Shuffle the advancement items.
+  Item advancement[ARRAY_LENGTH(ADVANCEMENT_ITEMS)];
+  memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(advancement));
+  mt_shuffle(advancement, ARRAY_LENGTH(advancement));
+  // 3. `fiil` advancement items into the reversed locations.
+
+  world.print();
+  getchar();
+  fill_items_in_locations(world, advancement, ARRAY_LENGTH(advancement),
+                          empty_locations);
+  // 4. Filter down to the empty locations again.
+  memset(empty_locations, 0, sizeof(empty_locations));
+  int num_empty = 0;
+  for (int locations_offset = (int)Location::NUM_LOCATIONS - 1;
+       locations_offset > 0; locations_offset--) {
+    if (!world.has_item(locations[locations_offset])) {
+      empty_locations[num_empty++] = locations[locations_offset];
+    }
+  }
+  // 5. Shuffle them again.
+  mt_shuffle(empty_locations, num_empty);
+
+  // 6. `ffiil` shuffled nice
+  Item nice[ARRAY_LENGTH(NICE_ITEMS)];
+  memcpy(nice, NICE_ITEMS, sizeof(nice));
+  world.print();
+  getchar();
+  fast_fill_items_in_locations(world, nice, ARRAY_LENGTH(nice),
+                               empty_locations);
+
+  // 7. `ffiil` shuffled trash
+  Item *trash = extra + gt_junk;
+  world.print();
+  getchar();
+  fast_fill_items_in_locations(world, trash, ARRAY_LENGTH(extra) - gt_junk,
+                               empty_locations);
+  world.print();
 
   // We need to follow the exact procedure from the PHP randomizer if we want to
   // faithfully generate the exact layouts from the given seed value.  When we
   // switch to just generating seeds as fast as possible, we can change this to
   // be more memory-friendly.
+  return world;
 }
 
 int main(int argc, char **argv) {
   count_items();
 
   int seed = 1;
-  makeseed(seed);
+  World result = makeseed(seed);
+  result.print();
 }

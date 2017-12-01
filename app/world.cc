@@ -1,4 +1,6 @@
+#include <cassert>
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 #include <vector>
 
@@ -16,16 +18,35 @@ World::World() {
 }
 
 void World::print() {
-  for (uint i = 1; i < ARRAY_LENGTH(assignments) - 1; i++) {
-    cout << (int)assignments[(int)i] << endl;
+  int col = 0;
+  for (uint i = 1; i < ARRAY_LENGTH(assignments); i++) {
+    cout << setw(4) << (int)assignments[(int)i];
+    if (++col >= 13) {
+      cout << endl;
+      col = 0;
+    }
   }
+  cout << endl;
+  int num_empty = 0;
+  for (uint i = 1; i < ARRAY_LENGTH(assignments); i++) {
+    if (!has_item((Location)i)) {
+      num_empty++;
+    }
+  }
+  cout << "Empty: " << num_empty << endl;
 }
 
 bool World::has_item(Location location) {
+  assert(location != Location::INVALID);
+  assert(location != Location::NUM_LOCATIONS);
   return (bool)assignments[(int)location];
 }
 
 void World::set_item(Location location, Item item) {
+  assert(location != Location::INVALID);
+  assert(location != Location::NUM_LOCATIONS);
+  assert(item != Item::INVALID);
+  assert(item != Item::NUM_ITEMS);
   assignments[(int)location] = item;
   where_is[(int)item].push_back(location);
   num_unplaced[(int)item]--;
@@ -33,10 +54,18 @@ void World::set_item(Location location, Item item) {
 }
 
 void World::set_medallion(Location location, Item item) {
+  assert(location != Location::INVALID);
+  assert(location != Location::NUM_LOCATIONS);
+  assert(item != Item::INVALID);
+  assert(item != Item::NUM_ITEMS);
   assignments[(int)location] = item;
 }
 
 bool World::can_reach_with_one_fewer_item(Location location, Item item) {
+  assert(location != Location::INVALID);
+  assert(location != Location::NUM_LOCATIONS);
+  assert(item != Item::INVALID);
+  assert(item != Item::NUM_ITEMS);
   num_unplaced[(int)item]--;
   bool ret = can_reach(location);
   num_unplaced[(int)item]++;
@@ -44,6 +73,8 @@ bool World::can_reach_with_one_fewer_item(Location location, Item item) {
 }
 
 bool World::can_reach(Location location) {
+  assert(location != Location::INVALID);
+  assert(location != Location::NUM_LOCATIONS);
   if (reachability_cache[(int)location]) {
     return reachability_cache[(int)location] > 0;
   }
@@ -55,6 +86,8 @@ bool World::can_reach(Location location) {
 }
 
 int World::num_reachable(Item item) {
+  assert(item != Item::INVALID);
+  assert(item != Item::NUM_ITEMS);
   int count = num_unplaced[(int)item];
   for (auto i = where_is[(int)item].cbegin(); i != where_is[(int)item].cend();
        i++) {
