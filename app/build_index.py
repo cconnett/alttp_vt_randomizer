@@ -68,7 +68,8 @@ def BuildIndex():
                   'method_name': method_name,
                   'region': region
               }
-          fill_rules[location] = r.get('fill_rules')
+          if 'fill_rules' in r:
+            fill_rules[location] = r['fill_rules']
 
   return can_reach, can_enter, can_complete, fill_rules
 
@@ -98,9 +99,9 @@ code = re.sub(
 #     ' '.join(CodeFor(can_complete, namespace='Region::')),
 #     code,
 #     flags=re.MULTILINE)
-# code = re.sub(
-#     r'^.*// <SUB:fill_rules>.*$',
-#     ' '.join(CodeFor(fill_rules)),
-#     code,
-#     flags=re.MULTILINE)
+code = re.sub(
+    r'^.*// <SUB:can_fill>.*$',
+    ' '.join(CodeFor(fill_rules)),
+    code,
+    flags=re.MULTILINE)
 print(code)
