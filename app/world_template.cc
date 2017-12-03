@@ -21,7 +21,13 @@ bool World::can_complete(Region region) {
   }
 }
 
-bool World::can_fill(Location location, Item item) { return true; }
+bool World::can_fill(Location location, Item item) {
+  switch (location) {
+    // <SUB:can_fill>
+    default:
+      return true;
+  }
+}
 
 bool World::uncached_can_reach(Location location) {
   switch (location) {

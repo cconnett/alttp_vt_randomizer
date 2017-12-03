@@ -51,16 +51,17 @@ game_mode = (p.Literal("config('game-mode') == 'swordless'").setParseAction(
 # Reduce to true/false with generation-time config options.
 world_config = G(
     s('$this->world->config(') + p.quotedString('option') + s(',') +
-    boolean('value') + s(')')).setName('config option')
+    boolean('default') + s(')')).setName('config option')
 
 # Item classification: Group items into sets in source code and do class lookup.
-is_a = ((s('is_a($item, Item\\') - p.Word(p.alphas) - s('::class)')) |
-        (s('$item instanceof Item\\') - p.Word(p.alphas))).setName('is_a')
+item_is_a = (
+    (s('is_a($item, Item\\') - p.Word(p.alphas) - s('::class)')) |
+    (s('$item instanceof Item\\') - p.Word(p.alphas))).setName('item_is_a')
 item_ref = s('Item::get(') - p.quotedString - s(')')
 item_is_not = s('$item !=') - item_ref
 item_is_one_of = ((s('in_array($item, [') - G(
-    item_ref + p.ZeroOrMore(s(',') - item_ref) + p.Optional(s(','))) - s('])'))
-                  | (s('$item ==') - item_ref))
+    item_ref + p.OneOrMore(s(',') - item_ref) + p.Optional(s(','))) - s('])')) |
+                  (s('$item ==') - item_ref))
 location_def = ((s('$this->locations[') - p.quotedString - s(']')) |
                 p.Literal('$this->prize_location').setParseAction(
                     p.replaceWith('Prize')))
@@ -76,14 +77,14 @@ php_lambda = G(
 
 parenthesized_expr = (s('(') + php_expr + s(')')).setName('parenthesized')
 php_atom = G(
-    has_item('has') | locations_has('lhas') |
-    region_can_enter('access_to_region') | can_access('access') |
-    method_call('method') | item_in_locations('iil') | game_mode('mode') |
-    is_a('is_a') | item_is_not('is_not') | item_is_one_of('item_is_one_of') |
+    has_item('has') | locations_has('lhas') | region_can_enter(
+        'access_to_region') | can_access('access') | method_call('method') |
+    item_in_locations('iil') | game_mode('mode') | item_is_a('item_is_a') |
+    item_is_not('is_not') | item_is_one_of('item_is_one_of') |
     world_config('config') | boolean('boolean') | php_lambda('lambda') |
     parenthesized_expr).setName('atom')
-php_negation = ('!' + php_atom).setName('not')
-php_literal = php_negation('not') | php_atom
+php_negation = (s('!') + php_atom).setName('not')
+php_literal = G(php_negation('not')) | php_atom
 php_and = G(php_literal + p.OneOrMore(s('&&') + php_literal)).setName('and')
 php_clause = php_and('and') | php_literal
 php_or = G(php_clause + p.OneOrMore(s('||') + php_clause)).setName('or')
@@ -180,6 +181,8 @@ def ExpandToC(d):
     elif name == 'or':
       yield '(' + ' || '.join(' '.join(str(e) for e in ExpandToC(term))
                               for term in value) + ')'
+    elif name == 'not':
+      yield '!({})'.format(' '.join(ExpandToC(value)))
     elif name == 'ternary':
       yield '({condition}) ? ({true}) : ({false})'.format(
           condition=' '.join(ExpandToC(value[0])),
@@ -198,6 +201,14 @@ def ExpandToC(d):
             location=Smoosh(location), item='Item::' + Smoosh(value['item']))
         yield '&&'
       yield 'false)'
+    elif name == 'config':
+      yield value['default']
+    elif name == 'is_not':
+      yield 'item != Item::{}'.format(value)
+    elif name == 'item_is_one_of':
+      if isinstance(value, str):
+        value = [value]
+      yield '(' + '||'.join('item == Item::' + option for option in value) + ')'
     else:
       raise Error('Unhandled case: {}. Next level: {}'.format(name, value))
   else:
