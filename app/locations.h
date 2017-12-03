@@ -275,6 +275,14 @@ enum class Region {
   NUM_REGIONS,  // Must be last
 };
 
+const Location PRIZE_LOCATIONS[] = {
+    Location::PalaceofDarknessPrize, Location::SwampPalacePrize,
+    Location::SkullWoodsPrize,       Location::ThievesTownPrize,
+    Location::IcePalacePrize,        Location::MiseryMirePrize,
+    Location::TurtleRockPrize,       Location::EasternPalacePrize,
+    Location::DesertPalacePrize,     Location::TowerofHeraPrize,
+};
+
 const int MAX_DUNGEON_LOCATIONS = 28;
 const Location DUNGEON_LOCATIONS[NUM_DUNGEONS + 1][MAX_DUNGEON_LOCATIONS + 1] =
     {
