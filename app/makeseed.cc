@@ -33,14 +33,13 @@ void fill_prizes(World &world) {
   }
 }
 
-void fill_items_in_locations(World &world, const Item *items, size_t n,
+void fill_items_in_locations(World &world, const Item *items,
                              Location *locations) {
-  for (uint i = 0; i < n; i++) {
-    for (auto l = locations; l < (locations + (uint)Location::NUM_LOCATIONS);
-         l++) {
-      if (!world.has_item(*l) && world.can_fill(*l, items[i]) &&
-          world.can_reach_with_one_fewer_item(*l, items[i])) {
-        world.set_item(*l, items[i]);
+  for (const Item *i = items; *i != Item::INVALID; i++) {
+    for (Location *l = locations; *l != Location::INVALID; l++) {
+      if (!world.has_item(*l) && world.can_fill(*l, *i) &&
+          world.can_reach_with_one_fewer_item(*l, *i)) {
+        world.set_item(*l, *i);
         break;
       }
     }
@@ -51,42 +50,70 @@ void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
                                   Location *locations) {
   Location *next = locations - 1;
   for (uint i = 0; i < n; i++) {
-    while (world.has_item(*++next))
+    while (next++, *next != Location::INVALID && world.has_item(*next))
       ;
+    if (*next == Location::INVALID) {
+      world.print();
+      cout << "Ran out of locations." << endl;
+      assert(false);
+    }
     world.set_item(*next, items[i]);
   }
 }
 
 World makeseed(int seed) {
   World world;
-  world.print();
-  getchar();
   php_srand(seed);
 
   set_medallions(world);
-  world.print();
-  getchar();
   fill_prizes(world);
 
-  // Shuffle locations.
+  // Create a list of the _valid_ locations (starting at 1).
+  // locations.
   Location locations[(int)Location::NUM_LOCATIONS];
   for (uint i = 1; i < (int)Location::NUM_LOCATIONS; i++) {
-    locations[i] = (Location)i;
+    locations[i - 1] = (Location)i;
   }
-  mt_shuffle(locations + 1, (size_t)Location::NUM_LOCATIONS - 1);
+  // Null terminate the list.
+  locations[(int)Location::NUM_LOCATIONS - 1] = Location::INVALID;
 
-  world.print();
-  getchar();
-  // Fill dungeon items.
-  fill_items_in_locations(world, DUNGEON_ITEMS, ARRAY_LENGTH(DUNGEON_ITEMS),
-                          locations + 1);
+  // Shuffle the real locations (not the null terminator).
+  mt_shuffle(locations, (size_t)Location::NUM_LOCATIONS - 1);
+
+  // Fill dungeon items.  Fill the items into each dungeon separately, since
+  // dungeon items can only go in their respective dungeons.
+  for (Region dungeon = Region::HyruleCastleEscape;
+       dungeon <= Region::GanonsTower; ((int &)dungeon)++) {
+    // Pull the locations from the shuffled master list into a list in the
+    // same order, but existing consecutively in memory so it can be passed to
+    // a fill_items_in_locations just for the one dungeon.
+    Location shuffled_dungeon_locations[MAX_DUNGEON_LOCATIONS + 1];
+    memset(shuffled_dungeon_locations, 0, sizeof(shuffled_dungeon_locations));
+    int found = 0;
+    for (uint i = 0; i < ARRAY_LENGTH(locations); i++) {
+      for (uint c = 0; DUNGEON_LOCATIONS[(int)dungeon][c] != Location::INVALID;
+           c++) {
+        if (locations[i] == DUNGEON_LOCATIONS[(int)dungeon][c]) {
+          shuffled_dungeon_locations[found++] = locations[i];
+          break;
+        }
+      }
+    }
+
+    // Fill the items passing just shuffled_dungeon_locations.
+    fill_items_in_locations(world, DUNGEON_ITEMS[(int)dungeon],
+                            shuffled_dungeon_locations);
+  }
 
   // Random junk fill in Ganon's tower.
-  Location ganons_tower_empty[ARRAY_LENGTH(GANONS_TOWER)];
+  Location ganons_tower_empty[MAX_DUNGEON_LOCATIONS];
   size_t num_empty_gt_locations = 0;
-  for (uint i = 0; i < ARRAY_LENGTH(GANONS_TOWER); i++) {
-    if (!world.has_item(GANONS_TOWER[i])) {
-      ganons_tower_empty[num_empty_gt_locations++] = GANONS_TOWER[i];
+  for (uint i = 0;
+       DUNGEON_LOCATIONS[(int)Region::GanonsTower][i] != Location::INVALID;
+       i++) {
+    if (!world.has_item(DUNGEON_LOCATIONS[(int)Region::GanonsTower][i])) {
+      ganons_tower_empty[num_empty_gt_locations++] =
+          DUNGEON_LOCATIONS[(int)Region::GanonsTower][i];
     }
   }
   int gt_junk = mt_rand(0, 15);
@@ -96,61 +123,58 @@ World makeseed(int seed) {
   Item extra[ARRAY_LENGTH(TRASH_ITEMS)];
   memcpy(extra, TRASH_ITEMS, sizeof(extra));
   mt_shuffle(extra, ARRAY_LENGTH(extra));
-  world.print();
-  getchar();
   fast_fill_items_in_locations(world, extra, gt_trash_locations.size(),
                                gt_trash_locations.data());
 
-  // 1. Proceeding from the back of locations and take the empty ones.
-  Location empty_locations[(int)Location::NUM_LOCATIONS];
-  for (int num_empty = 0, locations_offset = (int)Location::NUM_LOCATIONS - 1;
-       locations_offset > 0; locations_offset--) {
-    if (!world.has_item(locations[locations_offset])) {
-      empty_locations[num_empty++] = locations[locations_offset];
-    }
-  }
-  // 2. Shuffle the advancement items.
-  Item advancement[ARRAY_LENGTH(ADVANCEMENT_ITEMS)];
-  memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(advancement));
-  mt_shuffle(advancement, ARRAY_LENGTH(advancement));
-  // 3. `fiil` advancement items into the reversed locations.
-
-  world.print();
-  getchar();
-  fill_items_in_locations(world, advancement, ARRAY_LENGTH(advancement),
-                          empty_locations);
-  // 4. Filter down to the empty locations again.
-  memset(empty_locations, 0, sizeof(empty_locations));
+  // The dungeon items were filled into locations starting at the front of the
+  // shuffled locations list. The PHP version then uses locations from the
+  // back of the shuffled list for placing the advancement items. Proceeding
+  // from the back of locations, take the empty ones into a new list.
+  Location empty_locations[(int)Location::NUM_LOCATIONS + 1];
   int num_empty = 0;
-  for (int locations_offset = (int)Location::NUM_LOCATIONS - 1;
+  for (uint locations_offset = (int)Location::NUM_LOCATIONS - 2;
        locations_offset > 0; locations_offset--) {
     if (!world.has_item(locations[locations_offset])) {
       empty_locations[num_empty++] = locations[locations_offset];
     }
   }
-  // 5. Shuffle them again.
+
+  // Null terminate empty_locations.
+  empty_locations[num_empty] = Location::INVALID;
+
+  // Shuffle the advancement items.
+  int num_advancement = ARRAY_LENGTH(ADVANCEMENT_ITEMS);
+  Item advancement[num_advancement + 1];
+  memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(advancement));
+  advancement[num_advancement] = Item::INVALID;
+  mt_shuffle(advancement, num_advancement);
+
+  // Fill advancement.
+  fill_items_in_locations(world, advancement, empty_locations);
+
+  // Filter down to the empty locations again.
+  num_empty = 0;
+  for (int i = 0; empty_locations[i] != Location::INVALID; i++) {
+    if (!world.has_item(empty_locations[i])) {
+      empty_locations[num_empty++] = empty_locations[i];
+    }
+  }
+  // Null terminate empty_locations.
+  empty_locations[num_empty] = Location::INVALID;
+  // Shuffle them again.
   mt_shuffle(empty_locations, num_empty);
 
-  // 6. `ffiil` shuffled nice
+  // fast_fill_items_in_locations the shuffled nice items.
   Item nice[ARRAY_LENGTH(NICE_ITEMS)];
   memcpy(nice, NICE_ITEMS, sizeof(nice));
-  world.print();
-  getchar();
   fast_fill_items_in_locations(world, nice, ARRAY_LENGTH(nice),
                                empty_locations);
 
-  // 7. `ffiil` shuffled trash
+  // fast_fill_items_in_locations the shuffled remaining trash items (the
+  // first `gt_junk` of them were already placed in Ganon's Tower).
   Item *trash = extra + gt_junk;
-  world.print();
-  getchar();
   fast_fill_items_in_locations(world, trash, ARRAY_LENGTH(extra) - gt_junk,
                                empty_locations);
-  world.print();
-
-  // We need to follow the exact procedure from the PHP randomizer if we want to
-  // faithfully generate the exact layouts from the given seed value.  When we
-  // switch to just generating seeds as fast as possible, we can change this to
-  // be more memory-friendly.
   return world;
 }
 

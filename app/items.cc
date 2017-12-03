@@ -8,7 +8,9 @@ void count_items() {
     INITIAL_UNPLACED[(int)PRIZES[i]]++;
   }
   for (unsigned int i = 0; i < ARRAY_LENGTH(DUNGEON_ITEMS); i++) {
-    INITIAL_UNPLACED[(int)DUNGEON_ITEMS[i]]++;
+    for (const Item *j = DUNGEON_ITEMS[i]; *j != Item::INVALID; j++) {
+      INITIAL_UNPLACED[(int)*j]++;
+    }
   }
   for (unsigned int i = 0; i < ARRAY_LENGTH(ADVANCEMENT_ITEMS); i++) {
     INITIAL_UNPLACED[(int)ADVANCEMENT_ITEMS[i]]++;
