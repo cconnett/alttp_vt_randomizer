@@ -20,16 +20,13 @@ void fill_prizes(World &world) {
   Item prizes[ARRAY_LENGTH(PRIZES)];
   memcpy(prizes, PRIZES, sizeof(PRIZES));
 
-  const Location prize_locations[] = {
-      Location::EasternPalacePrize, Location::DesertPalacePrize,
-      Location::TowerofHeraPrize,   Location::PalaceofDarknessPrize,
-      Location::SwampPalacePrize,   Location::SkullWoodsPrize,
-      Location::ThievesTownPrize,   Location::IcePalacePrize,
-      Location::MiseryMirePrize,    Location::TurtleRockPrize,
-  };
   mt_shuffle<Item>(prizes, ARRAY_LENGTH(prizes));
-  for (uint i = 0; i < ARRAY_LENGTH(prize_locations); i++) {
-    world.set_item(prize_locations[i], prizes[i]);
+  for (uint i = 0; i < ARRAY_LENGTH(prizes); i++) {
+    // The PHP pops from the end of its shuffled array of prizes.
+    world.set_item(PRIZE_LOCATIONS[i], prizes[ARRAY_LENGTH(PRIZES) - i - 1]);
+    cout << LOCATION_NAMES[(int)PRIZE_LOCATIONS[i]]
+         << " := " << ITEM_NAMES[(int)prizes[ARRAY_LENGTH(PRIZES) - i - 1]]
+         << endl;
   }
 }
 
