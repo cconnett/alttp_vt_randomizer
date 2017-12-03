@@ -331,27 +331,114 @@ const Item PRIZES[] = {
 // There are four major pools that the filler uses: dungeon, advancement,
 // nice-to-have, and trash. Each of these will have a static array definition
 // because we're only caring about open mode.
-
-const Item DUNGEON_ITEMS[] = {
-    Item::BigKeyA2,  Item::BigKeyD1,  Item::BigKeyD2,  Item::BigKeyD3,
-    Item::BigKeyD4,  Item::BigKeyD5,  Item::BigKeyD6,  Item::BigKeyD7,
-    Item::BigKeyP1,  Item::BigKeyP2,  Item::BigKeyP3,
-
-    Item::KeyA2,     Item::KeyA2,     Item::KeyA2,     Item::KeyA2,
-    Item::KeyD1,     Item::KeyD1,     Item::KeyD1,     Item::KeyD1,
-    Item::KeyD1,     Item::KeyD1,     Item::KeyD2,     Item::KeyD3,
-    Item::KeyD3,     Item::KeyD4,     Item::KeyD5,     Item::KeyD5,
-    Item::KeyD6,     Item::KeyD6,     Item::KeyD6,     Item::KeyD7,
-    Item::KeyD7,     Item::KeyD7,     Item::KeyD7,     Item::KeyA1,
-    Item::KeyA1,     Item::KeyH2,     Item::KeyP2,     Item::KeyP3,
-
-    Item::MapA2,     Item::MapD1,     Item::MapD2,     Item::MapD3,
-    Item::MapD4,     Item::MapD5,     Item::MapD6,     Item::MapD7,
-    Item::MapH2,     Item::MapP1,     Item::MapP2,     Item::MapP3,
-
-    Item::CompassA2, Item::CompassD1, Item::CompassD2, Item::CompassD3,
-    Item::CompassD4, Item::CompassD5, Item::CompassD6, Item::CompassD7,
-    Item::CompassP1, Item::CompassP2, Item::CompassP3,
+const int NUM_DUNGEONS = 13;
+const int MAX_DUNGEON_ITEMS = 9;
+const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
+    {
+        // We access this with the Region enum, so make entry 0 a dummy.
+        Item::INVALID,
+    },
+    {
+        Item::KeyA1,
+        Item::KeyA1,
+        Item::INVALID,
+    },
+    {
+        Item::BigKeyP1,
+        Item::MapP1,
+        Item::CompassP1,
+        Item::INVALID,
+    },
+    {
+        Item::BigKeyP2,
+        Item::KeyP2,
+        Item::MapP2,
+        Item::CompassP2,
+        Item::INVALID,
+    },
+    {
+        Item::BigKeyP3,
+        Item::KeyP3,
+        Item::MapP3,
+        Item::CompassP3,
+        Item::INVALID,
+    },
+    {
+        Item::KeyH2,
+        Item::MapH2,
+        Item::INVALID,
+    },
+    {
+        Item::BigKeyD1,
+        Item::KeyD1,
+        Item::KeyD1,
+        Item::KeyD1,
+        Item::KeyD1,
+        Item::KeyD1,
+        Item::KeyD1,
+        Item::MapD1,
+        Item::CompassD1,
+        Item::INVALID,
+    },
+    {
+        Item::BigKeyD2,
+        Item::KeyD2,
+        Item::MapD2,
+        Item::CompassD2,
+        Item::INVALID,
+    },
+    {
+        Item::BigKeyD3,
+        Item::KeyD3,
+        Item::KeyD3,
+        Item::MapD3,
+        Item::CompassD3,
+        Item::INVALID,
+    },
+    {
+        Item::BigKeyD4,
+        Item::KeyD4,
+        Item::INVALID,
+        Item::MapD4,
+        Item::CompassD4,
+    },
+    {
+        Item::BigKeyD5,
+        Item::KeyD5,
+        Item::KeyD5,
+        Item::MapD5,
+        Item::CompassD5,
+        Item::INVALID,
+    },
+    {
+        Item::BigKeyD6,
+        Item::KeyD6,
+        Item::KeyD6,
+        Item::KeyD6,
+        Item::MapD6,
+        Item::CompassD6,
+        Item::INVALID,
+    },
+    {
+        Item::BigKeyD7,
+        Item::KeyD7,
+        Item::KeyD7,
+        Item::KeyD7,
+        Item::KeyD7,
+        Item::MapD7,
+        Item::CompassD7,
+        Item::INVALID,
+    },
+    {
+        Item::BigKeyA2,
+        Item::KeyA2,
+        Item::KeyA2,
+        Item::KeyA2,
+        Item::KeyA2,
+        Item::MapA2,
+        Item::CompassA2,
+        Item::INVALID,
+    },
 };
 
 // Advancement items should contain 2 progressive swords. The other two swords
