@@ -442,6 +442,30 @@ const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
     },
 };
 
+const Item FLAT_DUNGEON_ITEMS[] = {
+    Item::BigKeyA2,  Item::BigKeyD1,  Item::BigKeyD2,  Item::BigKeyD3,
+    Item::BigKeyD4,  Item::BigKeyD5,  Item::BigKeyD6,  Item::BigKeyD7,
+    Item::BigKeyP1,  Item::BigKeyP2,  Item::BigKeyP3,
+
+    Item::KeyA1,     Item::KeyA1,     Item::KeyA2,     Item::KeyA2,
+    Item::KeyA2,     Item::KeyA2,     Item::KeyD1,     Item::KeyD1,
+    Item::KeyD1,     Item::KeyD1,     Item::KeyD1,     Item::KeyD1,
+    Item::KeyD2,     Item::KeyD3,     Item::KeyD3,     Item::KeyD4,
+    Item::KeyD5,     Item::KeyD5,     Item::KeyD6,     Item::KeyD6,
+    Item::KeyD6,     Item::KeyD7,     Item::KeyD7,     Item::KeyD7,
+    Item::KeyD7,     Item::KeyH2,     Item::KeyP2,     Item::KeyP3,
+
+    Item::MapA2,     Item::MapD1,     Item::MapD2,     Item::MapD3,
+    Item::MapD4,     Item::MapD5,     Item::MapD6,     Item::MapD7,
+    Item::MapH2,     Item::MapP1,     Item::MapP2,     Item::MapP3,
+
+    Item::CompassA2, Item::CompassD1, Item::CompassD2, Item::CompassD3,
+    Item::CompassD4, Item::CompassD5, Item::CompassD6, Item::CompassD7,
+    Item::CompassP1, Item::CompassP2, Item::CompassP3,
+
+    Item::INVALID,
+};
+
 // Advancement items should contain 2 progressive swords. The other two swords
 // go in the nice-to-have category. SilverArrowUpgrade is in nice items.
 
