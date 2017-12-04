@@ -466,22 +466,18 @@ const Item FLAT_DUNGEON_ITEMS[] = {
     Item::INVALID,
 };
 
-// Advancement items should contain 2 progressive swords. The other two swords
-// go in the nice-to-have category. SilverArrowUpgrade is in nice items.
-
+// Advancement items, nice items, and their orders were determined by running
+// the PHP (open mode).
 const Item ADVANCEMENT_ITEMS[] = {
+    Item::Bottle,
     Item::Bombos,
     Item::BookOfMudora,
-    Item::Bottle,
     Item::Bow,
-    Item::BugCatchingNet,
-    Item::CaneOfByrna,
     Item::CaneOfSomaria,
     Item::Cape,
     Item::Ether,
     Item::FireRod,
     Item::Flippers,
-    Item::HalfMagic,
     Item::Hammer,
     Item::Hookshot,
     Item::IceRod,
@@ -492,26 +488,21 @@ const Item ADVANCEMENT_ITEMS[] = {
     Item::OcarinaInactive,
     Item::PegasusBoots,
     Item::Powder,
-    Item::ProgressiveGlove,
-    Item::ProgressiveGlove,
-    Item::ProgressiveShield,
-    Item::ProgressiveShield,
-    Item::ProgressiveShield,
-    Item::ProgressiveSword,
-    Item::ProgressiveSword,
     Item::Quake,
     Item::Shovel,
-    Item::SilverArrowUpgrade,
+    Item::ProgressiveGlove,
+    Item::ProgressiveGlove,
+    Item::BugCatchingNet,
+    Item::ProgressiveShield,
+    Item::ProgressiveShield,
+    Item::ProgressiveShield,
+    Item::CaneOfByrna,
+    Item::HalfMagic,
+    Item::ProgressiveSword,
+    Item::ProgressiveSword,
 };
 
 const Item NICE_ITEMS[] = {
-    Item::Bottle,
-    Item::Bottle,
-    Item::Bottle,
-
-    Item::ProgressiveSword,
-    Item::ProgressiveSword,
-
     Item::HeartContainer,
     Item::BossHeartContainer,
     Item::BossHeartContainer,
@@ -523,12 +514,16 @@ const Item NICE_ITEMS[] = {
     Item::BossHeartContainer,
     Item::BossHeartContainer,
     Item::BossHeartContainer,
-
+    Item::Bottle,
+    Item::Bottle,
+    Item::Bottle,
     Item::ProgressiveArmor,
     Item::ProgressiveArmor,
-
     Item::Boomerang,
     Item::RedBoomerang,
+    Item::SilverArrowUpgrade,
+    Item::ProgressiveSword,
+    Item::ProgressiveSword,
 };
 
 const Item TRASH_ITEMS[] = {
