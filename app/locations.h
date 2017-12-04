@@ -504,6 +504,7 @@ const Location FILLABLE_LOCATIONS[] = {
     Location::GanonsTowerMoldormChest,
 };
 const int NUM_FILLABLE_LOCATIONS = ARRAY_LENGTH(FILLABLE_LOCATIONS);
+
 const int MAX_DUNGEON_LOCATIONS = 28;
 const Location DUNGEON_LOCATIONS[NUM_DUNGEONS + 1][MAX_DUNGEON_LOCATIONS + 1] =
     {

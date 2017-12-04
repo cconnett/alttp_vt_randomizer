@@ -24,6 +24,30 @@ Item get_bottle(int filled) {
   return bottles[mt_rand(filled, 6)];
 }
 
+// (`item` is a dungeon item) -> (`location` is in the dungeon of `item`)
+bool dungeon_item_in_dungeon_location(Item item, Location location) {
+  for (Region r = Region::HyruleCastleEscape; r <= Region::GanonsTower;
+       ((int &)r)++) {
+    for (const Item *dungeon_item = DUNGEON_ITEMS[(int)r];
+         *dungeon_item != Item::INVALID; dungeon_item++) {
+      if (item == *dungeon_item) {
+        // `item` is a dungeon item belonging to dungeon `r`. Return (`location`
+        // in dungeon `r`).
+        for (const Location *dungeon_location = DUNGEON_LOCATIONS[(int)r];
+             *dungeon_location != Location::INVALID; dungeon_location++) {
+          if (location == *dungeon_location) {
+            return true;
+          }
+        }
+        return false;
+      }
+    }
+    // Item doesn't belong to dungeon `r`.
+  }
+  // Item doesn't belong to any dungeon.
+  return true;
+}
+
 void set_medallions(World &world) {
   const Item medallions[] = {Item::Ether, Item::Bombos, Item::Quake};
   world.set_medallion(Location::MiseryMireMedallion, medallions[mt_rand(0, 2)]);
@@ -57,7 +81,8 @@ void fill_items_in_locations(World &world, const Item *items,
   for (const Item *i = items; *i != Item::INVALID; i++) {
     for (Location *l = locations; *l != Location::INVALID; l++) {
       if (!world.has_item(*l) && world.can_fill(*l, *i) &&
-          world.can_reach_with_one_fewer_item(*l, *i)) {
+          world.can_reach_with_one_fewer_item(*l, *i) &&
+          dungeon_item_in_dungeon_location(*i, *l)) {
         world.set_item(*l, *i);
         break;
       }
@@ -120,28 +145,7 @@ World makeseed(int seed) {
 
   // Fill dungeon items.  Fill the items into each dungeon separately, since
   // dungeon items can only go in their respective dungeons.
-  for (Region dungeon = Region::HyruleCastleEscape;
-       dungeon <= Region::GanonsTower; ((int &)dungeon)++) {
-    // Pull the locations from the shuffled master list into a list in the
-    // same order, but existing consecutively in memory so it can be passed to
-    // a fill_items_in_locations just for the one dungeon.
-    Location shuffled_dungeon_locations[MAX_DUNGEON_LOCATIONS + 1];
-    memset(shuffled_dungeon_locations, 0, sizeof(shuffled_dungeon_locations));
-    int found = 0;
-    for (uint i = 0; i < NUM_FILLABLE_LOCATIONS; i++) {
-      for (uint c = 0; DUNGEON_LOCATIONS[(int)dungeon][c] != Location::INVALID;
-           c++) {
-        if (locations[i] == DUNGEON_LOCATIONS[(int)dungeon][c]) {
-          shuffled_dungeon_locations[found++] = locations[i];
-          break;
-        }
-      }
-    }
-
-    // Fill the items passing just shuffled_dungeon_locations.
-    fill_items_in_locations(world, DUNGEON_ITEMS[(int)dungeon],
-                            shuffled_dungeon_locations);
-  }
+  fill_items_in_locations(world, FLAT_DUNGEON_ITEMS, locations);
 
   // Random junk fill in Ganon's tower.
   Location ganons_tower_empty[MAX_DUNGEON_LOCATIONS];
