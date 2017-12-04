@@ -92,16 +92,18 @@ void fill_items_in_locations(World &world, const Item *items,
 
 void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
                                   Location *locations) {
-  Location *next = locations - 1;
-  for (uint i = 0; i < n; i++) {
-    while (next++, *next != Location::INVALID && world.has_item(*next))
-      ;
+  Location *next = locations;
+  for (const Item *item_to_place = items + n - 1; item_to_place >= items;
+       item_to_place--) {
+    while (*next != Location::INVALID && world.has_item(*next)) {
+      next++;
+    }
     if (*next == Location::INVALID) {
       world.print();
       cerr << "Ran out of locations." << endl;
       assert(false);
     }
-    world.set_item(*next, items[i]);
+    world.set_item(*next, *item_to_place);
   }
 }
 
