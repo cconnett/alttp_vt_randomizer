@@ -1,4 +1,12 @@
 <?php
+
+function mt_rand2($low, $high) {
+  $rand = mt_rand($low, $high);
+  // printf("mt_rand(%d, %d) = %d\n", $low, $high, $rand);
+  // debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+  return $rand;
+}
+
 /**
  * Shuffle the contents of an array using mt_rand
  *
@@ -9,7 +17,7 @@
 function mt_shuffle(array $array) {
 	$new_array = [];
 	while(count($array)) {
-		$pull_key = mt_rand(0, count($array) - 1);
+		$pull_key = mt_rand2(0, count($array) - 1);
 		$new_array = array_merge($new_array, array_splice($array, $pull_key, 1));
 	}
 	return $new_array;
