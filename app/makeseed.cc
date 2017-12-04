@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 
+#include "PHP_mt19937.h"
 #include "arraylength.h"
 #include "items.h"
 #include "locations.h"
@@ -9,6 +10,19 @@
 #include "world.h"
 
 using namespace std;
+
+Item get_bottle(int filled) {
+  Item bottles[] = {
+      Item::Bottle,
+      Item::BottleWithRedPotion,
+      Item::BottleWithGreenPotion,
+      Item::BottleWithBluePotion,
+      Item::BottleWithBee,
+      Item::BottleWithGoldBee,
+      Item::BottleWithFairy,
+  };
+  return bottles[mt_rand(filled, 6)];
+}
 
 void set_medallions(World &world) {
   const Item medallions[] = {Item::Ether, Item::Bombos, Item::Quake};
@@ -21,12 +35,20 @@ void fill_prizes(World &world) {
   memcpy(prizes, PRIZES, sizeof(PRIZES));
 
   mt_shuffle<Item>(prizes, ARRAY_LENGTH(prizes));
+
+  // PHP: There are 10 extra calls to getAdvancementItems->...->getBottle calls
+  // that are wasted.
+  for (int i = 0; i < 10; i++) {
+    get_bottle(0);
+  }
+  // Then two more for setting fountain prizes that we don't care about.
+  for (int i = 0; i < 2; i++) {
+    get_bottle(1);
+  }
+
   for (uint i = 0; i < ARRAY_LENGTH(prizes); i++) {
     // The PHP pops from the end of its shuffled array of prizes.
     world.set_item(PRIZE_LOCATIONS[i], prizes[ARRAY_LENGTH(PRIZES) - i - 1]);
-    cout << LOCATION_NAMES[(int)PRIZE_LOCATIONS[i]]
-         << " := " << ITEM_NAMES[(int)prizes[ARRAY_LENGTH(PRIZES) - i - 1]]
-         << endl;
   }
 }
 
@@ -51,7 +73,7 @@ void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
       ;
     if (*next == Location::INVALID) {
       world.print();
-      cout << "Ran out of locations." << endl;
+      cerr << "Ran out of locations." << endl;
       assert(false);
     }
     world.set_item(*next, items[i]);
@@ -60,22 +82,41 @@ void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
 
 World makeseed(int seed) {
   World world;
-  php_srand(seed);
+  mt_srand(seed);
 
   set_medallions(world);
   fill_prizes(world);
 
-  // Create a list of the _valid_ locations (starting at 1).
-  // locations.
-  Location locations[(int)Location::NUM_LOCATIONS];
-  for (uint i = 1; i < (int)Location::NUM_LOCATIONS; i++) {
-    locations[i - 1] = (Location)i;
+  // Initialize the advancement items here, because there's a random element to
+  // the bottle contents, and all random calls have to match PHP exactly.
+  int num_advancement = ARRAY_LENGTH(ADVANCEMENT_ITEMS);
+  Item advancement[num_advancement + 1];
+  memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(advancement));
+  advancement[num_advancement] = Item::INVALID;
+  for (int i = 0; i < num_advancement; i++) {
+    if (advancement[i] == Item::Bottle) {
+      advancement[i] = get_bottle(0);
+    }
   }
+
+  // Similarly for nice items.
+  Item nice[ARRAY_LENGTH(NICE_ITEMS)];
+  memcpy(nice, NICE_ITEMS, sizeof(nice));
+  for (uint i = 0; i < ARRAY_LENGTH(nice); i++) {
+    if (nice[i] == Item::Bottle) {
+      nice[i] = get_bottle(0);
+    }
+  }
+
+  // Copy the fillable locations to a local array so we can shuffle it.
+  Location locations[NUM_FILLABLE_LOCATIONS + 1];
+  memcpy(locations, FILLABLE_LOCATIONS,
+         NUM_FILLABLE_LOCATIONS * sizeof(Location));
   // Null terminate the list.
-  locations[(int)Location::NUM_LOCATIONS - 1] = Location::INVALID;
+  locations[NUM_FILLABLE_LOCATIONS] = Location::INVALID;
 
   // Shuffle the real locations (not the null terminator).
-  mt_shuffle(locations, (size_t)Location::NUM_LOCATIONS - 1);
+  mt_shuffle(locations, NUM_FILLABLE_LOCATIONS);
 
   // Fill dungeon items.  Fill the items into each dungeon separately, since
   // dungeon items can only go in their respective dungeons.
@@ -87,7 +128,7 @@ World makeseed(int seed) {
     Location shuffled_dungeon_locations[MAX_DUNGEON_LOCATIONS + 1];
     memset(shuffled_dungeon_locations, 0, sizeof(shuffled_dungeon_locations));
     int found = 0;
-    for (uint i = 0; i < ARRAY_LENGTH(locations); i++) {
+    for (uint i = 0; i < NUM_FILLABLE_LOCATIONS; i++) {
       for (uint c = 0; DUNGEON_LOCATIONS[(int)dungeon][c] != Location::INVALID;
            c++) {
         if (locations[i] == DUNGEON_LOCATIONS[(int)dungeon][c]) {
@@ -127,23 +168,16 @@ World makeseed(int seed) {
   // shuffled locations list. The PHP version then uses locations from the
   // back of the shuffled list for placing the advancement items. Proceeding
   // from the back of locations, take the empty ones into a new list.
-  Location empty_locations[(int)Location::NUM_LOCATIONS + 1];
+  Location empty_locations[NUM_FILLABLE_LOCATIONS + 1];
+  memset(empty_locations, 0, sizeof(empty_locations));
   int num_empty = 0;
-  for (uint locations_offset = (int)Location::NUM_LOCATIONS - 2;
-       locations_offset > 0; locations_offset--) {
-    if (!world.has_item(locations[locations_offset])) {
-      empty_locations[num_empty++] = locations[locations_offset];
+  for (int offset = NUM_FILLABLE_LOCATIONS - 1; offset >= 0; offset--) {
+    if (!world.has_item(locations[offset])) {
+      empty_locations[num_empty++] = locations[offset];
     }
   }
 
-  // Null terminate empty_locations.
-  empty_locations[num_empty] = Location::INVALID;
-
   // Shuffle the advancement items.
-  int num_advancement = ARRAY_LENGTH(ADVANCEMENT_ITEMS);
-  Item advancement[num_advancement + 1];
-  memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(advancement));
-  advancement[num_advancement] = Item::INVALID;
   mt_shuffle(advancement, num_advancement);
 
   // Fill advancement.
@@ -154,6 +188,7 @@ World makeseed(int seed) {
   for (int i = 0; empty_locations[i] != Location::INVALID; i++) {
     if (!world.has_item(empty_locations[i])) {
       empty_locations[num_empty++] = empty_locations[i];
+      // cout << LOCATION_NAMES[(int)empty_locations[num_empty]] << endl;
     }
   }
   // Null terminate empty_locations.
@@ -162,8 +197,6 @@ World makeseed(int seed) {
   mt_shuffle(empty_locations, num_empty);
 
   // fast_fill_items_in_locations the shuffled nice items.
-  Item nice[ARRAY_LENGTH(NICE_ITEMS)];
-  memcpy(nice, NICE_ITEMS, sizeof(nice));
   fast_fill_items_in_locations(world, nice, ARRAY_LENGTH(nice),
                                empty_locations);
 

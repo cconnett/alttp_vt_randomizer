@@ -1,9 +1,15 @@
+#ifndef _MT_RAND_H
+#define _MT_RAND_H
+
 #include <cassert>
 #include <cstdlib>
+#include <iostream>
 #include <vector>
 
 unsigned int mt_rand(uint low, uint high);
 void mt_srand(int seed);
+
+using namespace std;
 
 template <typename T>
 void mt_shuffle(T *array, size_t n) {
@@ -44,3 +50,5 @@ std::vector<T> mt_sample(T *population, size_t popsize, size_t k) {
   }
   return ret;
 }
+
+#endif
