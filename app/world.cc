@@ -19,8 +19,6 @@ World::World() {
   assignments[(int)Location::HyruleCastleTowerPrize] = Item::DefeatAgahnim;
   assignments[(int)Location::GanonsTowerPrize] = Item::DefeatAgahnim2;
   assignments[(int)Location::DarkWorldNorthEastPrize] = Item::DefeatGanon;
-  assignments[(int)Location::PyramidFairyBow] = Item::BottleWithGreenPotion;
-  assignments[(int)Location::PyramidFairySword] = Item::BottleWithGreenPotion;
 }
 
 void World::compact_print() {
@@ -60,6 +58,8 @@ void World::set_item(Location location, Item item) {
   assert(location != Location::NUM_LOCATIONS);
   assert(item != Item::INVALID);
   assert(item != Item::NUM_ITEMS);
+  cout << LOCATION_NAMES[(int)location] << " := " << ITEM_NAMES[(int)item]
+       << endl;
   assignments[(int)location] = item;
   where_is[(int)item].push_back(location);
   num_unplaced[(int)item]--;

@@ -1,7 +1,8 @@
-#include <string>
-
 #ifndef ITEMS_H
 #define ITEMS_H
+
+#include <string>
+
 enum class Item {
   INVALID,
   Arrow,

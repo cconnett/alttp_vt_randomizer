@@ -29,6 +29,7 @@ cc_library(
     srcs = [
         "locations.h",
     ],
+    deps = [":arraylength"],
 )
 
 cc_library(
@@ -37,7 +38,9 @@ cc_library(
         "items.cc",
         "items.h",
     ],
-    deps = [":arraylength"],
+    deps = [
+        ":arraylength",
+    ],
 )
 
 cc_library(
