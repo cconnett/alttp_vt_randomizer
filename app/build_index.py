@@ -13,19 +13,6 @@ class Error(Exception):
   pass
 
 
-def DisplayPR(pr, level=0):
-  if isinstance(pr, str):
-    return
-  print(('  ' * level) + 'Name: ' + str(pr.getName()))
-  print(('  ' * level) + 'Keys: ' + str(list(pr.keys())))
-  print(('  ' * level) + 'Len : ' + str(len(pr)))
-  for key in pr.keys():
-    if isinstance(pr[key], str):
-      print(('  ' * (level + 1)) + '{}:{}'.format(key, pr[key]))
-    else:
-      DisplayPR(pr[key], level=level + 1)
-
-
 def WalkSources():
   for root, _, files in os.walk('Region/'):
     for filename in files:
