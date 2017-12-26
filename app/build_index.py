@@ -49,12 +49,22 @@ def BuildIndex():
             r = {r[0]: r[1]}
           can_reach[location] = r.get('requirements')
           if can_reach[location]:
-            if can_reach[location].get('region_method_call', None):
+            if 'region_method_call' in can_reach[location]:
               method_name = can_reach[location]['region_method_call']
               can_reach[location]['region_method_call'] = {
                   'method_name': method_name,
                   'region': region
               }
+            elif 'body' in can_reach[location]:
+              body = can_reach[location]['body']
+              body['return'] = {
+                  'and': [{
+                      'access_to_region': {
+                          'region': region
+                      }
+                  }, body['return']]
+              }
+              can_reach[location]['body'] = body
           if 'fill_rules' in r:
             fill_rules[location] = r['fill_rules']
 
@@ -64,9 +74,11 @@ def BuildIndex():
 can_reach, can_enter, can_complete, fill_rules = BuildIndex()
 
 
-def CodeFor(methods, namespace='Location::'):
+def CodeFor(methods, namespace='Location::', injection=None):
   for place in sorted(methods.keys()):
     yield 'case {namespace}{place}:'.format(namespace=namespace, place=place)
+    if injection:
+      yield injection.format(place=place)
     yield ' '.join(php_grammar.ExpandToC(methods[place]))
 
 

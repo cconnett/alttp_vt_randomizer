@@ -17,7 +17,7 @@ bool World::can_complete(Region region) {
   switch (region) {
     // <SUB:can_complete>
     default:
-      return true;
+      return can_enter(region);
   }
 }
 

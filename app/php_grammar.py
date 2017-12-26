@@ -55,8 +55,9 @@ locations_has = G(
     p.quotedString('item') + s('))')).setName('location_has')
 
 # Generated global functions (or macros).
-region_can_enter = (
-    ((s('$this->world->getRegion(') + p.quotedString + s(')')) | s('$this')) +
+region_can_enter = G(
+    ((s('$this->world->getRegion(') + p.quotedString('region') + s(')')) |
+     p.Literal('$this')('region')) +
     s('->canEnter($locations, $items)')).setName('region_can_enter')
 method_call = (s(p.oneOf('$items $this') + '->') + p.Word(p.alphas) +
                s('()')).setName('method_call')
@@ -85,7 +86,7 @@ item_is_one_of = ((s('in_array($item, [') - G(
 location_def = ((s('$this->locations[') - p.quotedString - s(']')) |
                 p.Literal('$this->prize_location').setParseAction(
                     p.replaceWith('Prize')))
-can_access = location_def('location') + s('->canAccess($items)')
+can_access = G(location_def('location') + s('->canAccess($items)'))
 
 php_expr = p.Forward().setName('expression')
 php_block = p.Forward().setName('block')
@@ -209,8 +210,13 @@ def ExpandToC(d):
           true=' '.join(ExpandToC(value[1])),
           false=' '.join(ExpandToC(value[2])))
     elif name == 'access_to_region':
-      yield 'this->can_enter({})'.format('Region::' + region_name_mapping.get(
-          Smoosh(value), Smoosh(value)))
+      if value['region'] == '$this':
+        yield 'true'
+      else:
+        yield 'this->can_enter({})'.format('Region::' + region_name_mapping.get(
+            Smoosh(value['region']), Smoosh(value['region'])))
+    elif name == 'access':
+      yield 'this->can_reach(Location::{})'.format(Smoosh(value['location']))
     elif name == 'lhas':
       yield 'assignments[(int)Location::{location}] == Item::{item}'.format(
           location=Smoosh(value['location']), item=Smoosh(value['item']))
