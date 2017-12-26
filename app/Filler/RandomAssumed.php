@@ -60,7 +60,7 @@ class RandomAssumed extends Filler {
 
 			$fill_location = $fillable_locations->first();
 
-			Log::debug(sprintf("Placing Item: %s in %s", $item->getNiceName(), $fill_location->getName()));
+			printf("%s := %s\n", $fill_location->getName(), $item->getName());
 
 			$fill_location->setItem($item);
 		}

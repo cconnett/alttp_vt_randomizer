@@ -2,8 +2,8 @@
 
 function mt_rand2($low, $high) {
   $rand = mt_rand($low, $high);
-  // printf("mt_rand(%d, %d) = %d\n", $low, $high, $rand);
-  // debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+  printf("mt_rand(%d, %d) = %d\n", $low, $high, $rand);
+  //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
   return $rand;
 }
 

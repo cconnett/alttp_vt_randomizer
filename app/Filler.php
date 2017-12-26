@@ -58,7 +58,7 @@ abstract class Filler {
 			if (!$item) {
 				break;
 			}
-			Log::debug(sprintf('Placing: %s in %s', $item->getNiceName(), $location->getName()));
+			printf("%s := %s\n", $location->getName(), $item->getName());
 			$location->setItem($item);
 		}
 	}

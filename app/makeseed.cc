@@ -217,7 +217,8 @@ World makeseed(int seed) {
 int main(int argc, char **argv) {
   count_items();
 
-  int seed = 1;
+  int seed = 2;
+  mt_srand(seed);
   World result = makeseed(seed);
-  result.print();
+  // result.print();
 }

@@ -12,8 +12,7 @@ int scale(uint n, uint min, uint max) {
 unsigned int mt_rand(uint min, uint max) {
   int raw = generator.random();
   int ret = scale(raw, min, max);
-  // std::cout << "mt_rand(" << min << ", " << max << ") = " << ret <<
-  // std::endl;
+  std::cout << "mt_rand(" << min << ", " << max << ") = " << ret << std::endl;
   return ret;
 }
 void mt_srand(int seed) { generator.seed(seed); }
