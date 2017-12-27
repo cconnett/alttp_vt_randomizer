@@ -47,9 +47,9 @@ def BuildIndex():
       if not isinstance(s, list):
         s = [s]
       for entry in s:
-        if entry.get('region_method') == 'can_enter':
+        if entry.get('region_method') == ['can_enter']:
           can_enter[region] = entry['rhs']
-        elif entry.get('region_method') == 'can_complete':
+        elif entry.get('region_method') == ['can_complete']:
           can_complete[region] = entry['rhs']
         elif entry.get('location'):
           location = php_grammar.Smoosh(entry['location'])
