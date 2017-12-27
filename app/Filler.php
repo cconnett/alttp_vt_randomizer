@@ -58,7 +58,6 @@ abstract class Filler {
 			if (!$item) {
 				break;
 			}
-			printf("%s := %s\n", $location->getName(), $item->getName());
 			$location->setItem($item);
 		}
 	}

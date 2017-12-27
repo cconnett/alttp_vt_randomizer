@@ -60,8 +60,6 @@ class RandomAssumed extends Filler {
 
 			$fill_location = $fillable_locations->first();
 
-			printf("%s := %s\n", $fill_location->getName(), $item->getName());
-
 			$fill_location->setItem($item);
 		}
 	}

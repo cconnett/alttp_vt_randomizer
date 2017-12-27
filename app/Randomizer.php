@@ -360,6 +360,7 @@ class Randomizer {
             $spoiler .= PHP_EOL;
                                                             });
 		}
+
 		// $spoiler['playthrough'] = $this->world->getPlayThrough();
 		// $spoiler['meta'] = [
 		// 	'difficulty' => $this->difficulty,
