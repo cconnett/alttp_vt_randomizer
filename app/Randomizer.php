@@ -340,37 +340,38 @@ class Randomizer {
 	 * @return array
 	 */
 	public function getSpoiler() {
-		$spoiler = [];
+             printf($this->rng_seed . "\n");
+		$spoiler = "";
 
 		foreach ($this->world->getRegions() as $region) {
-			$name = $region->getName();
-			if (!isset($spoiler[$name])) {
-				$spoiler[$name] = [];
-			}
-			$region->getLocations()->each(function($location) use (&$spoiler, $name) {
-				if ($location instanceof Location\Prize\Event
-					|| $location instanceof Location\Trade) {
-					return;
-				}
-				if ($location->hasItem()) {
-					$spoiler[$name][$location->getName()] = $location->getItem()->getNiceName();
-				} else {
-					$spoiler[$name][$location->getName()] = 'Nothing';
-				}
-			});
+          $region->getLocations()->each(function($location) use (&$spoiler) {
+            if ($location instanceof Location\Prize\Event
+                || $location instanceof Location\Trade) {
+              return;
+            }
+            // printf("%s -> %s\n", $location->getName(), preg_replace("/[^A-Za-z0-9]/", "", $location->getName()));
+            $lname = preg_replace("/[^A-Za-z0-9]/", "", $location->getName());
+            if ($location->hasItem()) {
+              $iname = preg_replace("/[^A-Za-z0-9]/", "", $location->getItem()->getName());
+            } else {
+              $iname = 'Nothing';
+            }
+            $spoiler .= sprintf("%s = %s", $lname, $iname);
+            $spoiler .= PHP_EOL;
+                                                            });
 		}
-		$spoiler['playthrough'] = $this->world->getPlayThrough();
-		$spoiler['meta'] = [
-			'difficulty' => $this->difficulty,
-			'variation' => $this->variation,
-			'logic' => $this->getLogic(),
-			'seed' => $this->rng_seed,
-			'goal' => $this->goal,
-			'build' => Rom::BUILD,
-			'mode' => config('game-mode', 'standard'),
-		];
+		// $spoiler['playthrough'] = $this->world->getPlayThrough();
+		// $spoiler['meta'] = [
+		// 	'difficulty' => $this->difficulty,
+		// 	'variation' => $this->variation,
+		// 	'logic' => $this->getLogic(),
+		// 	'seed' => $this->rng_seed,
+		// 	'goal' => $this->goal,
+		// 	'build' => Rom::BUILD,
+		// 	'mode' => config('game-mode', 'standard'),
+		// ];
 
-		$this->seed->spoiler = json_encode($spoiler);
+		$this->seed->spoiler = $spoiler;
 
 		return $spoiler;
 	}
