@@ -340,8 +340,8 @@ const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
         Item::INVALID,
     },
     {
-        Item::KeyA1,
-        Item::KeyA1,
+        Item::KeyH2,
+        Item::MapH2,
         Item::INVALID,
     },
     {
@@ -365,8 +365,8 @@ const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
         Item::INVALID,
     },
     {
-        Item::KeyH2,
-        Item::MapH2,
+        Item::KeyA1,
+        Item::KeyA1,
         Item::INVALID,
     },
     {
@@ -392,6 +392,7 @@ const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
         Item::BigKeyD3,
         Item::KeyD3,
         Item::KeyD3,
+        Item::KeyD3,
         Item::MapD3,
         Item::CompassD3,
         Item::INVALID,
@@ -399,9 +400,9 @@ const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
     {
         Item::BigKeyD4,
         Item::KeyD4,
-        Item::INVALID,
         Item::MapD4,
         Item::CompassD4,
+        Item::INVALID,
     },
     {
         Item::BigKeyD5,
@@ -447,13 +448,13 @@ const Item FLAT_DUNGEON_ITEMS[] = {
     Item::BigKeyD4,  Item::BigKeyD5,  Item::BigKeyD6,  Item::BigKeyD7,
     Item::BigKeyP1,  Item::BigKeyP2,  Item::BigKeyP3,
 
-    Item::KeyA1,     Item::KeyA1,     Item::KeyA2,     Item::KeyA2,
-    Item::KeyA2,     Item::KeyA2,     Item::KeyD1,     Item::KeyD1,
+    Item::KeyA2,     Item::KeyA2,     Item::KeyA2,     Item::KeyA2,
     Item::KeyD1,     Item::KeyD1,     Item::KeyD1,     Item::KeyD1,
-    Item::KeyD2,     Item::KeyD3,     Item::KeyD3,     Item::KeyD4,
-    Item::KeyD5,     Item::KeyD5,     Item::KeyD6,     Item::KeyD6,
-    Item::KeyD6,     Item::KeyD7,     Item::KeyD7,     Item::KeyD7,
-    Item::KeyD7,     Item::KeyH2,     Item::KeyP2,     Item::KeyP3,
+    Item::KeyD1,     Item::KeyD1,     Item::KeyD2,     Item::KeyD3,
+    Item::KeyD3,     Item::KeyD4,     Item::KeyD5,     Item::KeyD5,
+    Item::KeyD6,     Item::KeyD6,     Item::KeyD6,     Item::KeyD7,
+    Item::KeyD7,     Item::KeyD7,     Item::KeyD7,     Item::KeyA1,
+    Item::KeyA1,     Item::KeyH2,     Item::KeyP2,     Item::KeyP3,
 
     Item::MapA2,     Item::MapD1,     Item::MapD2,     Item::MapD3,
     Item::MapD4,     Item::MapD5,     Item::MapD6,     Item::MapD7,

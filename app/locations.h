@@ -521,6 +521,7 @@ const Location DUNGEON_LOCATIONS[NUM_DUNGEONS + 1][MAX_DUNGEON_LOCATIONS + 1] =
             Location::HyruleCastleBoomerangChest,
             Location::HyruleCastleMapChest,
             Location::HyruleCastleZeldasCell,
+            Location::Sanctuary,
             Location::INVALID,
         },
         {

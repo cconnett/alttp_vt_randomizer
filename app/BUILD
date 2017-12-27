@@ -74,7 +74,7 @@ genrule(
     name = "world-generated",
     srcs = glob(["Region/**/*.php"]) + ["Support/ItemCollection.php"],
     outs = ["world.gen.cc"],
-    cmd = "$(location :build_index) > $(OUTS)",
+    cmd = "$(location :build_index) | clang-format > $(OUTS)",
     tools = [
         "world_template.cc",
         ":build_index",
