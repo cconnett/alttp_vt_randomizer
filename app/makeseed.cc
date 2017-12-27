@@ -82,13 +82,18 @@ void fill_prizes(World &world) {
 void fill_items_in_locations(World &world, const Item *items,
                              Location *locations) {
   for (const Item *i = items; *i != Item::INVALID; i++) {
-    for (Location *l = locations; *l != Location::INVALID; l++) {
+    Location *l;
+    for (l = locations; *l != Location::INVALID; l++) {
       if (!world.has_item(*l) && world.can_fill(*l, *i) &&
           world.can_reach_with_one_fewer_item(*l, *i) &&
           dungeon_item_in_dungeon_location(*i, *l)) {
         world.set_item(*l, *i);
         break;
       }
+    }
+    if (*l == Location::INVALID) {
+      cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
+      assert(false);
     }
   }
 }
