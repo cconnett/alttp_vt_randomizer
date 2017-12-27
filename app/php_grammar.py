@@ -12,6 +12,7 @@ class Error(Exception):
 
 
 s = p.Suppress
+G = p.Group
 
 
 def ReduceToOne(prs):
@@ -31,7 +32,7 @@ def AssertNoKeys(prs):
   return prs
 
 
-def G(pe):
+def M(pe):
   return p.Group(pe).setParseAction(AssertNoKeys)
 
 p.ParserElement.enablePackrat()
