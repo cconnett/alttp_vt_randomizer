@@ -4,6 +4,9 @@
 int INITIAL_UNPLACED[(int)Item::NUM_ITEMS];
 
 void count_items() {
+  INITIAL_UNPLACED[(int)Item::DefeatAgahnim] = 1;
+  INITIAL_UNPLACED[(int)Item::DefeatAgahnim2] = 1;
+  INITIAL_UNPLACED[(int)Item::DefeatGanon] = 1;
   for (unsigned int i = 0; i < ARRAY_LENGTH(PRIZES); i++) {
     INITIAL_UNPLACED[(int)PRIZES[i]]++;
   }

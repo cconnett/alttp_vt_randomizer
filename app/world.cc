@@ -16,9 +16,9 @@ World::World() {
   memset(assignments, 0, sizeof(assignments));
   memcpy(num_unplaced, INITIAL_UNPLACED, sizeof(INITIAL_UNPLACED));
 
-  assignments[(int)Location::HyruleCastleTowerPrize] = Item::DefeatAgahnim;
-  assignments[(int)Location::GanonsTowerPrize] = Item::DefeatAgahnim2;
-  assignments[(int)Location::DarkWorldNorthEastPrize] = Item::DefeatGanon;
+  set_item(Location::HyruleCastleTowerPrize, Item::DefeatAgahnim);
+  set_item(Location::GanonsTowerPrize, Item::DefeatAgahnim2);
+  set_item(Location::DarkWorldNorthEastPrize, Item::DefeatGanon);
 }
 
 void World::compact_print() {
@@ -80,8 +80,10 @@ bool World::can_reach_with_one_fewer_item(Location location, Item item) {
   assert(item != Item::INVALID);
   assert(item != Item::NUM_ITEMS);
   num_unplaced[(int)item]--;
+  memset(reachability_cache, 0, sizeof(reachability_cache));
   bool ret = can_reach(location);
   num_unplaced[(int)item]++;
+  memset(reachability_cache, 0, sizeof(reachability_cache));
   return ret;
 }
 
