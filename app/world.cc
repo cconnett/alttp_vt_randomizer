@@ -58,8 +58,10 @@ void World::set_item(Location location, Item item) {
   assert(location != Location::NUM_LOCATIONS);
   assert(item != Item::INVALID);
   assert(item != Item::NUM_ITEMS);
+#ifdef DEBUG
   cout << LOCATION_NAMES[(int)location] << " := " << ITEM_NAMES[(int)item]
        << endl;
+#endif
   assignments[(int)location] = item;
   where_is[(int)item].push_back(location);
   num_unplaced[(int)item]--;
