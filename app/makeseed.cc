@@ -230,8 +230,9 @@ World makeseed(int seed) {
 int main(int argc, char **argv) {
   count_items();
 
-  int seed = 2;
+  int seed;
+  cin >> seed;
   mt_srand(seed);
   World result = makeseed(seed);
-  // result.print();
+  result.print();
 }
