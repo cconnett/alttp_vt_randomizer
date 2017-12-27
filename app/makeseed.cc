@@ -53,8 +53,8 @@ bool dungeon_item_in_dungeon_location(Item item, Location location) {
 
 void set_medallions(World &world) {
   const Item medallions[] = {Item::Ether, Item::Bombos, Item::Quake};
-  world.set_medallion(Location::MiseryMireMedallion, medallions[mt_rand(0, 2)]);
   world.set_medallion(Location::TurtleRockMedallion, medallions[mt_rand(0, 2)]);
+  world.set_medallion(Location::MiseryMireMedallion, medallions[mt_rand(0, 2)]);
 }
 
 void fill_prizes(World &world) {
@@ -112,6 +112,7 @@ void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
 
 World makeseed(int seed) {
   World world;
+  world.set_item(Location::SkullWoodsPinballRoom, Item::KeyD3);
   mt_srand(seed);
 
   set_medallions(world);

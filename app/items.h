@@ -392,6 +392,7 @@ const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
         Item::BigKeyD3,
         Item::KeyD3,
         Item::KeyD3,
+        Item::KeyD3,
         Item::MapD3,
         Item::CompassD3,
         Item::INVALID,
