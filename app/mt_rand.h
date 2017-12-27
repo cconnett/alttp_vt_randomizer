@@ -11,18 +11,21 @@ void mt_srand(int seed);
 
 using namespace std;
 
+// Adapted from Helpers/array.php:mt_shuffle
 template <typename T>
 void mt_shuffle(T *array, size_t n) {
-  T old[n];
+  uint n2 = n;
+  T old[n2];
   memcpy(old, array, sizeof(old));
   int out = 0;
-  while (n--) {
-    uint j = mt_rand(0, n);
+  while (n2) {
+    uint j = mt_rand(0, n2 - 1);
     array[out++] = old[j];
-    while (j < n) {
+    while (j < n2 - 1) {
       old[j] = old[j + 1];
       j++;
     }
+    n2--;
   }
 }
 

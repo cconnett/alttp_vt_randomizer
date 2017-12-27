@@ -24,7 +24,8 @@ Item get_bottle(int filled) {
   return bottles[mt_rand(filled, 6)];
 }
 
-// (`item` is a dungeon item) -> (`location` is in the dungeon of `item`)
+// Returns the implication:
+//(`item` is a dungeon item) -> (`location` is in the `item`'s dungeon)
 bool dungeon_item_in_dungeon_location(Item item, Location location) {
   for (Region r = Region::HyruleCastleEscape; r <= Region::GanonsTower;
        ((int &)r)++) {
@@ -36,9 +37,11 @@ bool dungeon_item_in_dungeon_location(Item item, Location location) {
         for (const Location *dungeon_location = DUNGEON_LOCATIONS[(int)r];
              *dungeon_location != Location::INVALID; dungeon_location++) {
           if (location == *dungeon_location) {
+            // Item belongs in dungeon `r`, and `location` is in dungeon `r`.
             return true;
           }
         }
+        // Item belongs in dungeon `r`, but `location` is not in dungeon `r`.
         return false;
       }
     }
@@ -114,8 +117,8 @@ World makeseed(int seed) {
   set_medallions(world);
   fill_prizes(world);
 
-  // Initialize the advancement items here, because there's a random element to
-  // the bottle contents, and all random calls have to match PHP exactly.
+  // Initialize the advancement items here.  Bottle contents are randomized and
+  // all random calls have to match PHP exactly, so determine the contents here.
   int num_advancement = ARRAY_LENGTH(ADVANCEMENT_ITEMS);
   Item advancement[num_advancement + 1];
   memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(advancement));
@@ -126,7 +129,7 @@ World makeseed(int seed) {
     }
   }
 
-  // Similarly for nice items.
+  // Similarly for bottles in nice items.
   Item nice[ARRAY_LENGTH(NICE_ITEMS)];
   memcpy(nice, NICE_ITEMS, sizeof(nice));
   for (uint i = 0; i < ARRAY_LENGTH(nice); i++) {
@@ -203,14 +206,18 @@ World makeseed(int seed) {
   mt_shuffle(empty_locations, num_empty);
 
   // fast_fill_items_in_locations the shuffled nice items.
+  mt_shuffle(nice, ARRAY_LENGTH(nice));
   fast_fill_items_in_locations(world, nice, ARRAY_LENGTH(nice),
                                empty_locations);
 
-  // fast_fill_items_in_locations the shuffled remaining trash items (the
-  // first `gt_junk` of them were already placed in Ganon's Tower).
+  // fast_fill_items_in_locations the shuffled remaining trash items. The first
+  // `gt_junk` of them were already placed in Ganon's Tower, so offset by
+  // `gt_junk`.
   Item *trash = extra + gt_junk;
-  fast_fill_items_in_locations(world, trash, ARRAY_LENGTH(extra) - gt_junk,
-                               empty_locations);
+  int num_trash = ARRAY_LENGTH(extra) - gt_junk;
+  mt_shuffle(trash, num_trash);
+  fast_fill_items_in_locations(world, trash, num_trash, empty_locations);
+
   return world;
 }
 

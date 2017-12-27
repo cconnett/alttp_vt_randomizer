@@ -34,16 +34,15 @@ def AssertNoKeys(prs):
 def G(pe):
   return p.Group(pe).setParseAction(AssertNoKeys)
 
-
 p.ParserElement.enablePackrat()
 p.quotedString.addParseAction(p.removeQuotes)
 
 boolean = p.oneOf('true false').setName('boolean')
 item_in_locations = G(
     s('$locations->itemInLocations(Item::get(') + p.quotedString('item') +
-    s('), [') + G(p.quotedString + p.ZeroOrMore(s(',') + p.quotedString) + s(
-        p.Optional(',')))('allowable_locations') + s('])')).setName(
-            'item_in_location')
+    s('), [') + G(p.quotedString + p.ZeroOrMore(s(',') + p.quotedString) +
+                  s(p.Optional(',')))('allowable_locations') + s('])')).setName(
+                      'item_in_location')
 
 # Lookup into item count array.
 has_item = G(
@@ -55,10 +54,10 @@ locations_has = G(
     p.quotedString('item') + s('))')).setName('location_has')
 
 # Generated global functions (or macros).
-region_can_enter = G(
-    ((s('$this->world->getRegion(') + p.quotedString('region') + s(')')) |
-     p.Literal('$this')('region')) +
-    s('->canEnter($locations, $items)')).setName('region_can_enter')
+region_can_enter = G((
+    (s('$this->world->getRegion(') + p.quotedString('region') + s(')')) |
+    p.Literal('$this')('region')) + s('->canEnter($locations, $items)')
+                    ).setName('region_can_enter')
 method_call = (s(p.oneOf('$items $this') + '->') + p.Word(p.alphas) +
                s('()')).setName('method_call')
 can_enter_or_complete = (
@@ -93,16 +92,17 @@ php_block = p.Forward().setName('block')
 php_lambda = G(
     can_enter_or_complete('region_method_call') |
     ((s('function($locations, $items)') |
-      s('function($item, $locations, $items)')).setName('func_head') -
-     php_block('body'))).setName('lambda')
+      s('function($item, $locations, $items)')
+     ).setName('func_head') - php_block('body'))).setName('lambda')
 
 parenthesized_expr = (s('(') + php_expr + s(')')).setName('parenthesized')
 php_atom = G(
-    has_item('has') | locations_has('lhas') | region_can_enter(
-        'access_to_region') | can_access('access') | method_call('method') |
-    item_in_locations('iil') | game_mode('mode') | item_is_a('item_is_a') |
-    item_is_not('is_not') | item_is_one_of('item_is_one_of') |
-    world_config('config') | boolean('boolean') | php_lambda('lambda') |
+    has_item('has') | locations_has('lhas') |
+    region_can_enter('access_to_region') | can_access('access') |
+    method_call('method') | item_in_locations('iil') | game_mode('mode') |
+    item_is_a('item_is_a') | item_is_not('is_not') |
+    item_is_one_of('item_is_one_of') | world_config('config') |
+    boolean('boolean') | php_lambda('lambda') |
     parenthesized_expr).setName('atom')
 php_negation = (s('!') + php_atom).setName('not')
 php_literal = G(php_negation('not')) | php_atom
@@ -117,8 +117,9 @@ php_expr <<= G(php_ternary('ternary') | php_term).setName('expression')
 # These can be nearly copied over nearly in tact.
 return_stmt = (
     s('return') - php_expr('return') - s(';')).setName('return statement')
-if_stmt = (s('if (') - php_expr - s(')') + php_block).setName('if statement')
-php_stmt = (return_stmt | if_stmt).setName('statement')
+if_stmt = G(s('if (') - php_expr('cond') - s(')') + php_block('body')).setName(
+    'if statement')
+php_stmt = G(return_stmt | if_stmt('if')).setName('statement')
 php_block <<= s('{') + G(p.OneOrMore(php_stmt)) + s('}')
 
 set_requirements = s('->setRequirements(') - php_lambda('requirements') - s(')')
@@ -140,12 +141,8 @@ def ToTupleList(parse_results):
     return parse_results
 
   keys = list(parse_results.keys())
-  #if len(keys) > 1:
   if keys:
     return {key: ToTupleList(parse_results[key]) for key in keys}
-  #return (keys[0], ToTupleList(parse_results[keys[0]]))
-  elif len(parse_results) == 1:
-    return ToTupleList(parse_results[0])
   else:
     return [ToTupleList(result) for result in parse_results]
 
@@ -177,11 +174,15 @@ region_name_mapping = {
 def ExpandToC(d):
   if not d:
     return
+  if isinstance(d, list) and len(d) == 1:
+    for x in ExpandToC(d[0]):
+      yield x
+    return
   if len(d) == 1:
     name, value = next(iter(d.items()))
     if name in ('lambda', 'body'):
-      for token in ExpandToC(value):
-        yield token
+      for statement in value:
+        yield ' '.join(ExpandToC(statement))
     elif name in ('mode', 'boolean'):
       yield value
     elif name == 'return':
@@ -190,18 +191,18 @@ def ExpandToC(d):
         yield token
       yield ';'
     elif name == 'method':
-      yield '(' + ' '.join(ExpandToC(methods[value]['return'])) + ')'
+      yield '(' + ' '.join(ExpandToC(methods[value[0]][0][0]['return'])) + ')'
     elif name == 'region_method_call':
-      yield 'return this->{method_name}(Region::{region});'.format(**value)
+      yield 'return this->{method_name[0]}(Region::{region});'.format(**value)
     elif name == 'has':
       yield 'this->num_reachable(Item::{}) >= {}'.format(
           value['item'], value.get('count', 1))
     elif name == 'and':
-      yield '(' + ' && '.join(' '.join(str(e) for e in ExpandToC(clause))
-                              for clause in value) + ')'
+      yield '(' + ' && '.join(
+          ' '.join(str(e) for e in ExpandToC(clause)) for clause in value) + ')'
     elif name == 'or':
-      yield '(' + ' || '.join(' '.join(str(e) for e in ExpandToC(term))
-                              for term in value) + ')'
+      yield '(' + ' || '.join(
+          ' '.join(str(e) for e in ExpandToC(term)) for term in value) + ')'
     elif name == 'not':
       yield '!({})'.format(' '.join(ExpandToC(value)))
     elif name == 'ternary':
@@ -209,6 +210,9 @@ def ExpandToC(d):
           condition=' '.join(ExpandToC(value[0])),
           true=' '.join(ExpandToC(value[1])),
           false=' '.join(ExpandToC(value[2])))
+    elif name == 'if':
+      yield 'if ({})'.format(' '.join(ExpandToC(value['cond'])))
+      yield '{' + ' '.join(ExpandToC(value['body'])) + '}'
     elif name == 'access_to_region':
       if value['region'] == '$this':
         yield 'true'
@@ -230,11 +234,13 @@ def ExpandToC(d):
     elif name == 'config':
       yield value['default']
     elif name == 'is_not':
-      yield 'item != Item::{}'.format(value)
+      yield 'item != Item::{}'.format(value[0])
     elif name == 'item_is_one_of':
       if isinstance(value, str):
         value = [value]
       yield '(' + '||'.join('item == Item::' + option for option in value) + ')'
+    elif name == 'item_is_a':
+      yield 'false'  # Massive shortcut!
     else:
       raise Error('Unhandled case: {}. Next level: {}'.format(name, value))
   else:
