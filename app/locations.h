@@ -246,6 +246,9 @@ enum class Location {
 enum class Region {
   INVALID,
 
+  // Dungeon item locality iterates over dungeons in this order from
+  // HyruleCastleEscape to GanonsTower. The dungeons must be a contiguous block
+  // at the beginning of the Region enum.
   HyruleCastleEscape,
   EasternPalace,
   DesertPalace,
@@ -261,19 +264,18 @@ enum class Region {
   TurtleRock,
   GanonsTower,
 
-  DarkWorldDeathMountainEast,
-  DarkWorldDeathMountainWest,
-  DarkWorldMire,
+  LightWorld,
+  DeathMountainEast,
+  DeathMountainWest,
+
   DarkWorldNorthEast,
   DarkWorldNorthWest,
   DarkWorldSouth,
-  DeathMountainEast,
-  DeathMountainWest,
-  LightWorld,
-  NorthEastDarkWorld,
-  NorthWestDarkWorld,
-  SouthDarkWorld,
-  WestDeathMountain,
+
+  DarkWorldDeathMountainEast,
+  DarkWorldDeathMountainWest,
+  DarkWorldMire,
+
   NUM_REGIONS,  // Must be last
 };
 
