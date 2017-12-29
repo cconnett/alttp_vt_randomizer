@@ -270,7 +270,6 @@ enum class Region {
   DeathMountainEast,
   DeathMountainWest,
   LightWorld,
-  Mire,
   NorthEastDarkWorld,
   NorthWestDarkWorld,
   SouthDarkWorld,
