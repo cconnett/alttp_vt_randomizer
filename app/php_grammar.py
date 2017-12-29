@@ -168,8 +168,13 @@ methods = GetItemCollectionMethods()
 
 region_name_mapping = {
     'EastDeathMountain': 'DeathMountainEast',
+    'WestDeathMountain': 'DeathMountainWest',
     'EastDarkWorldDeathMountain': 'DarkWorldDeathMountainEast',
+    'WestDarkWorldDeathMountain': 'DarkWorldDeathMountainWest',
     'Mire': 'DarkWorldMire',
+    'SouthDarkWorld': 'DarkWorldSouth',
+    'NorthEastDarkWorld': 'DarkWorldNorthEast',
+    'NorthWestDarkWorld': 'DarkWorldNorthWest',
 }
 
 
