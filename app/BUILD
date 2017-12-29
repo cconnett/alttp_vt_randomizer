@@ -35,7 +35,6 @@ cc_library(
 cc_library(
     name = "items",
     srcs = [
-        "items.cc",
         "items.h",
     ],
     deps = [

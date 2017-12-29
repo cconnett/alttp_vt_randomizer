@@ -12,13 +12,18 @@
 using namespace std;
 
 World::World() {
-  memset(reachability_cache, 0, sizeof(reachability_cache));
+  clear_assumed();
+  clear_reachability_cache();
   memset(assignments, 0, sizeof(assignments));
-  memcpy(num_unplaced, INITIAL_UNPLACED, sizeof(INITIAL_UNPLACED));
 
   set_item(Location::HyruleCastleTowerPrize, Item::DefeatAgahnim);
   set_item(Location::GanonsTowerPrize, Item::DefeatAgahnim2);
   set_item(Location::DarkWorldNorthEastPrize, Item::DefeatGanon);
+  set_item(Location::SkullWoodsPinballRoom, Item::KeyD3);
+}
+
+void World::clear_reachability_cache() {
+  memset(reachability_cache, 0, sizeof(reachability_cache));
 }
 
 void World::compact_print() {
@@ -65,7 +70,14 @@ void World::set_item(Location location, Item item) {
   assignments[(int)location] = item;
   where_is[(int)item].push_back(location);
   num_unplaced[(int)item]--;
-  memset(reachability_cache, 0, sizeof(reachability_cache));
+  clear_reachability_cache();
+}
+
+void World::clear_assumed() { memset(num_unplaced, 0, sizeof(num_unplaced)); }
+void World::add_assumed(const Item *items, size_t n_items) {
+  for (size_t i = 0; i < n_items; i++) {
+    num_unplaced[(int)items[i]]++;
+  }
 }
 
 void World::set_medallion(Location location, Item item) {
@@ -82,10 +94,10 @@ bool World::can_reach_with_one_fewer_item(Location location, Item item) {
   assert(item != Item::INVALID);
   assert(item != Item::NUM_ITEMS);
   num_unplaced[(int)item]--;
-  memset(reachability_cache, 0, sizeof(reachability_cache));
+  clear_reachability_cache();
   bool ret = can_reach(location);
   num_unplaced[(int)item]++;
-  memset(reachability_cache, 0, sizeof(reachability_cache));
+  clear_reachability_cache();
   return ret;
 }
 

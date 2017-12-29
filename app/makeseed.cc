@@ -117,7 +117,6 @@ void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
 
 World makeseed(int seed) {
   World world;
-  world.set_item(Location::SkullWoodsPinballRoom, Item::KeyD3);
   mt_srand(seed);
 
   set_medallions(world);
@@ -156,6 +155,9 @@ World makeseed(int seed) {
 
   // Fill dungeon items.  Fill the items into each dungeon separately, since
   // dungeon items can only go in their respective dungeons.
+  world.clear_assumed();
+  world.add_assumed(FLAT_DUNGEON_ITEMS, ARRAY_LENGTH(FLAT_DUNGEON_ITEMS));
+  world.add_assumed(ADVANCEMENT_ITEMS, ARRAY_LENGTH(ADVANCEMENT_ITEMS));
   fill_items_in_locations(world, FLAT_DUNGEON_ITEMS, locations);
 
   // Random junk fill in Ganon's tower.
@@ -228,8 +230,6 @@ World makeseed(int seed) {
 }
 
 int main(int argc, char **argv) {
-  count_items();
-
   int seed;
   cin >> seed;
   mt_srand(seed);

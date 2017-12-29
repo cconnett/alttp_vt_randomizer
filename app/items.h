@@ -333,7 +333,7 @@ const Item PRIZES[] = {
 // nice-to-have, and trash. Each of these will have a static array definition
 // because we're only caring about open mode.
 const int NUM_DUNGEONS = 13;
-const int MAX_DUNGEON_ITEMS = 9;
+const int MAX_DUNGEON_ITEMS = 4;
 const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
     {
         // We access this with the Region enum, so make entry 0 a dummy.
@@ -366,16 +366,10 @@ const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
     },
     {
         Item::KeyA1,
-        Item::KeyA1,
         Item::INVALID,
     },
     {
         Item::BigKeyD1,
-        Item::KeyD1,
-        Item::KeyD1,
-        Item::KeyD1,
-        Item::KeyD1,
-        Item::KeyD1,
         Item::KeyD1,
         Item::MapD1,
         Item::CompassD1,
@@ -391,8 +385,6 @@ const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
     {
         Item::BigKeyD3,
         Item::KeyD3,
-        Item::KeyD3,
-        Item::KeyD3,
         Item::MapD3,
         Item::CompassD3,
         Item::INVALID,
@@ -407,15 +399,12 @@ const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
     {
         Item::BigKeyD5,
         Item::KeyD5,
-        Item::KeyD5,
         Item::MapD5,
         Item::CompassD5,
         Item::INVALID,
     },
     {
         Item::BigKeyD6,
-        Item::KeyD6,
-        Item::KeyD6,
         Item::KeyD6,
         Item::MapD6,
         Item::CompassD6,
@@ -424,18 +413,12 @@ const Item DUNGEON_ITEMS[NUM_DUNGEONS + 1][MAX_DUNGEON_ITEMS + 1] = {
     {
         Item::BigKeyD7,
         Item::KeyD7,
-        Item::KeyD7,
-        Item::KeyD7,
-        Item::KeyD7,
         Item::MapD7,
         Item::CompassD7,
         Item::INVALID,
     },
     {
         Item::BigKeyA2,
-        Item::KeyA2,
-        Item::KeyA2,
-        Item::KeyA2,
         Item::KeyA2,
         Item::MapA2,
         Item::CompassA2,
@@ -644,7 +627,4 @@ const Item TRASH_ITEMS[] = {
     Item::ThreeHundredRupees,
 };
 
-extern int INITIAL_UNPLACED[(int)Item::NUM_ITEMS];
-
-void count_items();
 #endif

@@ -13,6 +13,10 @@ class World {
   // Assign to `location` the item `item`. Invalidate the reachability cache.
   void set_item(Location location, Item item);
 
+  // Manage the list of items to assume are reachable.
+  void clear_assumed();
+  void add_assumed(const Item *items, size_t n_items);
+
   // Assign to `location` the medallion `item`. Don't add it to the where_is
   // structure to avoid it being seen as collectible.
   void set_medallion(Location location, Item item);
@@ -49,6 +53,7 @@ class World {
   // 0 = Unknown
   // -1 = Unreachable
   int reachability_cache[(int)Location::NUM_LOCATIONS];
+  void clear_reachability_cache();
 
   // Uncached version that's easier to generate.
   bool uncached_can_reach(Location location);
