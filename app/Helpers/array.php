@@ -2,7 +2,7 @@
 
 function mt_rand2($low, $high) {
   $rand = mt_rand($low, $high);
-  //printf("mt_rand(%d, %d) = %d\n", $low, $high, $rand);
+  printf("mt_rand(%d, %d) = %d\n", $low, $high, $rand);
   return $rand;
 }
 

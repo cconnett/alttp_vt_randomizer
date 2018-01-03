@@ -29,6 +29,10 @@ class RandomAssumed extends Filler {
 
 		$randomized_order_locations = $randomized_order_locations->getEmptyLocations()->reverse();
 
+        foreach ($randomized_order_locations as $loc) {
+          //printf("empty loc: %s\n", $loc->getName());
+        }
+
 		$this->fillItemsInLocations($this->shuffleItems($required), $randomized_order_locations);
 
 		$randomized_order_locations = $this->shuffleLocations($randomized_order_locations->getEmptyLocations());
@@ -49,9 +53,16 @@ class RandomAssumed extends Filler {
 
 		foreach ($fill_items as $key => $item) {
 			$assumed_items = $this->world->collectItems($remaining_fill_items->removeItem($item->getName())->merge($base_assumed_items));
+            foreach ($assumed_items as $it) {
+              printf("placing %s, have: %s × %d\n", $item->getName(), $it->getName(), $assumed_items->countItem($it->getName()));
+            }
 
 			$fillable_locations = $locations->filter(function($location) use ($item, $assumed_items) {
-				return !$location->hasItem() && $location->canFill($item, $assumed_items);
+                if (!$location->canFill($item, $assumed_items)) {
+                  printf("I don't like %s.\n", $location->getName());
+                  return false;
+                }
+                return !$location->hasItem();
 			});
 
 			if ($fillable_locations->count() == 0) {
