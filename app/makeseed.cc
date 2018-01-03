@@ -75,7 +75,8 @@ void fill_prizes(World &world) {
 
   for (uint i = 0; i < ARRAY_LENGTH(prizes); i++) {
     // The PHP pops from the end of its shuffled array of prizes.
-    world.set_item(PRIZE_LOCATIONS[i], prizes[ARRAY_LENGTH(PRIZES) - i - 1]);
+    world.raw_set_item(PRIZE_LOCATIONS[i],
+                       prizes[ARRAY_LENGTH(PRIZES) - i - 1]);
   }
 }
 
@@ -100,6 +101,7 @@ void fill_items_in_locations(World &world, const Item *items,
 
 void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
                                   Location *locations) {
+  world.add_assumed(items, n);
   Location *next = locations;
   for (const Item *item_to_place = items + n - 1; item_to_place >= items;
        item_to_place--) {
@@ -198,6 +200,8 @@ World makeseed(int seed) {
   mt_shuffle(advancement, num_advancement);
 
   // Fill advancement.
+  world.clear_assumed();
+  world.add_assumed(advancement, ARRAY_LENGTH(advancement));
   fill_items_in_locations(world, advancement, empty_locations);
 
   // Filter down to the empty locations again.
