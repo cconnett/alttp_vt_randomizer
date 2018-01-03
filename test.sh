@@ -6,11 +6,15 @@ function runtest {
     | egrep -v "(Waterfall|Pyramid)Bottle" \
     > /tmp/php
 
-  echo "${seed}" | app/bazel-bin/makeseed | \
+  app/bazel-bin/makeseed "${seed}" | \
     sort | \
     egrep -v "= Defeat|PyramidFairy(Bow|Sword)" \
     > /tmp/c
   diff -u /tmp/php /tmp/c
 }
 
-runtest 2
+SEEDS=$(python -c 'import random; print " ".join(str(random.randint(1, 10**9)) for _ in range(100))')
+for i in $SEEDS; do
+  echo $i
+  runtest $i
+done
