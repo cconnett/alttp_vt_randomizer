@@ -27,14 +27,14 @@ Item get_bottle(int filled) {
 // Returns the implication:
 //(`item` is a dungeon item) -> (`location` is in the `item`'s dungeon)
 bool dungeon_item_in_dungeon_location(Item item, Location location) {
-  for (Region r = Region::HyruleCastleEscape; r <= Region::GanonsTower;
-       ((int &)r)++) {
-    for (const Item *dungeon_item = DUNGEON_ITEMS[(int)r];
+  for (int r = (int)Region::HyruleCastleEscape; r <= (int)Region::GanonsTower;
+       r++) {
+    for (const Item *dungeon_item = DUNGEON_ITEMS[r];
          *dungeon_item != Item::INVALID; dungeon_item++) {
       if (item == *dungeon_item) {
         // `item` is a dungeon item belonging to dungeon `r`. Return (`location`
         // in dungeon `r`).
-        for (const Location *dungeon_location = DUNGEON_LOCATIONS[(int)r];
+        for (const Location *dungeon_location = DUNGEON_LOCATIONS[r];
              *dungeon_location != Location::INVALID; dungeon_location++) {
           if (location == *dungeon_location) {
             // Item belongs in dungeon `r`, and `location` is in dungeon `r`.
