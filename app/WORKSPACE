@@ -3,3 +3,11 @@ new_local_repository(
     path = "/usr/local/google/home/cjc/untwister/prngs",
     build_file = "untwister.BUILD",
 )
+
+new_http_archive(
+    name = "sqlite3",
+    url = "http://sqlite.org/2017/sqlite-amalgamation-3210000.zip",
+    strip_prefix = "sqlite-amalgamation-3210000",
+    sha256 = "87c047bafd5623db76a941521478036961275cfb091646f9496357e6be866db8",
+    build_file = "sqlite3.BUILD",
+)
