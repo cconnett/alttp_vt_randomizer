@@ -21,27 +21,33 @@ def WalkSources():
         yield (open(path).read(), path[len('Region/'):-len('.php')])
 
 
+def AccessToRegion(region):
+  return {'return': {'access_to_region': {'region': region}}}
+
+
 def BuildIndex():
   """Parse some PHP."""
   # By location
-  can_reach = {
-      # This location has no fill rules and no requirements and thus does not
-      # appear in the source file for the region. We'll need to manually give it
-      # an entry.
-      'SkullWoodsMapChest': {
-          'return': {
-              'access_to_region': {
-                  'region': 'SkullWoods'
-              }
-          }
-      }
-  }
+  can_reach = {}
   fill_rules = {}
   # By region
   can_enter = {}
   can_complete = {}
   for source, region in WalkSources():
     region = php_grammar.Smoosh(region)
+    if region in ('Fountains', 'Medallions'):
+      continue
+    # Find all locations mentioned anywhere in the file and default their
+    # can_reach requirements to can_enter(region).
+    locations = set(
+        re.findall(r'''\$this->locations\[['"](.*?)['"]\]''', source))
+    for location in locations:
+      location = php_grammar.Smoosh(location)
+      if location in ('Ganon', 'Agahnim', 'Agahnim2'):
+        continue
+      can_reach[location] = AccessToRegion(region)
+
+    # Search for the initNoMajorGlitches function and read its code.
     for e in php_grammar.init_no_major_glitches('root').searchString(source):
       s = ToTupleList(e.root.definitions)
       if not isinstance(s, list):
