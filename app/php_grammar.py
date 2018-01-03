@@ -236,7 +236,7 @@ def ExpandToC(d):
       for location in value['allowable_locations']:
         yield 'assignments[(int)Location::{location}] == {item}'.format(
             location=Smoosh(location), item='Item::' + Smoosh(value['item']))
-        yield '&&'
+        yield '||'
       yield 'false)'
     elif name == 'config':
       yield value['default']
