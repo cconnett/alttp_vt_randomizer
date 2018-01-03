@@ -7,6 +7,7 @@ cc_binary(
         ":locations",
         ":mt_rand",
         ":world",
+        "@sqlite3//:sqlite3",
     ],
 )
 
