@@ -243,5 +243,5 @@ int main(int argc, char **argv) {
 
   mt_srand(seed);
   World result = makeseed(seed);
-  result.print();
+  result.sqlite3_write("seeds.db", seed);
 }

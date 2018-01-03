@@ -19,5 +19,9 @@ cc_library(
         "sqlite3ext.h",
     ],
     copts = ["-DSQLITE_CORE"] + COMPILER_OPTS,
+    linkopts = [
+        "-lpthread",
+        "-ldl",
+    ],
     visibility = ["//visibility:public"],
 )
