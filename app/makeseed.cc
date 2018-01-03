@@ -235,7 +235,12 @@ World makeseed(int seed) {
 
 int main(int argc, char **argv) {
   int seed;
-  cin >> seed;
+  if (argc > 1) {
+    seed = atoi(argv[1]);
+  } else {
+    cin >> seed;
+  }
+
   mt_srand(seed);
   World result = makeseed(seed);
   result.print();
