@@ -1,3 +1,3 @@
-CREATE TABLE assignments (seed int, location int, item int);
+CREATE TABLE assignments (seed integer primary key, location int, item int);
 CREATE UNIQUE INDEX unique_locations on assignments (seed, location);
 CREATE INDEX items on assignments (seed, item);
