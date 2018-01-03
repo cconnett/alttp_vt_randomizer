@@ -7,6 +7,7 @@ class World {
   World();
   void print();
   void compact_print();
+  void sqlite3_write(const char *filename, const int seed);
 
   bool has_item(Location location);
 

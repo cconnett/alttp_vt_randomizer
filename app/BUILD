@@ -1,3 +1,7 @@
+COMPILER_OPTS = [
+    "-DNDEBUG=1",
+]
+
 cc_binary(
     name = "makeseed",
     srcs = ["makeseed.cc"],
@@ -53,6 +57,7 @@ cc_library(
     deps = [
         ":items",
         ":locations",
+        "@sqlite3//:sqlite3",
     ],
 )
 

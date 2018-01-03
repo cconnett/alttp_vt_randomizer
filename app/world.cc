@@ -7,6 +7,7 @@
 #include "arraylength.h"
 #include "items.h"
 #include "locations.h"
+#include "sqlite3.h"
 #include "world.h"
 
 using namespace std;
@@ -50,6 +51,31 @@ void World::print() {
     cout << LOCATION_NAMES[i] << " = " << ITEM_NAMES[(int)assignments[i]]
          << endl;
   }
+}
+
+void World::sqlite3_write(const char *filename, const int seed) {
+  sqlite3 *conn;
+  if (sqlite3_open(filename, &conn) != SQLITE_OK) {
+    return;
+  }
+  sqlite3_stmt *stmt;
+  sqlite3_prepare_v2(conn,
+                     "INSERT OR REPLACE INTO assignments VALUES (?, ?, ?)", 256,
+                     &stmt, nullptr);
+
+  sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+  for (uint i = 1; i < ARRAY_LENGTH(assignments); i++) {
+    if (assignments[i] != Item::INVALID) {
+      sqlite3_reset(stmt);
+      sqlite3_bind_int(stmt, 1, seed);
+      sqlite3_bind_int(stmt, 2, i);
+      sqlite3_bind_int(stmt, 3, (int)assignments[i]);
+    }
+    sqlite3_step(stmt);
+  }
+  sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
+  sqlite3_finalize(stmt);
+  sqlite3_close(conn);
 }
 
 bool World::has_item(Location location) {
