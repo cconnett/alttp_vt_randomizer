@@ -12,6 +12,7 @@ class World {
 
   // Assign to `location` the item `item`. Invalidate the reachability cache.
   void set_item(Location location, Item item);
+  void raw_set_item(Location location, Item item);
 
   // Manage the list of items to assume are reachable.
   void clear_assumed();

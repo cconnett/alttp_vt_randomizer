@@ -16,10 +16,10 @@ World::World() {
   clear_reachability_cache();
   memset(assignments, 0, sizeof(assignments));
 
-  set_item(Location::HyruleCastleTowerPrize, Item::DefeatAgahnim);
-  set_item(Location::GanonsTowerPrize, Item::DefeatAgahnim2);
-  set_item(Location::DarkWorldNorthEastPrize, Item::DefeatGanon);
-  set_item(Location::SkullWoodsPinballRoom, Item::KeyD3);
+  raw_set_item(Location::HyruleCastleTowerPrize, Item::DefeatAgahnim);
+  raw_set_item(Location::GanonsTowerPrize, Item::DefeatAgahnim2);
+  raw_set_item(Location::DarkWorldNorthEastPrize, Item::DefeatGanon);
+  raw_set_item(Location::SkullWoodsPinballRoom, Item::KeyD3);
 }
 
 void World::clear_reachability_cache() {
@@ -59,6 +59,14 @@ bool World::has_item(Location location) {
 }
 
 void World::set_item(Location location, Item item) {
+  raw_set_item(location, item);
+  num_unplaced[(int)item]--;
+  if (num_unplaced[(int)item] < 0) {
+    assert(false);
+  }
+  clear_reachability_cache();
+}
+void World::raw_set_item(Location location, Item item) {
   assert(location != Location::INVALID);
   assert(location != Location::NUM_LOCATIONS);
   assert(item != Item::INVALID);
@@ -69,8 +77,6 @@ void World::set_item(Location location, Item item) {
 #endif
   assignments[(int)location] = item;
   where_is[(int)item].push_back(location);
-  num_unplaced[(int)item]--;
-  clear_reachability_cache();
 }
 
 void World::clear_assumed() { memset(num_unplaced, 0, sizeof(num_unplaced)); }
