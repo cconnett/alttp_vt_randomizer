@@ -29,6 +29,14 @@ bool World::can_fill(Location location, Item item) {
   }
 }
 
+bool World::always_allow(Location location, Item item) {
+  switch (location) {
+    // <SUB:always_allow>
+    default:
+      return false;
+  }
+}
+
 bool World::uncached_can_reach(Location location) {
   switch (location) {
     // <SUB:can_reach>

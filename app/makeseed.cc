@@ -85,9 +85,11 @@ void fill_items_in_locations(World &world, const Item *items,
   for (const Item *i = items; *i != Item::INVALID; i++) {
     Location *l;
     for (l = locations; *l != Location::INVALID; l++) {
-      if (!world.has_item(*l) && world.can_fill(*l, *i) &&
-          world.can_reach_with_one_fewer_item(*l, *i) &&
-          dungeon_item_in_dungeon_location(*i, *l)) {
+      if (!world.has_item(*l) &&
+          (world.always_allow(*l, *i) ||
+           (world.can_fill(*l, *i) &&
+            world.can_reach_with_one_fewer_item(*l, *i) &&
+            dungeon_item_in_dungeon_location(*i, *l)))) {
         world.set_item(*l, *i);
         break;
       }
