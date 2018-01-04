@@ -6,6 +6,7 @@
 #include "items.h"
 #include "locations.h"
 #include "mt_rand.h"
+#include "sqlite3.h"
 #include "world.h"
 
 using namespace std;
@@ -235,13 +236,44 @@ World makeseed(int seed) {
 }
 
 int main(int argc, char **argv) {
-  int seed;
   if (argc > 1) {
-    seed = atoi(argv[1]);
-  } else {
-    cin >> seed;
+    int seed = atoi(argv[1]);
+    World result = makeseed(seed);
+    result.print();
+    return 0;
   }
 
-  World result = makeseed(seed);
-  result.sqlite3_write("seeds.db", seed);
+  sqlite3 *conn;
+  int status = sqlite3_open("seeds.db", &conn);
+  if (status != SQLITE_OK) {
+    return status;
+  }
+  sqlite3_exec(conn,
+               "CREATE TABLE IF NOT EXISTS assignments (seed int primary key, "
+               "location int, item int) WITHOUT ROWID;",
+               nullptr, nullptr, nullptr);
+
+  sqlite3_stmt *stmt;
+  sqlite3_prepare_v2(conn,
+                     "INSERT OR REPLACE INTO assignments VALUES (?, ?, ?)", 256,
+                     &stmt, nullptr);
+
+  sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+  for (uint seed = 1; seed <= 50000; seed++) {
+    World result = makeseed(seed);
+
+    sqlite3_reset(stmt);
+    sqlite3_bind_int(stmt, 1, seed);
+    result.sqlite3_write(stmt);
+    sqlite3_step(stmt);
+
+    if (seed % 1000 == 0) {
+      sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
+      cout << seed << endl;
+      sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+    }
+  }
+  sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
+  sqlite3_finalize(stmt);
+  sqlite3_close(conn);
 }

@@ -1,3 +1,2 @@
-CREATE TABLE assignments (seed integer primary key, location int, item int);
-CREATE UNIQUE INDEX unique_locations on assignments (seed, location);
-CREATE INDEX items on assignments (seed, item);
+CREATE TABLE IF NOT EXISTS assignments (seed int primary key, location int, item int) WITHOUT ROWID;
+--CREATE INDEX items on assignments (location, item);
