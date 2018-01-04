@@ -2,7 +2,6 @@
 #include <iostream>
 #include <vector>
 
-#include "PHP_mt19937.h"
 #include "arraylength.h"
 #include "items.h"
 #include "locations.h"
@@ -243,7 +242,6 @@ int main(int argc, char **argv) {
     cin >> seed;
   }
 
-  mt_srand(seed);
   World result = makeseed(seed);
   result.sqlite3_write("seeds.db", seed);
 }
