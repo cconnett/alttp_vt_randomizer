@@ -52,13 +52,14 @@ def BuildIndex():
     # Search for the initNoMajorGlitches function and read its code.
     try:
       result = php_grammar.init_no_major_glitches('root').searchString(source)
-    except pyparsing.ParseException as e:
-      import IPython; IPython.embed()
-    for e in :
-      s = ToTupleList(e.root.definitions)
-      if not isinstance(s, list):
-        s = [s]
-      for entry in s:
+    except Exception as ex:
+      import IPython
+      IPython.embed()
+    for init_nmg_block in result:
+      definition_list = ToTupleList(init_nmg_block.root.definitions)
+      if not isinstance(definition_list, list):
+        definition_list = [definition_list]
+      for entry in definition_list:
         if entry.get('region_method') == ['can_enter']:
           can_enter[region] = entry['rhs']
         elif entry.get('region_method') == ['can_complete']:
