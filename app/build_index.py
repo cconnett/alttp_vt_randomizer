@@ -30,9 +30,11 @@ def BuildIndex():
   # By location
   can_reach = {}
   fill_rules = {}
+  always_allow = {}
   # By region
   can_enter = {}
   can_complete = {}
+
   for source, region in WalkSources():
     region = php_grammar.Smoosh(region)
     if region in ('Fountains', 'Medallions'):
@@ -48,7 +50,11 @@ def BuildIndex():
       can_reach[location] = AccessToRegion(region)
 
     # Search for the initNoMajorGlitches function and read its code.
-    for e in php_grammar.init_no_major_glitches('root').searchString(source):
+    try:
+      result = php_grammar.init_no_major_glitches('root').searchString(source)
+    except pyparsing.ParseException as e:
+      import IPython; IPython.embed()
+    for e in :
       s = ToTupleList(e.root.definitions)
       if not isinstance(s, list):
         s = [s]
@@ -102,11 +108,12 @@ def BuildIndex():
             }
           if 'fill_rules' in r:
             fill_rules[location] = r['fill_rules']
+          if 'always_allow' in r:
+            always_allow[location] = r['always_allow']
+  return can_reach, can_enter, can_complete, fill_rules, always_allow
 
-  return can_reach, can_enter, can_complete, fill_rules
 
-
-can_reach, can_enter, can_complete, fill_rules = BuildIndex()
+can_reach, can_enter, can_complete, fill_rules, always_allow = BuildIndex()
 
 
 def CodeFor(methods, namespace='Location::', injection=None):
@@ -136,6 +143,11 @@ code = re.sub(
 code = re.sub(
     r'^.*// <SUB:can_fill>.*$',
     ' '.join(CodeFor(fill_rules)),
+    code,
+    flags=re.MULTILINE)
+code = re.sub(
+    r'^.*// <SUB:always_allow>.*$',
+    ' '.join(CodeFor(always_allow)),
     code,
     flags=re.MULTILINE)
 print(code)

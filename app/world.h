@@ -46,6 +46,9 @@ class World {
   // region-specific item would be item KeyD1 in region PalaceOfDarkness).
   bool can_fill(Location location, Item item);
 
+  // Override other reachability and placement checks to always allow
+  bool always_allow(Location location, Item item);
+
  private:
   Item assignments[(int)Location::NUM_LOCATIONS];
   vector<Location> where_is[(int)Item::NUM_ITEMS];

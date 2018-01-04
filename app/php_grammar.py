@@ -93,7 +93,7 @@ php_block = p.Forward().setName('block')
 php_lambda = G(
     can_enter_or_complete('region_method_call') |
     ((s('function($locations, $items)') |
-      s('function($item, $locations, $items)')
+      s('function($item, $locations, $items)') | s('function($item, $items)')
      ).setName('func_head') - php_block('body'))).setName('lambda')
 
 parenthesized_expr = (s('(') + php_expr + s(')')).setName('parenthesized')
@@ -125,7 +125,8 @@ php_block <<= s('{') + G(p.OneOrMore(php_stmt)) + s('}')
 
 set_requirements = s('->setRequirements(') - php_lambda('requirements') - s(')')
 set_fill_rules = s('->setFillRules(') - php_lambda('fill_rules') - s(')')
-rider = (set_fill_rules | set_requirements).setName('rider')
+set_always_allow = s('->setAlwaysAllow(') - php_lambda('always_allow') - s(')')
+rider = (set_fill_rules | set_requirements | set_always_allow).setName('rider')
 definition = (
     (G(location_def('location') - G(p.OneOrMore(rider))('riders')) |
      G(can_enter_or_complete('region_method') - s('=') - php_lambda('rhs')) |
