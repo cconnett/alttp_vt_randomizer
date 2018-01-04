@@ -37,10 +37,10 @@ class Rom {
 	 *
 	 * @return Build
 	 */
-	public static function saveBuild(array $patch) : Build {
+	public static function saveBuild(array $patch, $build = null, $hash = null) : Build {
 		$build = Build::firstOrCreate([
-			'build' => static::BUILD,
-			'hash' => static::HASH,
+			'build' => $build ?? static::BUILD,
+			'hash' => $hash ?? static::HASH,
 		]);
 		$build->patch = json_encode($patch);
 		$build->save();
@@ -126,6 +126,45 @@ class Rom {
 		$this->write(0x7FDC, pack('S*', $inverse, $checksum));
 
 		return $this;
+	}
+
+	/**
+	 * Write a vanilla World to the Rom.
+	 *
+	 * @return World
+	 */
+	public function writeVanilla() {
+		$world = new World('vanilla', 'NoMajorGlitches', 'ganon');
+		$world->setVanilla();
+
+		foreach ($world->getLocations() as $location) {
+			$location->writeItem($this);
+		}
+
+		$this->setClockMode('off');
+		$this->setHardMode(0);
+
+		$this->setPyramidFairyChests(false);
+		$this->setWishingWellChests(false);
+		$this->setSmithyQuickItemGive(false);
+
+		$this->setOpenMode(false);
+		$this->setSwordlessMode(false);
+		$this->setGanonAgahnimRng('vanilla');
+
+		$this->setMaxArrows();
+		$this->setMaxBombs();
+		$this->setStartingTime(0);
+
+		$this->setBlindTextString("Ouch!\nMy Eyes!");
+		$this->setUncleTextString("I feel we've\ndone this all\nbefore...");
+		$this->setGanon1TextString("You drove\naway my other\nself, Agahnim\ntwo times…\nBut, I won't\ngive you the\nTriforce.\nI'll defeat\nyou!");
+		$this->setGanon2TextString("can you beat\nmy darkness\ntechnique?");
+		$this->setTriforceTextString("\n     G G");
+
+		$this->setSeedString(str_pad("ZELDANODENSETSU", 21, ' '));
+
+		return $world;
 	}
 
 	/**
