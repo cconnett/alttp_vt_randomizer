@@ -123,6 +123,9 @@ def CodeFor(methods, namespace='Location::', injection=None):
     if injection:
       yield injection.format(place=place)
     yield ' '.join(php_grammar.ExpandToC(methods[place]))
+    # The previous line should emit a one or more statements that always return,
+    # but in case it doesn't, emit a safety `break`.
+    yield 'break;'
 
 
 code = open('world_template.cc').read()
