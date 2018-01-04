@@ -1,5 +1,7 @@
 #include <vector>
 
+#include "sqlite3.h"
+
 using namespace std;
 
 class World {
@@ -7,7 +9,7 @@ class World {
   World();
   void print();
   void compact_print();
-  void sqlite3_write(const char *filename, const int seed);
+  void sqlite3_write(sqlite3_stmt *stmt);
 
   bool has_item(Location location);
 
