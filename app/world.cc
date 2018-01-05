@@ -81,12 +81,12 @@ void World::raw_set_item(Location location, Item item) {
   assert(location != Location::NUM_LOCATIONS);
   assert(item != Item::INVALID);
   assert(item != Item::NUM_ITEMS);
+  assignments[(int)location] = item;
+  where_is[(int)item].push_back(location);
 #ifndef NDEBUG
   cout << LOCATION_NAMES[(int)location] << " := " << ITEM_NAMES[(int)item]
        << endl;
 #endif
-  assignments[(int)location] = item;
-  where_is[(int)item].push_back(location);
 }
 
 void World::clear_assumed() { memset(num_unplaced, 0, sizeof(num_unplaced)); }
@@ -102,19 +102,6 @@ void World::set_medallion(Location location, Item item) {
   assert(item != Item::INVALID);
   assert(item != Item::NUM_ITEMS);
   assignments[(int)location] = item;
-}
-
-bool World::can_reach_with_one_fewer_item(Location location, Item item) {
-  assert(location != Location::INVALID);
-  assert(location != Location::NUM_LOCATIONS);
-  assert(item != Item::INVALID);
-  assert(item != Item::NUM_ITEMS);
-  num_unplaced[(int)item]--;
-  clear_reachability_cache();
-  bool ret = can_reach(location);
-  num_unplaced[(int)item]++;
-  clear_reachability_cache();
-  return ret;
 }
 
 bool World::can_reach(Location location) {

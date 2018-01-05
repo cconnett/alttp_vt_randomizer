@@ -12,7 +12,6 @@ class World {
   void sqlite3_write(sqlite3_stmt *stmt);
 
   bool has_item(Location location);
-
   // Assign to `location` the item `item`. Invalidate the reachability cache.
   void set_item(Location location, Item item);
   void raw_set_item(Location location, Item item);
@@ -20,6 +19,14 @@ class World {
   // Manage the list of items to assume are reachable.
   void clear_assumed();
   void add_assumed(const Item *items, size_t n_items);
+  void decr_assumed(Item item) {
+    clear_reachability_cache();
+    num_unplaced[(int)item]--;
+  }
+  void incr_assumed(Item item) {
+    clear_reachability_cache();
+    num_unplaced[(int)item]++;
+  }
 
   // Assign to `location` the medallion `item`. Don't add it to the where_is
   // structure to avoid it being seen as collectible.
@@ -27,10 +34,6 @@ class World {
 
   // Can `location` be reached?
   bool can_reach(Location location);
-
-  // Can `location` be reached if there is one fewer unplaced `item` in the
-  // world (for testing graph validity if the item would be placed in location).
-  bool can_reach_with_one_fewer_item(Location location, Item item);
 
   // How many instances of `item` can be reached?
   int num_reachable(Item item);
