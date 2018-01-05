@@ -252,8 +252,8 @@ int main(int argc, char **argv) {
     return status;
   }
   sqlite3_exec(conn,
-               "CREATE TABLE IF NOT EXISTS assignments (seed int primary key, "
-               "location int, item int) WITHOUT ROWID;",
+               "CREATE TABLE IF NOT EXISTS assignments "
+               "(seed int, location int, item int);",
                nullptr, nullptr, nullptr);
 
   sqlite3_stmt *stmt;
