@@ -5,12 +5,14 @@ function runtest {
     | fgrep " := " \
     | egrep -v "(Waterfall|Pyramid)Bottle" \
     | egrep -v "= Defeat|PyramidFairy(Bow|Sword)" \
+    | sed 's/:=/=/' \
+    | sort \
     > /tmp/php
-
   app/bazel-bin/makeseed "${seed}" \
-    | fgrep " := " \
-    | fgrep -v "Prize :=" \
+    | fgrep " = " \
+    | fgrep -v "Prize =" \
     | egrep -v "= Defeat|PyramidFairy(Bow|Sword)" \
+    | sort \
     > /tmp/c
   diff -u /tmp/php /tmp/c
 }
