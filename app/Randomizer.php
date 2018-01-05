@@ -331,6 +331,9 @@ class Randomizer {
 
 			$medallion = $medallions[mt_rand2(0, 2)];
 			$medallion_location->setItem($medallion);
+            print sprintf("%s := %s\n",
+                          preg_replace("/[^A-Za-z0-9]/", "", $medallion_location->getName()),
+                          preg_replace("/[^A-Za-z0-9]/", "", $medallion->getName()));
 		}
 	}
 
