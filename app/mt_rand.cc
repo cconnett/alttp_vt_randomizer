@@ -1,7 +1,7 @@
 #include "mt_rand.h"
 #include <iomanip>
 #include <iostream>
-#include "PHP_mt19937.h"
+#include "prngs/PHP_mt19937.h"
 
 PHP_mt19937 generator;
 
