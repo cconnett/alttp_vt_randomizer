@@ -1,5 +1,6 @@
 #include <vector>
 
+#include "items.h"
 #include "sqlite3.h"
 
 using namespace std;
