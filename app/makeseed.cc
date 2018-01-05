@@ -265,10 +265,7 @@ int main(int argc, char **argv) {
   for (uint seed = 1; seed <= 50000; seed++) {
     World result = makeseed(seed);
 
-    sqlite3_reset(stmt);
-    sqlite3_bind_int(stmt, 1, seed);
-    result.sqlite3_write(stmt);
-    sqlite3_step(stmt);
+    result.sqlite3_write(stmt, seed);
 
     if (seed % 1000 == 0) {
       sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);

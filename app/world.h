@@ -9,7 +9,7 @@ class World {
   World();
   void print();
   void compact_print();
-  void sqlite3_write(sqlite3_stmt *stmt);
+  void sqlite3_write(sqlite3_stmt *stmt, int seed);
 
   bool has_item(Location location);
   // Assign to `location` the item `item`. Invalidate the reachability cache.

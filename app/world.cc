@@ -53,11 +53,14 @@ void World::print() {
   }
 }
 
-void World::sqlite3_write(sqlite3_stmt *stmt) {
+void World::sqlite3_write(sqlite3_stmt *stmt, int seed) {
   for (uint i = 1; i < ARRAY_LENGTH(assignments); i++) {
     if (assignments[i] != Item::INVALID) {
+      sqlite3_reset(stmt);
+      sqlite3_bind_int(stmt, 1, seed);
       sqlite3_bind_int(stmt, 2, i);
       sqlite3_bind_int(stmt, 3, (int)assignments[i]);
+      sqlite3_step(stmt);
     }
   }
 }
