@@ -124,7 +124,7 @@ class Location {
 	public function setItem(Item $item = null) {
         $lname = preg_replace("/[^A-Za-z0-9]/", "", $this->getName());
         $iname = preg_replace("/[^A-Za-z0-9]/", "", $item->getName());
-        //printf("%s := %s\n", $lname, $iname);
+        printf("%s := %s\n", $lname, $iname);
         // debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 		$this->item = $item;
 
