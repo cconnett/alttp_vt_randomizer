@@ -289,9 +289,7 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canLiftRocks() {
-		return $this->has('PowerGlove')
-			|| $this->has('ProgressiveGlove')
-			|| $this->has('TitansMitt');
+             return $this->has('ProgressiveGlove');
 	}
 
 	/**
@@ -300,8 +298,7 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canLiftDarkRocks() {
-		return $this->has('TitansMitt')
-			|| $this->has('ProgressiveGlove', 2);
+		return $this->has('ProgressiveGlove', 2);
 	}
 
 	/**
@@ -329,7 +326,7 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canFly() {
-		return $this->has('OcarinaActive') || $this->has('OcarinaInactive');
+		return $this->has('OcarinaInactive');
 	}
 
 	/**
@@ -348,9 +345,7 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canShootArrows() {
-		return $this->has('Bow')
-			|| $this->has('BowAndArrows')
-			|| $this->has('BowAndSilverArrows');
+             return $this->has('Bow');
 	}
 
 	/**
@@ -359,8 +354,7 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canBlockLasers() {
-		return $this->has('MirrorShield')
-			|| $this->has('ProgressiveShield', 3);
+		return $this->has('ProgressiveShield', 3);
 	}
 
 	/**
@@ -390,10 +384,8 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function hasSword() {
-		return $this->has('L1Sword')
-			|| $this->has('L1SwordAndShield')
-			|| $this->has('ProgressiveSword')
-			|| $this->hasUpgradedSword();
+             return $this->has('ProgressiveSword');
+
 	}
 
 	/**
@@ -402,11 +394,7 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function hasUpgradedSword() {
-		return $this->has('L2Sword')
-			|| $this->has('MasterSword')
-			|| $this->has('L3Sword')
-			|| $this->has('L4Sword')
-			|| $this->has('ProgressiveSword', 2);
+		return $this->has('ProgressiveSword', 2);
 	}
 
 	/**
