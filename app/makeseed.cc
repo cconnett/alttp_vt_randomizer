@@ -252,6 +252,7 @@ int main(int argc, char **argv) {
     return status;
   }
   sqlite3_exec(conn,
+               "PRAGMA journal_mode = MEMORY;"
                "CREATE TABLE IF NOT EXISTS assignments "
                "(seed int, location int, item int);",
                nullptr, nullptr, nullptr);
