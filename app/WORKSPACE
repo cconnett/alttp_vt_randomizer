@@ -1,8 +1,3 @@
-# new_local_repository(
-#     name = "untwister",
-#     path = "/usr/local/google/home/cjc/untwister/prngs",
-#     build_file = "untwister.BUILD",
-# )
 new_http_archive(
     name = "untwister",
     build_file = "untwister.BUILD",
