@@ -1,13 +1,20 @@
-new_local_repository(
+# new_local_repository(
+#     name = "untwister",
+#     path = "/usr/local/google/home/cjc/untwister/prngs",
+#     build_file = "untwister.BUILD",
+# )
+new_http_archive(
     name = "untwister",
-    path = "/usr/local/google/home/cjc/untwister/prngs",
     build_file = "untwister.BUILD",
+    sha256 = "72032f4e19a870d06849f1a3200d0bffc95003e1ad5e319ca596119fd7878b54",
+    strip_prefix = "untwister-master",
+    url = "https://github.com/altf4/untwister/archive/master.zip",
 )
 
 new_http_archive(
     name = "sqlite3",
-    url = "http://sqlite.org/2017/sqlite-amalgamation-3210000.zip",
-    strip_prefix = "sqlite-amalgamation-3210000",
-    sha256 = "87c047bafd5623db76a941521478036961275cfb091646f9496357e6be866db8",
     build_file = "sqlite3.BUILD",
+    sha256 = "87c047bafd5623db76a941521478036961275cfb091646f9496357e6be866db8",
+    strip_prefix = "sqlite-amalgamation-3210000",
+    url = "http://sqlite.org/2017/sqlite-amalgamation-3210000.zip",
 )
