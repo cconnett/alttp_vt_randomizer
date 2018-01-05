@@ -214,7 +214,7 @@ def ExpandToC(d):
     elif name == 'not':
       yield '!({})'.format(' '.join(ExpandToC(value)))
     elif name == 'ternary':
-      yield '({condition}) ? ({true}) : ({false})'.format(
+      yield '(({condition}) ? ({true}) : ({false}))'.format(
           condition=' '.join(ExpandToC(value[0])),
           true=' '.join(ExpandToC(value[1])),
           false=' '.join(ExpandToC(value[2])))
