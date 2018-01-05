@@ -4,6 +4,7 @@
 #include <string>
 
 #include "arraylength.h"
+#include "items.h"
 
 enum class Location {
   INVALID,

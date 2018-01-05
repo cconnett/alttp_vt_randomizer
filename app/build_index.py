@@ -6,7 +6,8 @@ import os
 import re
 
 import php_grammar
-from php_grammar import ToTupleList
+
+ToTupleList = php_grammar.ToTupleList
 
 
 class Error(Exception):

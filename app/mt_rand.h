@@ -15,8 +15,8 @@ using namespace std;
 template <typename T>
 void mt_shuffle(T *array, size_t n) {
   uint n2 = n;
-  T old[n2];
-  memcpy(old, array, sizeof(old));
+  T *old = new T[n2];
+  memcpy(old, array, sizeof(T) * n);
   int out = 0;
   while (n2) {
     uint j = mt_rand(0, n2 - 1);
@@ -27,6 +27,7 @@ void mt_shuffle(T *array, size_t n) {
     }
     n2--;
   }
+  delete[] old;
 }
 
 template <typename T>
