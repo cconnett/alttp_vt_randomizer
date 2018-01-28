@@ -239,15 +239,25 @@ World makeseed(int seed) {
 }
 
 int main(int argc, char **argv) {
-  if (argc > 1) {
+  if (argc == 2) {
     int seed = atoi(argv[1]);
     World result = makeseed(seed);
     result.print();
     return 0;
   }
+  uint begin = 1, end = 50000;
+  if (argc == 3) {
+    begin = atoi(argv[1]);
+    end = atoi(argv[2]);
+  }
+
+  string filename = "seeds.db-";
+  filename += argv[1];
+  filename += "-";
+  filename += argv[2];
 
   sqlite3 *conn;
-  int status = sqlite3_open("seeds.db", &conn);
+  int status = sqlite3_open(filename.c_str(), &conn);
   if (status != SQLITE_OK) {
     return status;
   }
@@ -263,7 +273,7 @@ int main(int argc, char **argv) {
                      &stmt, nullptr);
 
   sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
-  for (uint seed = 1; seed <= 50000; seed++) {
+  for (uint seed = begin; seed < end; seed++) {
     World result = makeseed(seed);
 
     result.sqlite3_write(stmt, seed);
