@@ -1,7 +1,7 @@
 function runtest {
   seed="$1"
   shift
-  php artisan -v alttp:randomize --skip-md5 /tmp/rom /tmp --no-rom --spoiler --seed=${seed} --mode=open \
+  php artisan -v alttp:randomize --skip-md5 /dev/null /tmp --no-rom --spoiler --seed=${seed} --mode=open \
     | fgrep " := " \
     | egrep -v "(Waterfall|Pyramid)Bottle" \
     | egrep -v "= Defeat|PyramidFairy(Bow|Sword)" \
