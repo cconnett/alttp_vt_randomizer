@@ -43,6 +43,7 @@ enum class Item {
   BottleWithGreenPotion,
   BottleWithRedPotion,
   Bow,
+  BottleEnd = Bow,  // This should be the symbol after the last bottle.
   BowAndArrows,
   BowAndSilverArrows,
   BugCatchingNet,
