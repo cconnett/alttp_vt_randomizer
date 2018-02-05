@@ -15,26 +15,6 @@ s = p.Suppress
 G = p.Group
 
 
-def ReduceToOne(prs):
-  assert len(prs) == 1, 'ReduceToOne had more than one'
-  assert len(list(prs[0].keys())) == len(list(
-      prs[0].values())), 'Mixing labeled and unlabeled elements'
-  return {key: value for key, value in prs[0].items()}
-
-
-def H(pe):
-  return p.Group(pe).setParseAction(ReduceToOne)
-
-
-def AssertNoKeys(prs):
-  keys = list(prs.keys())
-  assert not keys, '{} had keys: {}'.format(prs.getName(), keys)
-  return prs
-
-
-def M(pe):
-  return p.Group(pe).setParseAction(AssertNoKeys)
-
 p.ParserElement.enablePackrat()
 p.quotedString.addParseAction(p.removeQuotes)
 
