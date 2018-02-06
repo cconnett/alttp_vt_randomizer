@@ -15,6 +15,13 @@ s = p.Suppress
 G = p.Group
 
 
+def disregardKeysAcquireListElements(pr):
+  assert not list(pr.keys()), 'Repeated group had keys.'
+  return list(pr)
+
+R = p.Group.copy()
+R.addParseAction(disregardKeysAcquireListElements)
+
 p.ParserElement.enablePackrat()
 p.quotedString.addParseAction(p.removeQuotes)
 
