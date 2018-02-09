@@ -3,11 +3,11 @@
 from __future__ import print_function
 
 import os
+import pdb
 import re
 
 import php_grammar
-
-ToTupleList = php_grammar.ToTupleList
+import pyparsing as p
 
 
 class Error(Exception):
@@ -20,10 +20,6 @@ def WalkSources():
       path = os.path.join(root, filename)
       if path.endswith('.php'):
         yield (open(path).read(), path[len('Region/'):-len('.php')])
-
-
-def AccessToRegion(region):
-  return {'return': {'access_to_region': {'region': region}}}
 
 
 def BuildIndex():
@@ -48,74 +44,133 @@ def BuildIndex():
       location = php_grammar.Smoosh(location)
       if location in ('Ganon', 'Agahnim', 'Agahnim2'):
         continue
-      can_reach[location] = AccessToRegion(region)
+      can_reach[location] = {
+          'body': [{
+              'return': {
+                  'access_to_region': {
+                      'region': region
+                  }
+              }
+          }]
+      }
 
     # Search for the initNoMajorGlitches function and read its code.
     try:
-      result = php_grammar.init_no_major_glitches('root').searchString(source)
-    except Exception as ex:
-      import IPython
-      IPython.embed()
-    for init_nmg_block in result:
-      definition_list = ToTupleList(init_nmg_block.root.definitions)
-      if not isinstance(definition_list, list):
-        definition_list = [definition_list]
-      for entry in definition_list:
-        if entry.get('region_method') == ['can_enter']:
-          can_enter[region] = entry['rhs']
-        elif entry.get('region_method') == ['can_complete']:
-          can_complete[region] = entry['rhs']
-        elif entry.get('location'):
-          location = php_grammar.Smoosh(entry['location'])
-          if location == 'Prize':
-            location = region + location
-          r = entry['riders']
-          if isinstance(r, tuple):
-            r = {r[0]: r[1]}
-          can_reach[location] = r.get('requirements')
-          if can_reach[location]:
-            if 'region_method_call' in can_reach[location]:
-              method_name = can_reach[location]['region_method_call']
-              can_reach[location]['region_method_call'] = {
-                  'method_name': method_name,
-                  'region': region
-              }
-            elif 'body' in can_reach[location]:
-              can_reach[location]['body'].insert(
-                  0, {
-                      'if': {
-                          'cond': {
-                              'not': {
-                                  'access_to_region': {
-                                      'region': region
-                                  }
-                              }
-                          },
-                          'body': [{
-                              'return': {
-                                  'boolean': 'false'
-                              }
-                          }]
-                      }
-                  })
-          else:
-            can_reach[location] = {
-                'body': [{
-                    'return': {
-                        'access_to_region': {
-                            'region': region
-                        }
-                    }
-                }]
+      init_nmg_block = php_grammar.init_no_major_glitches.searchString(source)[
+          0][0]
+    except (p.ParseException, p.ParseSyntaxException) as e:
+      print('Bad', region)
+      print(e.lineno)
+      print(e.line)
+      print(' ' * (e.col - 1) + '^')
+      print(e)
+      import sys
+      sys.exit()
+    definition_list = init_nmg_block.asDict()['definitions']
+    for entry in definition_list:
+      assert len(entry) == 1
+      name, value = list(entry.items())[0]
+      if name == 'location_definition':
+        # Massage the location name.
+        location = php_grammar.Smoosh(value['location'])
+        if location == 'Prize':
+          location = region + location
+
+        # Set the default can_reach value to be access to the region.
+        can_reach[location] = {
+            'return': {
+                'access_to_region': {
+                    'region': region
+                }
             }
-          if 'fill_rules' in r:
-            fill_rules[location] = r['fill_rules']
-          if 'always_allow' in r:
-            always_allow[location] = r['always_allow']
+        }
+
+        # Store each predicate that is explicitly set on the location.
+        for predicate in value['predicates']:
+          if predicate['slot'] == 'setRequirements':
+            can_reach[location] = ApplyAccessToRegion(
+                predicate['function'], region=region)
+          elif predicate['slot'] == 'setFillRules':
+            fill_rules[location] = predicate['function']
+          elif predicate['slot'] == 'setAlwaysAllow':
+            always_allow[location] = predicate['function']
+          else:
+            assert False
+      elif name == 'region_method_definition':
+        if value['region_method']['method_name'] == 'can_enter':
+          can_enter[region] = value['rhs']
+        elif value['region_method']['method_name'] == 'can_complete':
+          can_complete[region] = ApplyAccessToRegion(
+              value['rhs'], region=region)
+      else:
+        raise Error('Unhandled case: {}. Next level: {}'.format(name, value))
+
   return can_reach, can_enter, can_complete, fill_rules, always_allow
 
 
-can_reach, can_enter, can_complete, fill_rules, always_allow = BuildIndex()
+def ApplyAccessToRegion(code, region):
+  """Returns a modified version of code that checks for access to region.
+
+  This function does evil AST-based code rewriting that makes some assumptions.
+
+  Args:
+    code: Code to modify.
+    region: The current region (checks for access to region are inserted).
+  """
+  code = code.copy()
+  if 'body' in code:
+    # The code is a lambda with a code body we can modify.
+    if len(code['body']) == 1 and 'return' in code['body'][0]:
+      # The code is a single return statement with an expression.
+      returned_expr = code['body'][0]['return']
+
+      if ('and' in returned_expr and
+          'access_to_region' in returned_expr['and'][0] and
+          returned_expr['and'][0]['access_to_region']['region'] == '$this'):
+        # The code starts with an access check for $this, which we need to
+        # replace with the current region (which comes from the filename being
+        # parsed, which only this module has).
+        returned_expr['and'][0]['access_to_region']['region'] = region
+      else:
+        # Prefix the returned expression with an `and` of access_to_region and
+        # the original value.
+        code['body'][0]['return'] = {
+            'and': [{
+                'access_to_region': {
+                    'region': region
+                }
+            }, returned_expr]
+        }
+    else:
+      # It's not a simple return statement. Just insert a new statement at the
+      # beginning: `if (!access_to_region) { return false; }`.
+      code['body'].insert(
+          0, {
+              'if': {
+                  'condition': {
+                      'not': {'access_to_region': {'region': region}}
+                  },
+                  'body': [{
+                      'return': {
+                          'boolean': False
+                      }
+                  }],
+              }
+          })
+  elif 'call_to_region_method' in code:
+    # The code is a call to another method defined on the region, e.g.,
+    # can_complete. In theory we should also add a similar check for access to
+    # the region, but in practice all the can_complete definitions in the PHP
+    # include that check in the code.
+
+    # Since the current region isn't determined from the code itself (it comes
+    # from the name of the file being read), we have to go out of our way to
+    # attach the region to the parse result so the code generator knows what
+    # region to use.
+    code['call_to_region_method']['region'] = region
+  else:
+    raise Error('Unhandled case: {}.'.format(code))
+  return code
 
 
 def CodeFor(methods, namespace='Location::', injection=None):
@@ -123,36 +178,46 @@ def CodeFor(methods, namespace='Location::', injection=None):
     yield 'case {namespace}{place}:'.format(namespace=namespace, place=place)
     if injection:
       yield injection.format(place=place)
-    yield ' '.join(php_grammar.ExpandToC(methods[place]))
+    yield php_grammar.ExpandToC(methods[place])
     # The previous line should emit a one or more statements that always return,
     # but in case it doesn't, emit a safety `break`.
     yield 'break;'
 
 
-code = open('world_template.cc').read()
-code = re.sub(
-    r'^.*// <SUB:can_reach>.*$',
-    ' '.join(CodeFor(can_reach)),
-    code,
-    flags=re.MULTILINE)
-code = re.sub(
-    r'^.*// <SUB:can_enter>.*$',
-    ' '.join(CodeFor(can_enter, namespace='Region::')),
-    code,
-    flags=re.MULTILINE)
-code = re.sub(
-    r'^.*// <SUB:can_complete>.*$',
-    ' '.join(CodeFor(can_complete, namespace='Region::')),
-    code,
-    flags=re.MULTILINE)
-code = re.sub(
-    r'^.*// <SUB:can_fill>.*$',
-    ' '.join(CodeFor(fill_rules)),
-    code,
-    flags=re.MULTILINE)
-code = re.sub(
-    r'^.*// <SUB:always_allow>.*$',
-    ' '.join(CodeFor(always_allow)),
-    code,
-    flags=re.MULTILINE)
-print(code)
+def main():
+  can_reach, can_enter, can_complete, fill_rules, always_allow = BuildIndex()
+
+  code = open('world_template.cc').read()
+  code = re.sub(
+      r'^.*// <SUB:can_reach>.*$',
+      ' '.join(CodeFor(can_reach)),
+      code,
+      flags=re.MULTILINE)
+  code = re.sub(
+      r'^.*// <SUB:can_enter>.*$',
+      ' '.join(CodeFor(can_enter, namespace='Region::')),
+      code,
+      flags=re.MULTILINE)
+  code = re.sub(
+      r'^.*// <SUB:can_complete>.*$',
+      ' '.join(CodeFor(can_complete, namespace='Region::')),
+      code,
+      flags=re.MULTILINE)
+  code = re.sub(
+      r'^.*// <SUB:can_fill>.*$',
+      ' '.join(CodeFor(fill_rules)),
+      code,
+      flags=re.MULTILINE)
+  code = re.sub(
+      r'^.*// <SUB:always_allow>.*$',
+      ' '.join(CodeFor(always_allow)),
+      code,
+      flags=re.MULTILINE)
+  print(code)
+
+
+if __name__ == '__main__':
+  try:
+    main()
+  except Exception as e:
+    pdb.post_mortem()

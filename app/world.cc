@@ -74,9 +74,11 @@ bool World::has_item(Location location) {
 void World::set_item(Location location, Item item) {
   raw_set_item(location, item);
   num_unplaced[(int)item]--;
+#ifndef NDEBUG
   if (num_unplaced[(int)item] < 0) {
     assert(false);
   }
+#endif
   clear_reachability_cache();
 }
 void World::raw_set_item(Location location, Item item) {

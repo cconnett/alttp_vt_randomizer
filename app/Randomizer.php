@@ -36,7 +36,7 @@ class Randomizer {
 		0x31, 0xD2, 0x87, 0x29, 0xB4, 0xB9, 0x56, 0x2F,0xED, 0x5D, 0x9B, 0xC0, 0x16, 0x78, 0x8B, 0xB3,
 		0xE0, 0x53, 0xC5, 0xF8, 0x8F, 0xA9, 0x18, 0x32,0x6E, 0xE8, 0x8C, 0x5A, 0x73, 0x28, 0xCD, 0x77,
 		0xF5, 0xBF, 0x91, 0xAB, 0xAD, 0xDE, 0x4C, 0x5F,0x0E, 0x67, 0xB0, 0x79, 0x1E, 0xCC, 0x49, 0x65,
-		0xA2, 0xD9, 0x8D, 0x21, 0xFF, 0x0A, 0xD8, 0xBB,0x46, 0x80, 0xDB, 0x7B, 0x55, 0x6A, 0x58, 0x14,
+		0xA2, 0xD9, 0x8D, 0x21, 0xFF, 0x0A, 0xD8, 0xBB,0x46, 0x80, 0xDB, 0x7B, 0x55, 0x6A, 0x14, 0x58,
 	];
 
 	/**
@@ -420,8 +420,6 @@ class Randomizer {
 		$rom->setGoalRequiredCount($this->config('item.Goal.Required', 0) ?: 0);
 		$rom->setGoalIcon($this->config('item.Goal.Icon', 'triforce'));
 
-		$rom->setClockMode($this->config('rom.timerMode', 'off'));
-
 		$rom->setHardMode($this->config('rom.HardMode', 0));
 
 		$rom->setRupoorValue($this->config('item.value.Rupoor', 0) ?: 0);
@@ -454,7 +452,7 @@ class Randomizer {
 		}
 
 		$rom->setMapMode($this->config('rom.mapOnPickup', false));
-		$rom->setCompassMode($this->config('rom.compassOnPickup', false));
+		$rom->setCompassMode($this->config('rom.compassOnPickup', 'off'));
 		$rom->setFreeItemTextMode($this->config('rom.freeItemText', false));
 		$rom->setFreeItemMenu($this->config('rom.freeItemMenu', false));
 		$rom->setDiggingGameRng(mt_rand2(1, 30));
@@ -492,6 +490,9 @@ class Randomizer {
 			$this->config('item.value.ArrowUpgrade10', 0),
 		]);
 
+		// currently has to be after compass mode, as this will override compass mode.
+		$rom->setClockMode($this->config('rom.timerMode', 'off'));
+
 		$rom->setBlueClock($this->config('item.value.BlueClock', 0) ?: 0);
 		$rom->setRedClock($this->config('item.value.RedClock', 0) ?: 0);
 		$rom->setGreenClock($this->config('item.value.GreenClock', 0) ?: 0);
@@ -527,6 +528,10 @@ class Randomizer {
 
 		$rom->writeRandomizerLogicHash(self::$logic_array);
 		$rom->setSeedString(str_pad(sprintf("VT%s%'.09d%'.03s%s", $type_flag, $this->rng_seed, static::LOGIC, $this->difficulty), 21, ' '));
+
+		if (static::class == self::class) {
+			$rom->writeCredits();
+		}
 
 		$this->seed->patch = json_encode($rom->getWriteLog());
 		$this->seed->build = Rom::BUILD;
@@ -853,6 +858,7 @@ class Randomizer {
 			"\n   O  M  G",
 			" Hello.  Will\n  you be my\n   friend?",
 			"   Beetorp\n     was\n    here!",
+			"The Wind Fish\nwill wake\nsoon.    Hoot!",
 		])));
 
 		return $this;
@@ -1360,6 +1366,7 @@ class Randomizer {
 
 		// Pack drop chance
 		switch ($this->config('rom.HardMode', 0)) {
+			case 3:
 			case 2:
 				list($low, $high) = [3, 4]; // 12.5%, 6.25%
 				break;

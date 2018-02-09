@@ -224,13 +224,13 @@ class Pedestal extends Location {
 			case Item::get('BigKeyD7'):
 				return "The big key\nof terrorpins";
 			case Item::get('BigKeyD4'):
-				return "The Big Key\nof rouges";
+				return "The Big Key\nof rogues";
 			case Item::get('BigKeyP3'):
 				return "The big key\nto moldorms\nheart";
 			case Item::get('BigKeyD5'):
 				return "A frozen\nbig key\nrests here";
 			case Item::get('BigKeyD3'):
-				return "The big key\nnear here";
+				return "The big key\nof the dark\nforest";
 			case Item::get('BigKeyD6'):
 				return "The big key\nto Vitreous";
 			case Item::get('BigKeyD1'):
@@ -251,13 +251,13 @@ class Pedestal extends Location {
 			case Item::get('KeyD7'):
 				return "The small key\nof terrorpins";
 			case Item::get('KeyD4'):
-				return "The small key\nof rouges";
+				return "The small key\nof rogues";
 			case Item::get('KeyP3'):
 				return "The key\nto moldorms\nbasement";
 			case Item::get('KeyD5'):
 				return "A frozen\nsmall key\nrests here";
 			case Item::get('KeyD3'):
-				return "The small key\nnear here";
+				return "The small key\nof the dark\nforest";
 			case Item::get('KeyD6'):
 				return "The small key\nto Vitreous";
 			case Item::get('KeyD1'):

@@ -20,5 +20,5 @@ function runtest {
 SEEDS=$(python -c 'import random; print(" ".join(str(random.randint(1, 10**9)) for _ in range(100)))')
 for i in $SEEDS; do
   echo $i
-  runtest $i
+  runtest $i || exit $?
 done

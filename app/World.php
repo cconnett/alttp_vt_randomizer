@@ -510,13 +510,6 @@ class World {
     public function collectItems(ItemCollection $collected = null) {
         // Start with a provided collection, or default to an empty one.
 		$my_items = $collected ?? new ItemCollection;
-<<<<<<< HEAD
-=======
-        // "Collectable locations" are simply non-medallion (mire/tr),
-        // non-fountain locations. Grab all those that currently have
-        // items assigned.
-		$my_items = $my_items->merge($this->pre_collected_items);
->>>>>>> Add comments to collectItems function.
 		$available_locations = $this->getCollectableLocations()->filter(function($location) {
 			return $location->hasItem();
 		});
