@@ -14,6 +14,8 @@ class Error(Exception):
 G = p.Group
 opt = p.Optional
 s = p.Suppress
+LEFT = p.opAssoc.LEFT
+RIGHT = p.opAssoc.RIGHT
 
 
 def DelimitedList(token, delimiter=','):
@@ -106,23 +108,17 @@ php_atom = (G(
     item_is('item_is') | world_config('config') | boolean('boolean') |
     integer('integer') | php_callable_expression('callable') | php_var('var')) |
             parenthesized_expr).setName('atom')
-php_negation = G('!' + php_atom('not')).setName('negation')
-php_comparison = G(
-    php_atom('left') + p.oneOf('< <= == >= >')
-    ('operator') - php_atom('right')).setName('comparison')
-php_literal = php_negation | php_atom | php_comparison
-php_and = G(php_literal + p.OneOrMore(s('&&') - php_literal)).setName('and')
-php_mul = G(php_literal + p.OneOrMore(s('*') - php_literal))
-php_clause = G(php_and('and') | php_mul('mul')) | php_literal
-php_or = G(php_clause + p.OneOrMore(s('||') - php_literal)).setName('or')
-php_add = G(php_clause + p.OneOrMore(s('+') - php_clause))
-php_term = G(php_or('or') | php_add('add')) | php_clause
-php_ternary = G(
-    php_term('if') + '?' - php_term('then') - ':' - php_term('else')).setName(
-        'ternary')
-php_expr <<= (G(php_ternary('ternary')) | php_term).setName('expression')
 
-# These can be nearly copied over nearly in tact.
+php_expr <<= p.infixNotation(php_atom, [
+    ('!', 1, RIGHT),
+    ('*', 2, LEFT),
+    ('+', 2, LEFT),
+    ('&&', 2, LEFT),
+    ('||', 2, LEFT),
+    (p.oneOf('< <= == >= >'), 2, LEFT),
+    (('?', ':'), 3, LEFT),
+])
+
 return_stmt = G('return' - php_expr('return') - ';').setName('return statement')
 if_stmt = G('if (' - php_expr('condition') - ')' - php_block('body')).setName(
     'if statement')
