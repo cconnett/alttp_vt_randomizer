@@ -54,8 +54,8 @@ item_is = G(('in_array($item, [' - G(DelimitedList(item_ref))('items') - '])') |
 # End of ungrouped structures.
 
 # Reduce to true/false with generation-time config options.
-world_config = G('$this->world->config(' - p.quotedString('option') - ',' -
-                 boolean('default') - ')').setName('config expression')
+world_config = G('$this->world->config(' - p.quotedString('option') - ',' - (
+    boolean | integer)('default') - ')').setName('config expression')
 
 # Top-level expression alternates. These should be in groups so they get
 # substructures.
