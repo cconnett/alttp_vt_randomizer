@@ -195,6 +195,8 @@ def ExpandToC(d):
   # General C constructs.
   if name == 'return':
     return 'return ({});'.format(ExpandToC(value))
+  elif name in ('body',):
+    return '\n'.join(ExpandToC(statement) for statement in value)
   elif name == 'and':
     return '({})'.format(' && '.join(ExpandToC(clause) for clause in value))
   elif name == 'or':
@@ -210,7 +212,7 @@ def ExpandToC(d):
         condition=ExpandToC(value['if']),
         true=ExpandToC(value['then']),
         false=ExpandToC(value['else']))
-  elif name in ('boolean', 'mode'):
+  elif name == 'boolean':
     return 'true' if value else 'false'
   # ALTTP specifics
   elif name == 'call_to_region_method':
@@ -228,9 +230,6 @@ def ExpandToC(d):
         'assignments[(int)Location::{location}] == {item}'.format(
             location=Smoosh(location), item='Item::' + Smoosh(value['item']))
         for location in value['allowable_locations']) + ')'
-
-  elif name in ('body',):
-    return '\n'.join(ExpandToC(statement) for statement in value)
   elif name == 'access_to_region':
     if value['region'] == '$this':
       return 'true'
@@ -241,6 +240,8 @@ def ExpandToC(d):
     return 'this->can_reach(Location::{})'.format(Smoosh(value['location']))
   elif name == 'config':
     return ExpandToC({'boolean': value['default']})
+  elif name == 'mode':
+    return ExpandToC(value)
   elif name == 'item_is':
     return '({})'.format(' || '.join(
         'item == Item::' + option for option in value['items']))

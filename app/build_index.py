@@ -22,10 +22,6 @@ def WalkSources():
         yield (open(path).read(), path[len('Region/'):-len('.php')])
 
 
-def AccessToRegion(region):
-  return {'return': {'access_to_region': {'region': region}}}
-
-
 def BuildIndex():
   """Parse some PHP."""
   # By location
@@ -48,13 +44,21 @@ def BuildIndex():
       location = php_grammar.Smoosh(location)
       if location in ('Ganon', 'Agahnim', 'Agahnim2'):
         continue
-      can_reach[location] = {'body': [AccessToRegion(region)]}
+      can_reach[location] = {
+          'body': [{
+              'return': {
+                  'access_to_region': {
+                      'region': region
+                  }
+              }
+          }]
+      }
 
     # Search for the initNoMajorGlitches function and read its code.
     try:
       init_nmg_block = php_grammar.init_no_major_glitches.searchString(source)[
           0][0]
-    except p.ParseException as e:
+    except (p.ParseException, p.ParseSyntaxException) as e:
       print('Bad', region)
       print(e.lineno)
       print(e.line)
@@ -73,22 +77,31 @@ def BuildIndex():
           location = region + location
 
         # Set the default can_reach value to be access to the region.
-        can_reach[location] = AccessToRegion(region)
+        can_reach[location] = {
+            'return': {
+                'access_to_region': {
+                    'region': region
+                }
+            }
+        }
 
         # Store each predicate that is explicitly set on the location.
         for predicate in value['predicates']:
-          {
-              'setRequirements': can_reach,
-              'setFillRules': fill_rules,
-              'setAlwaysAllow': always_allow,
-          }[predicate['slot']][location] = ApplyAccessToRegion(
-              code=predicate['function'], region=region)
+          if predicate['slot'] == 'setRequirements':
+            can_reach[location] = ApplyAccessToRegion(
+                predicate['function'], region=region)
+          elif predicate['slot'] == 'setFillRules':
+            fill_rules[location] = predicate['function']
+          elif predicate['slot'] == 'setAlwaysAllow':
+            always_allow[location] = predicate['function']
+          else:
+            assert False
       elif name == 'region_method_definition':
-        method_suite = {
-            'can_enter': can_enter,
-            'can_complete': can_complete,
-        }[value['region_method']['method_name']]
-        method_suite[region] = value['rhs']
+        if value['region_method']['method_name'] == 'can_enter':
+          can_enter[region] = value['rhs']
+        elif value['region_method']['method_name'] == 'can_complete':
+          can_complete[region] = ApplyAccessToRegion(
+              value['rhs'], region=region)
       else:
         raise Error('Unhandled case: {}. Next level: {}'.format(name, value))
 
@@ -96,25 +109,46 @@ def BuildIndex():
 
 
 def ApplyAccessToRegion(code, region):
-  """Returns a modified version of code that checks for access to region."""
+  """Returns a modified version of code that checks for access to region.
+
+  This function does evil AST-based code rewriting that makes some assumptions.
+
+  Args:
+    code: Code to modify.
+    region: The current region (checks for access to region are inserted).
+  """
   code = code.copy()
   if 'body' in code:
     # The code is a lambda with a code body we can modify.
     if len(code['body']) == 1 and 'return' in code['body'][0]:
+      # The code is a single return statement with an expression.
+      returned_expr = code['body'][0]['return']
 
-      # The code is a single return statement with an expression. Replace the
-      # return value with an `and` of AccessToRegion and the original value.
-      code['body'][0]['return'] = {
-          'and': [AccessToRegion(region)['return'], code['body'][0]['return']]
-      }
+      if ('and' in returned_expr and
+          'access_to_region' in returned_expr['and'][0] and
+          returned_expr['and'][0]['access_to_region']['region'] == '$this'):
+        # The code starts with an access check for $this, which we need to
+        # replace with the current region (which comes from the filename being
+        # parsed, which only this module has).
+        returned_expr['and'][0]['access_to_region']['region'] = region
+      else:
+        # Prefix the returned expression with an `and` of access_to_region and
+        # the original value.
+        code['body'][0]['return'] = {
+            'and': [{
+                'access_to_region': {
+                    'region': region
+                }
+            }, returned_expr]
+        }
     else:
       # It's not a simple return statement. Just insert a new statement at the
-      # beginning: `if (!AccessToRegion) { return false; }`.
+      # beginning: `if (!access_to_region) { return false; }`.
       code['body'].insert(
           0, {
               'if': {
                   'condition': {
-                      'not': AccessToRegion(region)['return']
+                      'not': {'access_to_region': {'region': region}}
                   },
                   'body': [{
                       'return': {
@@ -124,6 +158,15 @@ def ApplyAccessToRegion(code, region):
               }
           })
   elif 'call_to_region_method' in code:
+    # The code is a call to another method defined on the region, e.g.,
+    # can_complete. In theory we should also add a similar check for access to
+    # the region, but in practice all the can_complete definitions in the PHP
+    # include that check in the code.
+
+    # Since the current region isn't determined from the code itself (it comes
+    # from the name of the file being read), we have to go out of our way to
+    # attach the region to the parse result so the code generator knows what
+    # region to use.
     code['call_to_region_method']['region'] = region
   else:
     raise Error('Unhandled case: {}.'.format(code))
