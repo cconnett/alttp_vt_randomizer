@@ -16,8 +16,6 @@ opt = p.Optional
 s = p.Suppress
 
 
-
-
 def DelimitedList(token, delimiter=','):
   return token + p.ZeroOrMore(s(delimiter) + token) - s(opt(delimiter))
 
@@ -41,15 +39,16 @@ game_mode = ((p.Literal("config('game-mode') == 'swordless'").setParseAction(
     })) | p.Literal("in_array(config('game-mode'), ['open', 'swordless'])")
               .setParseAction(p.replaceWith({
                   'boolean': True
-              }))))
+              })))).setName('game mode assertion')
 
 # Item classification: Group items into sets in source code and do class lookup.
 item_is_a = (('is_a($item, Item\\' - identifier - '::class)') |
              ('$item instanceof Item\\' - identifier)).setName('item_is_a')
-item_ref = s('Item::get(') - p.quotedString - s(')')
-item_is_not = G('$item !=' - item_ref('item'))
+item_ref = (s('Item::get(') - p.quotedString - s(')')).setName('item reference')
+item_is_not = G('$item !=' - item_ref('item')).setName(
+    'negative item assertion')
 item_is = G(('in_array($item, [' - G(DelimitedList(item_ref))('items') - '])') |
-            ('$item ==' - G(item_ref)('items')))
+            ('$item ==' - G(item_ref)('items'))).setName('item assertion')
 
 # End of ungrouped structures.
 
@@ -68,25 +67,29 @@ has_item = G(
     p.oneOf('$items $this') + '->has(' + p.quotedString('item') +
     opt(',' + integer('count')) + ')').setName('has_item')
 # Lookup into placement array.
-location_has = G(
-    '$locations[' + p.quotedString('location') + ']->hasItem(Item::get(' +
-    p.quotedString('item') + '))').setName('location_has')
+location_has = (G('$locations[' + p.quotedString('location') +
+                  ']->hasItem(Item::get(' + G(p.quotedString)('items') + '))') |
+                G('in_array($locations[' - p.quotedString('location') -
+                  ']->getItem(), [' - DelimitedList(item_ref)('items') - '])'))
 
-can_access = G(location_def('location') + '->canAccess($items)')
+can_access = G(location_def('location') + '->canAccess($items)').setName(
+    'reachability assertion')
 
 # Generated global functions (or macros).
 region_can_enter = G((
     ('$this->world->getRegion(' + p.quotedString('region') + ')') |
-    (p.Literal('$this')('region'))) + '->canEnter($locations, $items)').setName(
-        'region_can_enter')
+    (p.Literal('$this')('reggion'))) + '->canEnter($locations, $items)'
+                    ).setName('region_can_enter')
 method_call = G(
-    p.oneOf('$items $this') + '->' + identifier('method_name') + '()').setName(
+    p.oneOf('$items $this') + '->' + identifier('method_name') + '(' -
+    opt(integer('actual_parameter')) - ')').setName(
         'call to method of ItemCollection')
 can_enter_or_complete = G('$this->' + p.oneOf('can_enter can_complete')
                           ('method_name')).setName('region_method')
 
 php_expr = p.Forward().setName('expression')
 php_block = p.Forward().setName('block')
+php_var = (s('$') + identifier).setName('variable')
 php_callable_expression = G(
     can_enter_or_complete('call_to_region_method') | (p.oneOf([
         'function($locations, $items)',
@@ -101,13 +104,19 @@ php_atom = (G(
     method_call('call_builtin') | item_in_locations('item_in_locations') |
     game_mode('mode') | item_is_a('item_is_a') | item_is_not('item_is_not') |
     item_is('item_is') | world_config('config') | boolean('boolean') |
-    php_callable_expression('callable')) | parenthesized_expr).setName('atom')
+    integer('integer') | php_callable_expression('callable') | php_var('var')) |
+            parenthesized_expr).setName('atom')
 php_negation = G('!' + php_atom('not')).setName('negation')
-php_literal = php_negation | php_atom
+php_comparison = G(
+    php_atom('left') + p.oneOf('< <= == >= >')
+    ('operator') - php_atom('right')).setName('comparison')
+php_literal = php_negation | php_atom | php_comparison
 php_and = G(php_literal + p.OneOrMore(s('&&') - php_literal)).setName('and')
-php_clause = G(php_and('and')) | php_literal
+php_mul = G(php_literal + p.OneOrMore(s('*') - php_literal))
+php_clause = G(php_and('and') | php_mul('mul')) | php_literal
 php_or = G(php_clause + p.OneOrMore(s('||') - php_literal)).setName('or')
-php_term = G(php_or('or')) | php_clause
+php_add = G(php_clause + p.OneOrMore(s('+') - php_clause))
+php_term = G(php_or('or') | php_add('add')) | php_clause
 php_ternary = G(
     php_term('if') + '?' - php_term('then') - ':' - php_term('else')).setName(
         'ternary')
@@ -147,15 +156,27 @@ definition = G((location_definition('location_definition') |
 init_no_major_glitches = G(
     'public function initNoMajorGlitches() {' - p.OneOrMore(definition)
     ('definitions') - 'return $this;' - '}')
-meta_method = G('public function ' + p.Combine(p.oneOf('can has') + identifier)
-                ('name') + '()' - php_block('body'))
+php_type = p.oneOf('bool int')
+meta_method = G('public function ' + p.Combine(p.oneOf('can has') + identifier)(
+    'name') + '(' + opt(
+        s(opt(php_type)) + php_var('parameter') + '=' - integer('default')) -
+                ')' - opt(s(':') - php_type) - php_block('body'))
 
 
 def GetItemCollectionMethods():
   item_collection = open('Support/ItemCollection.php').read()
   ret = {}
 
-  for result in meta_method.searchString(item_collection):
+  try:
+    method_results = meta_method.searchString(item_collection)
+  except (p.ParseException, p.ParseSyntaxException) as e:
+    print(e.lineno)
+    print(e.line)
+    print(' ' * (e.col - 1) + '^')
+    print(e)
+    import sys
+    sys.exit()
+  for result in method_results:
     result = result[0].asDict()
     ret[result['name']] = result['body'][0]
   return ret
@@ -198,6 +219,11 @@ def ExpandToC(d):
     return 'if ({condition}) {{ {body} }} '.format(
         condition=ExpandToC(value['condition']),
         body='\n'.join(ExpandToC(stmt) for stmt in value['body']))
+  elif name == 'comparison':
+    return '(({left}){operator}({right}))'.format(
+        left=ExpandToC(value['left']),
+        operator=value['operator'],
+        right=ExpandToC(value['right']))
   elif name == 'ternary':
     return '(({condition}) ? ({true}) : ({false}))'.format(
         condition=ExpandToC(value['if']),
@@ -214,8 +240,10 @@ def ExpandToC(d):
     return 'this->num_reachable(Item::{}) >= {}'.format(value['item'],
                                                         value.get('count', 1))
   elif name == 'location_has_item':
-    return 'assignments[(int)Location::{location}] == Item::{item}'.format(
-        location=Smoosh(value['location']), item=Smoosh(value['item']))
+    return '(' + ' || '.join(
+        'assignments[(int)Location::{location}] == Item::{item}'.format(
+            location=Smoosh(value['location']), item=Smoosh(item))
+        for item in value['items']) + ')'
   elif name == 'item_in_locations':
     return '(' + ' || '.join(
         'assignments[(int)Location::{location}] == {item}'.format(
@@ -230,7 +258,13 @@ def ExpandToC(d):
   elif name == 'access_to_location':
     return 'this->can_reach(Location::{})'.format(Smoosh(value['location']))
   elif name == 'config':
-    return ExpandToC({'boolean': value['default']})
+    default = value['default']
+    if isinstance(default, bool):
+      return ExpandToC({'boolean': default})
+    elif isinstance(default, int):
+      return str(default)
+    else:
+      assert False
   elif name == 'mode':
     return ExpandToC(value)
   elif name == 'item_is':
