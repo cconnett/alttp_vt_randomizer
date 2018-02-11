@@ -11,6 +11,7 @@ class Error(Exception):
   pass
 
 
+p.ParserElement.enablePackrat()
 G = p.Group
 opt = p.Optional
 s = p.Suppress
@@ -22,7 +23,6 @@ def DelimitedList(token, delimiter=','):
   return token + p.ZeroOrMore(s(delimiter) + token) - s(opt(delimiter))
 
 
-p.ParserElement.enablePackrat()
 p.quotedString.addParseAction(p.removeQuotes)
 
 # Common structures. These are not in groups and often appear as subexpressions.
@@ -99,25 +99,27 @@ php_callable_expression = G(
         'function($item, $items)',
     ]) - php_block('body'))).setName('callable')
 
-parenthesized_expr = (s('(') + php_expr + s(')')).setName('parens')
-php_atom = (G(
+php_atom = G(
     has_item('has') | location_has('location_has_item') |
     region_can_enter('access_to_region') | can_access('access_to_location') |
     method_call('call_builtin') | item_in_locations('item_in_locations') |
     game_mode('mode') | item_is_a('item_is_a') | item_is_not('item_is_not') |
     item_is('item_is') | world_config('config') | boolean('boolean') |
-    integer('integer') | php_callable_expression('callable') | php_var('var')) |
-            parenthesized_expr).setName('atom')
+    integer('integer') | php_callable_expression('callable') |
+    php_var('var')).setName('atom')
 
-php_expr <<= p.infixNotation(php_atom, [
-    ('!', 1, RIGHT),
-    ('*', 2, LEFT),
-    ('+', 2, LEFT),
-    ('&&', 2, LEFT),
-    ('||', 2, LEFT),
-    (p.oneOf('< <= == >= >'), 2, LEFT),
-    (('?', ':'), 3, LEFT),
-])
+php_expr <<= p.infixNotation(
+    php_atom, [
+        ('!', 1, RIGHT),
+        ('*', 2, LEFT),
+        ('+', 2, LEFT),
+        ('&&', 2, LEFT),
+        ('||', 2, LEFT),
+        (p.oneOf('< <= == >= >'), 2, LEFT),
+        (('?', ':'), 3, LEFT),
+    ],
+    lpar=s('('),
+    rpar=s(')'))
 
 return_stmt = G('return' - php_expr('return') - ';').setName('return statement')
 if_stmt = G('if (' - php_expr('condition') - ')' - php_block('body')).setName(
