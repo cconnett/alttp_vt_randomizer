@@ -128,15 +128,16 @@ php_stmt = (return_stmt | G(if_stmt('if'))).setName('statement')
 php_block <<= s('{') + G(p.OneOrMore(php_stmt)) + s('}')
 
 # The logic is defined by calling methods on Location objects to specify
-# requirements (items needed to access the location), fill rules (a predicate
-# taking an item and reporting if it is allowed to be placed there), and
-# always-allow rules (a predicate taking an item and reporting if that item is
-# whitelisted to be placed there regardless of access requirements and fill
-# rules).
+# "requirements" (items needed to access the location), "fill rules" (a
+# predicate taking an item and reporting if it is allowed to be placed there),
+# and "always-allow" rules (a predicate taking an item and reporting if that
+# item is whitelisted to be placed there regardless of access requirements and
+# fill rules).
 #
-# An example to explain always-allow: The v28 key in its own chest is done with
-# always-allow, because the always allow predicate set on such a chest returns
-# true for the key.
+# An example to explain always-allow: In v28, a key can be placed in its own
+# chest. This is accomplished by setting an always-allow function that returns
+# true for such a key. The requirements would block that placement, but
+# always-allow short-circuits the requirements check.
 
 set_predicate = G('->' + p.oneOf('setRequirements setFillRules setAlwaysAllow')
                   ('slot') - '(' - php_callable_expression('function') - ')'
