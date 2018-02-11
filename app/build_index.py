@@ -124,18 +124,18 @@ def ApplyAccessToRegion(code, region):
       # The code is a single return statement with an expression.
       returned_expr = code['body'][0]['return']
 
-      if ('and' in returned_expr and
-          'access_to_region' in returned_expr['and'][0] and
-          returned_expr['and'][0]['access_to_region']['region'] == '$this'):
+      if ('&&' in returned_expr and
+          'access_to_region' in returned_expr['&&'][0] and
+          returned_expr['&&'][0]['access_to_region']['region'] == '$this'):
         # The code starts with an access check for $this, which we need to
         # replace with the current region (which comes from the filename being
         # parsed, which only this module has).
-        returned_expr['and'][0]['access_to_region']['region'] = region
+        returned_expr['&&'][0]['access_to_region']['region'] = region
       else:
         # Prefix the returned expression with an `and` of access_to_region and
         # the original value.
         code['body'][0]['return'] = {
-            'and': [{
+            '&&': [{
                 'access_to_region': {
                     'region': region
                 }
@@ -148,7 +148,11 @@ def ApplyAccessToRegion(code, region):
           0, {
               'if': {
                   'condition': {
-                      'not': {'access_to_region': {'region': region}}
+                      '!': {
+                          'access_to_region': {
+                              'region': region
+                          }
+                      }
                   },
                   'body': [{
                       'return': {
