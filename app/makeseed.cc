@@ -73,10 +73,10 @@ void fill_prizes(World &world) {
     get_bottle(1);
   }
 
+  world.add_assumed(prizes, ARRAY_LENGTH(PRIZES));
   for (uint i = 0; i < ARRAY_LENGTH(prizes); i++) {
     // The PHP pops from the end of its shuffled array of prizes.
-    world.raw_set_item(PRIZE_LOCATIONS[i],
-                       prizes[ARRAY_LENGTH(PRIZES) - i - 1]);
+    world.set_item(PRIZE_LOCATIONS[i], prizes[ARRAY_LENGTH(PRIZES) - i - 1]);
   }
 }
 
