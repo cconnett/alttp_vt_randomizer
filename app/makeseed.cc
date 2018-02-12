@@ -63,9 +63,9 @@ void fill_prizes(World &world) {
 
   mt_shuffle<Item>(prizes, ARRAY_LENGTH(prizes));
 
-  // PHP: There are 10 extra calls to getAdvancementItems->...->getBottle calls
+  // PHP: There are 40 extra calls to getAdvancementItems->...->getBottle calls
   // that are wasted.
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 40; i++) {
     get_bottle(0);
   }
   // Then two more for setting fountain prizes that we don't care about.
@@ -135,20 +135,30 @@ World makeseed(int seed) {
   Item advancement[num_advancement + 1];
   memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(advancement));
   advancement[num_advancement] = Item::INVALID;
+
+  // Initialize nice items, too.
+  Item nice[ARRAY_LENGTH(NICE_ITEMS)];
+  memcpy(nice, NICE_ITEMS, sizeof(nice));
+
+  // Assign actual bottle contents to the bottles in nice items and the one
+  // bottle in advancement. The PHP generates four bottles, pulls them off the
+  // advancement list, then puts the last one back on advancement and the other
+  // three on nice items. To recreate this, generate contents for nice, then
+  // advancement.
+  for (uint i = 0; i < ARRAY_LENGTH(nice); i++) {
+    if (nice[i] == Item::Bottle) {
+      nice[i] = get_bottle(0);
+    }
+  }
+
   for (int i = 0; i < num_advancement; i++) {
     if (advancement[i] == Item::Bottle) {
       advancement[i] = get_bottle(0);
     }
   }
 
-  // Similarly for bottles in nice items.
-  Item nice[ARRAY_LENGTH(NICE_ITEMS)];
-  memcpy(nice, NICE_ITEMS, sizeof(nice));
-  for (uint i = 0; i < ARRAY_LENGTH(nice); i++) {
-    if (nice[i] == Item::Bottle) {
-      nice[i] = get_bottle(0);
-    }
-  }
+  // Shuffle the advancement items.
+  mt_shuffle(advancement, num_advancement);
 
   // Copy the fillable locations to a local array so we can shuffle it.
   Location locations[NUM_FILLABLE_LOCATIONS + 1];

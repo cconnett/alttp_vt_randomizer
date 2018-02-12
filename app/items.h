@@ -454,7 +454,6 @@ const Item FLAT_DUNGEON_ITEMS[] = {
 // Advancement items, nice items, and their orders were determined by running
 // the PHP (open mode).
 const Item ADVANCEMENT_ITEMS[] = {
-    Item::Bottle,
     Item::Bombos,
     Item::BookOfMudora,
     Item::Bow,
@@ -485,6 +484,8 @@ const Item ADVANCEMENT_ITEMS[] = {
     Item::HalfMagic,
     Item::ProgressiveSword,
     Item::ProgressiveSword,
+    Item::Bottle,
+
 };
 
 const Item NICE_ITEMS[] = {
@@ -499,9 +500,6 @@ const Item NICE_ITEMS[] = {
     Item::BossHeartContainer,
     Item::BossHeartContainer,
     Item::BossHeartContainer,
-    Item::Bottle,
-    Item::Bottle,
-    Item::Bottle,
     Item::ProgressiveArmor,
     Item::ProgressiveArmor,
     Item::Boomerang,
@@ -509,6 +507,9 @@ const Item NICE_ITEMS[] = {
     Item::SilverArrowUpgrade,
     Item::ProgressiveSword,
     Item::ProgressiveSword,
+    Item::Bottle,
+    Item::Bottle,
+    Item::Bottle,
 };
 
 const Item TRASH_ITEMS[] = {
