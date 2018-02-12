@@ -15,7 +15,6 @@ class World {
   bool has_item(Location location);
   // Assign to `location` the item `item`. Invalidate the reachability cache.
   void set_item(Location location, Item item);
-  void raw_set_item(Location location, Item item);
 
   // Manage the list of items to assume are reachable.
   void clear_assumed();
@@ -62,6 +61,8 @@ class World {
   Item assignments[(int)Location::NUM_LOCATIONS];
   vector<Location> where_is[(int)Item::NUM_ITEMS];
   int num_unplaced[(int)Item::NUM_ITEMS];
+
+  void raw_set_item(Location location, Item item);
 
   // 1 = Reachable
   // 0 = Unknown
