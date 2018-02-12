@@ -25,10 +25,10 @@ def DelimitedList(token, delimiter=','):
 
 def ConvertInfixListToPrefixDict(pr):
   if not isinstance(pr, p.ParseResults):
-    print('Got non-pr:', pr)
-    print('Returning it unchanged.')
+    #print('Got non-pr:', pr)
+    #print('Returning it unchanged.')
     return pr
-  print('Got', pr.dump())
+  #print('Got', pr.dump())
 
   if pr.haskeys():
     result = pr.asDict()
@@ -66,10 +66,10 @@ def ConvertInfixListToPrefixDict(pr):
       print()
 
   if isinstance(result, dict):
-    print('Returning', result)
+    #print('Returning', result)
     return result
   else:
-    print('I should return a dict, but I am actually returning', result)
+    #print('I should return a dict, but I am actually returning', result)
     import pdb
     pdb.set_trace()
 
@@ -148,7 +148,7 @@ php_callable_expression = G(
         'function($locations, $items)',
         'function($item, $locations, $items)',
         'function($item, $items)',
-    ]) - php_block('body'))).setName('callable')
+    ]) - G(php_block)('body'))).setName('callable')
 
 php_atom = G(
     has_item('has') | location_has('location_has_item') |
@@ -170,8 +170,8 @@ php_expr <<= p.infixNotation(php_atom, [
 ]).setParseAction(ConvertInfixListToPrefixDict)
 
 return_stmt = G('return' - php_expr('return') - ';').setName('return statement')
-if_stmt = G('if (' - php_expr('condition') - ')' - php_block('body')).setName(
-    'if statement')
+if_stmt = G('if (' - php_expr('condition') - ')' - G(php_block)
+            ('body')).setName('if statement')
 php_stmt = (return_stmt | G(if_stmt('if'))).setName('statement')
 php_block <<= s('{') + p.OneOrMore(php_stmt) + s('}')
 
@@ -204,8 +204,7 @@ init_no_major_glitches = G(
     'public function initNoMajorGlitches() {' - p.OneOrMore(definition)
     ('definitions') - 'return $this;' - '}')
 php_type = p.oneOf('bool int')
-parameter = G(
-    s(opt(php_type)) + php_var('parameter') + '=' - integer('default'))
+parameter = (s(opt(php_type)) + php_var('parameter') + '=' - integer('default'))
 meta_method = G('public function ' + p.Combine(p.oneOf('can has') + identifier)
                 ('name') + '(' + opt(parameter) - ')' - opt(s(':') - php_type) -
                 php_block('body'))
@@ -218,6 +217,7 @@ def GetItemCollectionMethods():
   try:
     method_results = meta_method.searchString(item_collection)
   except (p.ParseException, p.ParseSyntaxException) as e:
+    print('Bad ItemCollection')
     print(e.lineno)
     print(e.line)
     print(' ' * (e.col - 1) + '^')
@@ -225,8 +225,8 @@ def GetItemCollectionMethods():
     import sys
     sys.exit()
   for result in method_results:
-    result = result[0].asDict()
-    ret[result['name']] = result
+    n = result[0].asDict()
+    ret[n['name']] = n
   return ret
 
 
@@ -237,12 +237,13 @@ def Smoosh(string):
 
 
 methods = GetItemCollectionMethods()
-import pprint
-
-pprint.pprint(methods['canKillMostThings'])
-
-import sys
-sys.exit()
+methods['bottleCount'] = {
+    'body': [{
+        'return': {
+            'integer': 'this->num_reachable(Item::Bottle)'
+        }
+    }]
+}
 
 region_name_mapping = {
     'EastDeathMountain': 'DeathMountainEast',
@@ -256,17 +257,15 @@ region_name_mapping = {
 }
 
 
-def ExpandToC(d, scope=None):
+def ExpandToC(d):
   name, value = next(iter(d.items()))
   # General C constructs.
   if name == 'return':
     return 'return ({});'.format(ExpandToC(value))
   elif name in ('body',):
     return '\n'.join(ExpandToC(statement) for statement in value)
-  elif name == '&&':
-    return '({})'.format(' && '.join(ExpandToC(clause) for clause in value))
-  elif name == '||':
-    return '({})'.format(' || '.join(ExpandToC(term) for term in value))
+  elif name in ('&&', '||', '*', '+'):
+    return '({})'.format(name.join(ExpandToC(expr) for expr in value))
   elif name == '!':
     return '!({})'.format(ExpandToC(value))
   elif name == 'if':
@@ -285,17 +284,18 @@ def ExpandToC(d, scope=None):
     return 'true' if value else 'false'
   # PHP constructs.
   elif name == 'var':
-    return '{%s}' % value[0]
+    return '{%s}' % 'foodiebar'
+  elif name == 'integer':
+    return str(value)
   # ALTTP specifics.
   elif name == 'call_to_region_method':
     return 'return this->{method_name}(Region::{region});'.format(**value)
   elif name == 'call_builtin':
-    if value['method_name'] == 'canKillMostThings':
-      import pdb
-      pdb.set_trace()
-    result = ExpandToC(methods[value['method_name']]['body'][0][0]['return'])
-    if scope:
-      result = result.format(**scope)
+    result = ExpandToC(methods[value['method_name']]['body'][0]['return'])
+    foodiebar = value.get('actual_parameter',
+                          methods[value['method_name']].get('default'))
+    if foodiebar:
+      result = result.format(foodiebar=foodiebar)
     return result
   elif name == 'has':
     return 'this->num_reachable(Item::{}) >= {}'.format(value['item'],
