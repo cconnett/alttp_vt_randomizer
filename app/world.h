@@ -39,6 +39,9 @@ class World {
   // How many instances of `item` can be reached?
   int num_reachable(Item item);
 
+  // How many bottles can be reached (including variations with contents)?
+  int bottle_count();
+
   // Can the specified region be entered.
   bool can_enter(Region region);
 

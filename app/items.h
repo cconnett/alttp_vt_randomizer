@@ -43,7 +43,6 @@ enum class Item {
   BottleWithGreenPotion,
   BottleWithRedPotion,
   Bow,
-  BottleEnd = Bow,  // This should be the symbol after the last bottle.
   BowAndArrows,
   BowAndSilverArrows,
   BugCatchingNet,
@@ -485,7 +484,6 @@ const Item ADVANCEMENT_ITEMS[] = {
     Item::ProgressiveSword,
     Item::ProgressiveSword,
     Item::Bottle,
-
 };
 
 const Item NICE_ITEMS[] = {

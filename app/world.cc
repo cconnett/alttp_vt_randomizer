@@ -134,3 +134,12 @@ int World::num_reachable(Item item) {
   }
   return count;
 }
+
+int World::bottle_count() {
+  return num_reachable(Item::Bottle) + num_reachable(Item::BottleWithBee) +
+         num_reachable(Item::BottleWithBluePotion) +
+         num_reachable(Item::BottleWithFairy) +
+         num_reachable(Item::BottleWithGoldBee) +
+         num_reachable(Item::BottleWithGreenPotion) +
+         num_reachable(Item::BottleWithRedPotion);
+}

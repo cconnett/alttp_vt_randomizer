@@ -240,7 +240,7 @@ methods = GetItemCollectionMethods()
 methods['bottleCount'] = {
     'body': [{
         'return': {
-            'integer': 'this->num_reachable(Item::Bottle)'
+            'integer': 'this->bottle_count()'
         }
     }]
 }
