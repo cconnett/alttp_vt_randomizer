@@ -13,6 +13,8 @@
 
 using namespace std;
 
+#define KEYSANITY false
+
 // Returns the implication:
 //(`item` is a dungeon item) -> (`location` is in the `item`'s dungeon)
 bool dungeon_item_in_dungeon_location(Item item, Location location) {
@@ -115,7 +117,7 @@ bool World::check_and_set_item(Location location, Item item) {
     return false;
   }
   if (always_allow(location, item) ||
-      (dungeon_item_in_dungeon_location(item, location) &&
+      ((KEYSANITY || dungeon_item_in_dungeon_location(item, location)) &&
        can_fill(location, item) && can_reach(location))) {
     incr_assumed(item);
     set_item(location, item);

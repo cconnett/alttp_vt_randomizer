@@ -12,6 +12,8 @@
 
 using namespace std;
 
+#define KEYSANITY false
+
 Item get_bottle(int filled) {
   Item bottles[] = {
       Item::Bottle,
@@ -98,9 +100,15 @@ World makeseed(int seed) {
 
   // Initialize the advancement items here.  Bottle contents are randomized and
   // all random calls have to match PHP exactly, so determine the contents here.
-  int num_advancement = ARRAY_LENGTH(ADVANCEMENT_ITEMS);
+  constexpr int num_advancement =
+      ARRAY_LENGTH(ADVANCEMENT_ITEMS) +
+      (KEYSANITY ? ARRAY_LENGTH(FLAT_DUNGEON_ITEMS) : 0);
   Item advancement[num_advancement + 1];
-  memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(advancement));
+  memcpy(advancement, ADVANCEMENT_ITEMS, ARRAY_LENGTH(ADVANCEMENT_ITEMS));
+  if (KEYSANITY) {
+    memcpy(advancement + ARRAY_LENGTH(ADVANCEMENT_ITEMS), FLAT_DUNGEON_ITEMS,
+           ARRAY_LENGTH(FLAT_DUNGEON_ITEMS));
+  }
   advancement[num_advancement] = Item::INVALID;
 
   // Initialize nice items, too.
@@ -137,12 +145,14 @@ World makeseed(int seed) {
   // Shuffle the real locations (not the null terminator).
   mt_shuffle(locations, NUM_FILLABLE_LOCATIONS);
 
-  // Fill dungeon items.  Fill the items into each dungeon separately, since
-  // dungeon items can only go in their respective dungeons.
-  world.clear_assumed();
-  world.add_assumed(FLAT_DUNGEON_ITEMS, ARRAY_LENGTH(FLAT_DUNGEON_ITEMS));
-  world.add_assumed(ADVANCEMENT_ITEMS, ARRAY_LENGTH(ADVANCEMENT_ITEMS));
-  fill_items_in_locations(world, FLAT_DUNGEON_ITEMS, locations);
+  if (!KEYSANITY) {
+    // Fill dungeon items.  Fill the items into each dungeon separately, since
+    // dungeon items can only go in their respective dungeons.
+    world.clear_assumed();
+    world.add_assumed(FLAT_DUNGEON_ITEMS, ARRAY_LENGTH(FLAT_DUNGEON_ITEMS));
+    world.add_assumed(ADVANCEMENT_ITEMS, ARRAY_LENGTH(ADVANCEMENT_ITEMS));
+    fill_items_in_locations(world, FLAT_DUNGEON_ITEMS, locations);
+  }
 
   // Random junk fill in Ganon's tower.
   Location ganons_tower_empty[MAX_DUNGEON_LOCATIONS];
