@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "arraylength.h"
+#include "errors.h"
 #include "items.h"
 #include "locations.h"
 #include "sqlite3.h"

@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "arraylength.h"
+#include "errors.h"
 #include "items.h"
 #include "locations.h"
 #include "mt_rand.h"
@@ -99,7 +100,7 @@ void fill_items_in_locations(World &world, const Item *items,
     }
     if (*l == Location::INVALID) {
       cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
-      assert(false);
+      throw CannotPlaceItem();
     }
   }
 }
@@ -116,7 +117,7 @@ void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
     if (*next == Location::INVALID) {
       world.print();
       cerr << "Ran out of locations." << endl;
-      assert(false);
+      throw CannotPlaceItem();
     }
     world.set_item(*next, *item_to_place);
   }
