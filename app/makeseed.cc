@@ -89,8 +89,7 @@ void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
   }
 }
 
-World makeseed(int seed) {
-  World world;
+void makeseed(World &world, int seed) {
   mt_srand(seed);
 
   set_medallions(world);
@@ -211,14 +210,19 @@ World makeseed(int seed) {
   int num_trash = ARRAY_LENGTH(extra) - gt_junk;
   mt_shuffle(trash, num_trash);
   fast_fill_items_in_locations(world, trash, num_trash, empty_locations);
-
-  return world;
 }
 
 int main(int argc, char **argv) {
   if (argc == 2) {
     int seed = atoi(argv[1]);
-    World result = makeseed(seed);
+    World result;
+    try {
+      makeseed(result, seed);
+    } catch (ConstraintViolation &e) {
+      return 1;
+    } catch (CannotPlaceItem &e) {
+      return 1;
+    }
     result.print();
     return 0;
   }
@@ -251,8 +255,14 @@ int main(int argc, char **argv) {
 
   sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
   for (uint seed = begin; seed < end; seed++) {
-    World result = makeseed(seed);
-
+    World result;
+    try {
+      makeseed(result, seed);
+    } catch (ConstraintViolation &e) {
+      continue;
+    } catch (CannotPlaceItem &e) {
+      return 1;
+    }
     result.sqlite3_write(stmt, seed);
 
     if (seed % 1000 == 0) {
