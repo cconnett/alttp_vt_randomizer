@@ -3,11 +3,12 @@ cc_binary(
     srcs = ["makeseed.cc"],
     deps = [
         ":arraylength",
+        ":errors",
         ":items",
         ":locations",
         ":mt_rand",
         ":world",
-        "@sqlite3//:sqlite3",
+        "@sqlite3",
     ],
 )
 
@@ -23,6 +24,13 @@ cc_library(
 cc_library(
     name = "arraylength",
     srcs = ["arraylength.h"],
+)
+
+cc_library(
+    name = "errors",
+    srcs = [
+        "errors.h",
+    ],
 )
 
 cc_library(
@@ -51,9 +59,10 @@ cc_library(
         "world.h",
     ],
     deps = [
+        ":errors",
         ":items",
         ":locations",
-        "@sqlite3//:sqlite3",
+        "@sqlite3",
     ],
 )
 
