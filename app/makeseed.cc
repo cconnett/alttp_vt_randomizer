@@ -178,7 +178,7 @@ World makeseed(int seed) {
     }
   }
 
-  // Shuffle the advancement items.
+  // Shuffle the advancement items. (Yes, again; the PHP does this)
   mt_shuffle(advancement, num_advancement);
 
   // Fill advancement.
