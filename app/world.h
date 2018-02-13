@@ -17,6 +17,10 @@ class World {
   void set_item(Location location, Item item);
   // Assign `item` only if there are unplaced instances available.
   bool check_and_set_item(Location location, Item item);
+  // Constrain generation to always have `item` at `location`.
+  void constrain(Location location, Item item) {
+    constraints[(int)location] = item;
+  }
 
   // Manage the list of items to assume are reachable.
   void clear_assumed();
@@ -63,6 +67,8 @@ class World {
   Item assignments[(int)Location::NUM_LOCATIONS];
   vector<Location> where_is[(int)Item::NUM_ITEMS];
   int num_unplaced[(int)Item::NUM_ITEMS];
+
+  Item constraints[(int)Location::NUM_LOCATIONS];
 
   void raw_set_item(Location location, Item item);
 

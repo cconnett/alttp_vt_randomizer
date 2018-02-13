@@ -44,6 +44,7 @@ World::World() {
   clear_assumed();
   clear_reachability_cache();
   memset(assignments, 0, sizeof(assignments));
+  memset(constraints, 0, sizeof(constraints));
 
   raw_set_item(Location::HyruleCastleTowerPrize, Item::DefeatAgahnim);
   raw_set_item(Location::GanonsTowerPrize, Item::DefeatAgahnim2);
@@ -100,6 +101,11 @@ bool World::has_item(Location location) {
 }
 
 void World::set_item(Location location, Item item) {
+  if (constraints[(int)location] != Item::INVALID &&
+      constraints[(int)location] != item) {
+    cerr << "Constraint violated" << endl;
+    throw ConstraintViolation();
+  }
   raw_set_item(location, item);
   num_unplaced[(int)item]--;
 #ifndef NDEBUG
