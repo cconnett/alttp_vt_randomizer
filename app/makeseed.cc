@@ -25,33 +25,6 @@ Item get_bottle(int filled) {
   return bottles[mt_rand(filled, 6)];
 }
 
-// Returns the implication:
-//(`item` is a dungeon item) -> (`location` is in the `item`'s dungeon)
-bool dungeon_item_in_dungeon_location(Item item, Location location) {
-  for (int r = (int)Region::HyruleCastleEscape; r <= (int)Region::GanonsTower;
-       r++) {
-    for (const Item *dungeon_item = DUNGEON_ITEMS[r];
-         *dungeon_item != Item::INVALID; dungeon_item++) {
-      if (item == *dungeon_item) {
-        // `item` is a dungeon item belonging to dungeon `r`. Return (`location`
-        // in dungeon `r`).
-        for (const Location *dungeon_location = DUNGEON_LOCATIONS[r];
-             *dungeon_location != Location::INVALID; dungeon_location++) {
-          if (location == *dungeon_location) {
-            // Item belongs in dungeon `r`, and `location` is in dungeon `r`.
-            return true;
-          }
-        }
-        // Item belongs in dungeon `r`, but `location` is not in dungeon `r`.
-        return false;
-      }
-    }
-    // Item doesn't belong to dungeon `r`.
-  }
-  // Item doesn't belong to any dungeon.
-  return true;
-}
-
 void set_medallions(World &world) {
   const Item medallions[] = {Item::Ether, Item::Bombos, Item::Quake};
   world.set_medallion(Location::TurtleRockMedallion, medallions[mt_rand(0, 2)]);
@@ -87,14 +60,7 @@ void fill_items_in_locations(World &world, const Item *items,
     world.decr_assumed(*i);
     Location *l;
     for (l = locations; *l != Location::INVALID; l++) {
-      if (world.has_item(*l)) {
-        continue;
-      }
-      if (world.always_allow(*l, *i) ||
-          (world.can_fill(*l, *i) && world.can_reach(*l) &&
-           dungeon_item_in_dungeon_location(*i, *l))) {
-        world.incr_assumed(*i);
-        world.set_item(*l, *i);
+      if (world.check_and_set_item(*l, *i)) {
         break;
       }
     }

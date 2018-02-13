@@ -15,6 +15,8 @@ class World {
   bool has_item(Location location);
   // Assign to `location` the item `item`. Invalidate the reachability cache.
   void set_item(Location location, Item item);
+  // Assign `item` only if there are unplaced instances available.
+  bool check_and_set_item(Location location, Item item);
 
   // Manage the list of items to assume are reachable.
   void clear_assumed();
