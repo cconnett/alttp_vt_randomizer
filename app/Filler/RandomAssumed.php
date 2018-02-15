@@ -73,7 +73,10 @@ class RandomAssumed extends Filler {
 				throw new \Exception(sprintf('No Available Locations: "%s"', $item->getNiceName()));
 			}
 			Log::debug(sprintf("Placing Item: %s in %s", $item->getNiceName(), $fill_location->getName()));
-			$fill_location->setItem($item);
+            $lname = preg_replace("/[^A-Za-z0-9]/", "", $fill_location->getName());
+            $iname = preg_replace("/[^A-Za-z0-9]/", "", $item->getName());
+            printf("%s := %s\n", $lname, $iname);
+			$fill_location->setItem($item, true);
 		}
 	}
 }
