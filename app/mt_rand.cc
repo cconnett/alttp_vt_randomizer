@@ -13,7 +13,7 @@ int scale(uint n, uint min, uint max) {
 unsigned int mt_rand(uint min, uint max) {
   int raw = generator.random();
   int ret = scale(raw, min, max);
-#ifndef NDEBUG
+#ifdef RAND_SYNC
   std::cout << "mt_rand(" << min << ", " << max << ") = " << ret << std::endl;
 #endif
   return ret;
