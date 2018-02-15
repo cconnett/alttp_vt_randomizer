@@ -57,16 +57,27 @@ void fill_prizes(World &world) {
 void fill_items_in_locations(World &world, const Item *items,
                              Location *locations) {
   for (const Item *i = items; *i != Item::INVALID; i++) {
+    // Caution: The `assumed` count is decremented here, incremented in
+    // check_and_set_item increments when it succeeds, and finally decremented
+    // again in set_item.
     world.decr_assumed(*i);
-    Location *l;
-    for (l = locations; *l != Location::INVALID; l++) {
-      if (world.check_and_set_item(*l, *i)) {
-        break;
+    if (!world.constraints[(int)*i].empty()) {
+      world.check_and_set_item(world.constraints[(int)*i].back(), *i);
+      world.constraints[(int)*i].pop_back();
+    } else {
+      Location *l;
+      for (l = locations; *l != Location::INVALID; l++) {
+        if (world.check_and_set_item(*l, *i)) {
+          break;
+        }
+#ifndef NDEBUG
+        cout << LOCATION_NAMES[(int)*l] << " ≠ " << ITEM_NAMES[(int)*i] << endl;
+#endif
       }
-    }
-    if (*l == Location::INVALID) {
-      cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
-      throw CannotPlaceItem();
+      if (*l == Location::INVALID) {
+        cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
+        throw CannotPlaceItem();
+      }
     }
   }
 }
@@ -190,7 +201,6 @@ void makeseed(World &world, int seed) {
   for (int i = 0; empty_locations[i] != Location::INVALID; i++) {
     if (!world.has_item(empty_locations[i])) {
       empty_locations[num_empty++] = empty_locations[i];
-      // cout << LOCATION_NAMES[(int)empty_locations[num_empty]] << endl;
     }
   }
   // Null terminate empty_locations.
@@ -218,8 +228,6 @@ int main(int argc, char **argv) {
     World result;
     try {
       makeseed(result, seed);
-    } catch (ConstraintViolation &e) {
-      return 1;
     } catch (CannotPlaceItem &e) {
       return 1;
     }
@@ -258,8 +266,6 @@ int main(int argc, char **argv) {
     World result;
     try {
       makeseed(result, seed);
-    } catch (ConstraintViolation &e) {
-      continue;
     } catch (CannotPlaceItem &e) {
       return 1;
     }
