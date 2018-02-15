@@ -11,6 +11,7 @@ function runtest {
   app/bazel-bin/makeseed "${seed}" \
     | fgrep " = " \
     | fgrep -v "Prize =" \
+    | fgrep -v "SkullWoodsPinballRoom =" \
     | egrep -v "= Defeat|PyramidFairy(Bow|Sword)" \
     | sort \
     > /tmp/c
