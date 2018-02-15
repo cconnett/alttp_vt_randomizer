@@ -159,15 +159,23 @@ php_atom = G(
     integer('integer') | php_callable_expression('callable') |
     php_var('var')).setName('atom')
 
-php_expr <<= p.infixNotation(php_atom, [
-    ('!', 1, RIGHT),
-    ('*', 2, LEFT),
-    ('+', 2, LEFT),
-    (p.oneOf('< <= == >= >'), 2, LEFT),
-    ('&&', 2, LEFT),
-    ('||', 2, LEFT),
-    (('?', ':'), 3, LEFT),
-]).setParseAction(ConvertInfixListToPrefixDict)
+php_expr <<= p.infixNotation(
+    php_atom,
+    [
+        ('!', 1, RIGHT),
+        ('*', 2, LEFT),
+        ('+', 2, LEFT),
+        (p.oneOf('< <= == >= >'), 2, LEFT),
+        ('&&', 2, LEFT),
+        ('||', 2, LEFT),
+        # Attention! The ternary operator is right-associative in C, but
+        # left-associative in PHP! We over-parenthesize everything we emit, so
+        # emitted code should match the PHP semantics.
+        #
+        # Example: "true ? false : false ? false : true"
+        # This expression evaluates to true in PHP and false in C.
+        (('?', ':'), 3, LEFT),
+    ]).setParseAction(ConvertInfixListToPrefixDict)
 
 return_stmt = G('return' - php_expr('return') - ';').setName('return statement')
 if_stmt = G('if (' - php_expr('condition') - ')' - G(php_block)
