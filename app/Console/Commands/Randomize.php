@@ -122,7 +122,7 @@ class Randomize extends Command {
 			if ($this->option('spoiler')) {
 				$spoiler_file = sprintf($this->argument('output_directory') . '/' . 'alttp - VT_%s_%s_%s_%s_%s.txt',
 					$rand->getLogic(), $this->option('difficulty'), config('game-mode'), $this->option('variation'), $rand->getSeed());
-				file_put_contents($spoiler_file, $rand->getSpoiler());
+				file_put_contents($spoiler_file, json_encode($rand->getSpoiler(), JSON_PRETTY_PRINT));
 				$this->info(sprintf('Spoiler Saved: %s', $spoiler_file));
 			}
 		}
