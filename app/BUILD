@@ -70,7 +70,7 @@ py_binary(
     name = "build_index",
     srcs = ["build_index.py"],
     data = [
-        "world.cc",
+        "world_template.cc",
     ],
     deps = [":php_grammar"],
 )
