@@ -7,6 +7,7 @@
 #include "items.h"
 #include "locations.h"
 #include "mt_rand.h"
+#include "spdlog/spdlog.h"
 #include "sqlite3.h"
 #include "world.h"
 
@@ -56,10 +57,13 @@ void fill_prizes(World &world) {
 
 void fill_items_in_locations(World &world, const Item *items,
                              Location *locations) {
+  auto log = spdlog::get("trace");
   for (const Item *i = items; *i != Item::INVALID; i++) {
     // Caution: The `assumed` count is decremented here, incremented in
     // check_and_set_item increments when it succeeds, and finally decremented
     // again in set_item.
+    SPDLOG_TRACE(log, "Placing {}", ITEM_NAMES[(int)*i]);
+
     world.decr_assumed(*i);
     if (!world.constraints[(int)*i].empty()) {
       world.check_and_set_item(world.constraints[(int)*i].back(), *i);
@@ -70,9 +74,6 @@ void fill_items_in_locations(World &world, const Item *items,
         if (world.check_and_set_item(*l, *i)) {
           break;
         }
-#ifndef NDEBUG
-        cout << LOCATION_NAMES[(int)*l] << " ≠ " << ITEM_NAMES[(int)*i] << endl;
-#endif
       }
       if (*l == Location::INVALID) {
         cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
@@ -223,6 +224,7 @@ void makeseed(World &world, int seed) {
 }
 
 int main(int argc, char **argv) {
+  spdlog::stdout_color_mt("trace");
   if (argc == 2) {
     int seed = atoi(argv[1]);
     World result;

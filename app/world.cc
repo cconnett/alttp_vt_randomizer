@@ -111,6 +111,15 @@ bool World::check_and_set_item(Location location, Item item) {
   if (has_item(location)) {
     return false;
   }
+
+  auto log = spdlog::get("trace");
+  SPDLOG_TRACE(log, "Trying {} for {}", LOCATION_NAMES[(int)location],
+               ITEM_NAMES[(int)item]);
+  if (always_allow(location, item)) {
+    SPDLOG_TRACE(log, "{} always allowed in {}", ITEM_NAMES[(int)item],
+                 LOCATION_NAMES[(int)location]);
+  }
+
   if (always_allow(location, item) ||
       (dungeon_item_in_dungeon_location(item, location) &&
        can_fill(location, item) && can_reach(location))) {
@@ -118,6 +127,8 @@ bool World::check_and_set_item(Location location, Item item) {
     set_item(location, item);
     return true;
   }
+  SPDLOG_TRACE("{} /= {}", LOCATION_NAMES[(int)location],
+               ITEM_NAMES[(int)item]);
   return false;
 }
 
@@ -152,11 +163,16 @@ void World::set_medallion(Location location, Item item) {
 bool World::can_reach(Location location) {
   assert(location != Location::INVALID);
   assert(location != Location::NUM_LOCATIONS);
+  auto log = spdlog::get("trace");
+
   if (reachability_cache[(int)location]) {
+    SPDLOG_TRACE("Cached. {}",
+                 reachability_cache[(int)location] > 0 ? "Good." : "Bad.");
     return reachability_cache[(int)location] > 0;
   }
   // Set it to -1 while we calculate reachability so that loops in the graph
   // see it as unreachable.
+  SPDLOG_TRACE("Descending.");
   reachability_cache[(int)location] = -1;
   reachability_cache[(int)location] = uncached_can_reach(location);
   return reachability_cache[(int)location];
@@ -172,6 +188,7 @@ int World::num_reachable(Item item) {
       count += 1;
     }
   }
+  SPDLOG_TRACE("Found {} of {}", count, ITEM_NAMES[(int)item]);
   return count;
 }
 
