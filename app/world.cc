@@ -180,10 +180,17 @@ bool World::can_reach(Location location) {
 int World::num_reachable(Item item) {
   assert(item != Item::INVALID);
   assert(item != Item::NUM_ITEMS);
+
   int count = num_unplaced[(int)item];
-  for (auto i = where_is[(int)item].cbegin(); i != where_is[(int)item].cend();
-       i++) {
-    if (can_reach(*i)) {
+
+  auto log = spdlog::get("trace");
+  SPDLOG_TRACE("Searching for {}. {} unplaced and assumed reachable.",
+               ITEM_NAMES[(int)item], count);
+
+  for (auto loc = where_is[(int)item].cbegin();
+       loc != where_is[(int)item].cend(); loc++) {
+    SPDLOG_TRACE("Looking in {}", LOCATION_NAMES[(int)*loc]);
+    if (can_reach(*loc)) {
       count += 1;
     }
   }
