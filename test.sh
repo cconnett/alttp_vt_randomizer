@@ -19,6 +19,11 @@ function runtest {
 }
 
 SEEDS=$(python -c 'import random; print(" ".join(str(random.randint(1, 10**9)) for _ in range(100)))')
+
+# These seeds have a tricky issue. Adding access to a BigKeyD5 can increase the
+# requirements for another chest.
+# PERILOUS_SEEDS="365791332 635470466"
+
 for i in $SEEDS; do
   echo $i
   runtest $i || exit $?
