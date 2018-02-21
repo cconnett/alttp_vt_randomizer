@@ -108,7 +108,7 @@ void World::set_item(Location location, Item item) {
 }
 
 bool World::check_and_set_item(Location location, Item item) {
-  if (has_item(location)) {
+  if (has_item(location) || !dungeon_item_in_dungeon_location(item, location)) {
     return false;
   }
 
@@ -121,8 +121,7 @@ bool World::check_and_set_item(Location location, Item item) {
   }
 
   if (always_allow(location, item) ||
-      (dungeon_item_in_dungeon_location(item, location) &&
-       can_fill(location, item) && can_reach(location))) {
+      (can_fill(location, item) && can_reach(location))) {
     incr_assumed(item);
     set_item(location, item);
     return true;
