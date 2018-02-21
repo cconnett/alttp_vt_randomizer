@@ -174,7 +174,19 @@ bool World::can_reach(Location location) {
   SPDLOG_TRACE("Descending.");
   reachability_cache[(int)location] = -1;
   reachability_cache[(int)location] = uncached_can_reach(location);
-  return reachability_cache[(int)location];
+  SPDLOG_TRACE("Answer found: {} is{} reachable.",
+               LOCATION_NAMES[(int)location],
+               reachability_cache[(int)location] > 0 ? "" : " not");
+  if (reachability_cache[(int)location] > 0) {
+    bool new_answer = uncached_can_reach(location);
+    if (!new_answer) {
+      log->warn("Answer changed: {} is{} reachable.",
+                LOCATION_NAMES[(int)location], new_answer ? "" : " not");
+    }
+    reachability_cache[(int)location] = new_answer;
+  }
+
+  return reachability_cache[(int)location] > 0;
 }
 
 int World::num_reachable(Item item) {
