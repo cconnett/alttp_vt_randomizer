@@ -112,7 +112,6 @@ bool World::check_and_set_item(Location location, Item item) {
     return false;
   }
 
-  auto log = spdlog::get("trace");
   SPDLOG_TRACE(log, "Trying {} for {}", LOCATION_NAMES[(int)location],
                ITEM_NAMES[(int)item]);
   if (always_allow(location, item)) {
@@ -126,7 +125,7 @@ bool World::check_and_set_item(Location location, Item item) {
     set_item(location, item);
     return true;
   }
-  SPDLOG_TRACE("{} /= {}", LOCATION_NAMES[(int)location],
+  SPDLOG_TRACE(log, "{} /= {}", LOCATION_NAMES[(int)location],
                ITEM_NAMES[(int)item]);
   return false;
 }
@@ -162,26 +161,25 @@ void World::set_medallion(Location location, Item item) {
 bool World::can_reach(Location location) {
   assert(location != Location::INVALID);
   assert(location != Location::NUM_LOCATIONS);
-  auto log = spdlog::get("trace");
 
   if (reachability_cache[(int)location]) {
-    SPDLOG_TRACE("Cached. {}",
+    SPDLOG_TRACE(log, "Cached. {}",
                  reachability_cache[(int)location] > 0 ? "Good." : "Bad.");
     return reachability_cache[(int)location] > 0;
   }
   // Set it to -1 while we calculate reachability so that loops in the graph
   // see it as unreachable.
-  SPDLOG_TRACE("Descending.");
+  SPDLOG_TRACE(log, "Descending.");
   reachability_cache[(int)location] = -1;
   reachability_cache[(int)location] = uncached_can_reach(location);
-  SPDLOG_TRACE("Answer found: {} is{} reachable.",
+  SPDLOG_TRACE(log, "Answer found: {} is{} reachable.",
                LOCATION_NAMES[(int)location],
                reachability_cache[(int)location] > 0 ? "" : " not");
   if (reachability_cache[(int)location] > 0) {
     bool new_answer = uncached_can_reach(location);
     if (!new_answer) {
-      log->warn("Answer changed: {} is{} reachable.",
-                LOCATION_NAMES[(int)location], new_answer ? "" : " not");
+      SPDLOG_TRACE(log, "Answer changed: {} is{} reachable.",
+                   LOCATION_NAMES[(int)location], new_answer ? "" : " not");
     }
     reachability_cache[(int)location] = new_answer;
   }
@@ -195,18 +193,17 @@ int World::num_reachable(Item item) {
 
   int count = num_unplaced[(int)item];
 
-  auto log = spdlog::get("trace");
-  SPDLOG_TRACE("Searching for {}. {} unplaced and assumed reachable.",
+  SPDLOG_TRACE(log, "Searching for {}. {} unplaced and assumed reachable.",
                ITEM_NAMES[(int)item], count);
 
   for (auto loc = where_is[(int)item].cbegin();
        loc != where_is[(int)item].cend(); loc++) {
-    SPDLOG_TRACE("Looking in {}", LOCATION_NAMES[(int)*loc]);
+    SPDLOG_TRACE(log, "Looking in {}", LOCATION_NAMES[(int)*loc]);
     if (can_reach(*loc)) {
       count += 1;
     }
   }
-  SPDLOG_TRACE("Found {} of {}", count, ITEM_NAMES[(int)item]);
+  SPDLOG_TRACE(log, "Found {} of {}", count, ITEM_NAMES[(int)item]);
   return count;
 }
 
