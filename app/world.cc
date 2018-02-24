@@ -175,15 +175,6 @@ bool World::can_reach(Location location) {
   SPDLOG_TRACE(log, "Answer found: {} is{} reachable.",
                LOCATION_NAMES[(int)location],
                reachability_cache[(int)location] > 0 ? "" : " not");
-  if (reachability_cache[(int)location] > 0) {
-    bool new_answer = uncached_can_reach(location);
-    if (!new_answer) {
-      SPDLOG_TRACE(log, "Answer changed: {} is{} reachable.",
-                   LOCATION_NAMES[(int)location], new_answer ? "" : " not");
-    }
-    reachability_cache[(int)location] = new_answer;
-  }
-
   return reachability_cache[(int)location] > 0;
 }
 
