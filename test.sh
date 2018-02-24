@@ -22,7 +22,7 @@ SEEDS=$(python -c 'import random; print(" ".join(str(random.randint(1, 10**9)) f
 
 # These seeds have a tricky issue. Adding access to a BigKeyD5 can increase the
 # requirements for another chest.
-# PERILOUS_SEEDS="365791332 635470466"
+SEEDS="992839880 365791332 635470466"
 
 for i in $SEEDS; do
   echo $i
