@@ -60,8 +60,8 @@ void fill_items_in_locations(World &world, const Item *items,
   auto log = spdlog::get("trace");
   for (const Item *i = items; *i != Item::INVALID; i++) {
     // Caution: The `assumed` count is decremented here, incremented in
-    // check_and_set_item increments when it succeeds, and finally decremented
-    // again in set_item.
+    // check_and_set_item when it succeeds, and finally decremented again in
+    // set_item.
     SPDLOG_TRACE(log, "Placing {}", ITEM_NAMES[(int)*i]);
 
     world.decr_assumed(*i);
