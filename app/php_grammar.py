@@ -111,9 +111,9 @@ world_config = G('$this->world->config(' - p.quotedString('option') - ',' - (
 
 # Top-level expression alternates. These should be in groups so they get
 # substructures.
-item_in_locations = G('$locations->itemInLocations(Item::get(' + p.quotedString(
-    'item') + '), [' + DelimitedList(p.quotedString)('allowable_locations') +
-                      '])').setName('item_in_location')
+item_in_locations = G('$locations->itemInLocations(Item::get(' - p.quotedString(
+    'item') - ')' - ',' - '[' - DelimitedList(p.quotedString)(
+        'allowable_locations') - ']' - ')').setName('item_in_location')
 
 # Lookup into item count array.
 has_item = G(
@@ -140,7 +140,6 @@ method_call = G(
 can_enter_or_complete = G('$this->' + p.oneOf('can_enter can_complete')
                           ('method_name')).setName('region_method')
 
-php_expr = p.Forward().setName('expression')
 php_block = p.Forward().setName('block')
 php_var = G(s('$') + identifier('symbol')).setName('variable')
 php_callable_expression = G(
@@ -159,6 +158,7 @@ php_atom = G(
     integer('integer') | php_callable_expression('callable') |
     php_var('var')).setName('atom')
 
+php_expr = p.Forward()  # Removing this Forward messes up the output types.
 php_expr <<= p.infixNotation(
     php_atom,
     [
