@@ -1,6 +1,7 @@
 #include <vector>
 
 #include "items.h"
+#include "spdlog/spdlog.h"
 #include "sqlite3.h"
 
 using namespace std;
@@ -80,4 +81,6 @@ class World {
 
   // Uncached version that's easier to generate.
   bool uncached_can_reach(Location location);
+
+  std::shared_ptr<spdlog::logger> log;
 };

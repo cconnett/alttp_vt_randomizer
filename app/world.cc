@@ -41,7 +41,7 @@ bool dungeon_item_in_dungeon_location(Item item, Location location) {
   return true;
 }
 
-World::World() {
+World::World() : log(spdlog::get("trace")) {
   clear_assumed();
   clear_reachability_cache();
   memset(assignments, 0, sizeof(assignments));
