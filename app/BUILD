@@ -8,6 +8,7 @@ cc_binary(
         ":locations",
         ":mt_rand",
         ":world",
+        "@spdlog",
         "@sqlite3",
     ],
 )
@@ -62,6 +63,7 @@ cc_library(
         ":errors",
         ":items",
         ":locations",
+        "@spdlog",
         "@sqlite3",
     ],
 )
@@ -70,7 +72,7 @@ py_binary(
     name = "build_index",
     srcs = ["build_index.py"],
     data = [
-        "world.cc",
+        "world_template.cc",
     ],
     deps = [":php_grammar"],
 )

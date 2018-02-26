@@ -7,6 +7,7 @@
 #include "items.h"
 #include "locations.h"
 #include "mt_rand.h"
+#include "spdlog/spdlog.h"
 #include "sqlite3.h"
 #include "world.h"
 
@@ -58,17 +59,28 @@ void fill_prizes(World &world) {
 
 void fill_items_in_locations(World &world, const Item *items,
                              Location *locations) {
+  auto log = spdlog::get("trace");
   for (const Item *i = items; *i != Item::INVALID; i++) {
+    // Caution: The `assumed` count is decremented here, incremented in
+    // check_and_set_item when it succeeds, and finally decremented again in
+    // set_item.
+    SPDLOG_TRACE(log, "Placing {}", ITEM_NAMES[(int)*i]);
+
     world.decr_assumed(*i);
-    Location *l;
-    for (l = locations; *l != Location::INVALID; l++) {
-      if (world.check_and_set_item(*l, *i)) {
-        break;
+    if (!world.constraints[(int)*i].empty()) {
+      world.check_and_set_item(world.constraints[(int)*i].back(), *i);
+      world.constraints[(int)*i].pop_back();
+    } else {
+      Location *l;
+      for (l = locations; *l != Location::INVALID; l++) {
+        if (world.check_and_set_item(*l, *i)) {
+          break;
+        }
       }
-    }
-    if (*l == Location::INVALID) {
-      cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
-      throw CannotPlaceItem();
+      if (*l == Location::INVALID) {
+        cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
+        throw CannotPlaceItem();
+      }
     }
   }
 }
@@ -91,8 +103,7 @@ void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
   }
 }
 
-World makeseed(int seed) {
-  World world;
+void makeseed(World &world, int seed) {
   mt_srand(seed);
 
   set_medallions(world);
@@ -146,8 +157,8 @@ World makeseed(int seed) {
   mt_shuffle(locations, NUM_FILLABLE_LOCATIONS);
 
   if (!KEYSANITY) {
-    // Fill dungeon items.  Fill the items into each dungeon separately, since
-    // dungeon items can only go in their respective dungeons.
+    // Fill dungeon items. The list of dungeon items is empty in keysanity;
+    // those items are part of the advancement items.
     world.clear_assumed();
     world.add_assumed(FLAT_DUNGEON_ITEMS, ARRAY_LENGTH(FLAT_DUNGEON_ITEMS));
     world.add_assumed(ADVANCEMENT_ITEMS, ARRAY_LENGTH(ADVANCEMENT_ITEMS));
@@ -188,7 +199,7 @@ World makeseed(int seed) {
     }
   }
 
-  // Shuffle the advancement items.
+  // Shuffle the advancement items. (Yes, again; the PHP does this)
   mt_shuffle(advancement, num_advancement);
 
   // Fill advancement.
@@ -201,7 +212,6 @@ World makeseed(int seed) {
   for (int i = 0; empty_locations[i] != Location::INVALID; i++) {
     if (!world.has_item(empty_locations[i])) {
       empty_locations[num_empty++] = empty_locations[i];
-      // cout << LOCATION_NAMES[(int)empty_locations[num_empty]] << endl;
     }
   }
   // Null terminate empty_locations.
@@ -221,14 +231,18 @@ World makeseed(int seed) {
   int num_trash = ARRAY_LENGTH(extra) - gt_junk;
   mt_shuffle(trash, num_trash);
   fast_fill_items_in_locations(world, trash, num_trash, empty_locations);
-
-  return world;
 }
 
 int main(int argc, char **argv) {
+  spdlog::stdout_color_mt("trace");
   if (argc == 2) {
     int seed = atoi(argv[1]);
-    World result = makeseed(seed);
+    World result;
+    try {
+      makeseed(result, seed);
+    } catch (CannotPlaceItem &e) {
+      return 1;
+    }
     result.print();
     return 0;
   }
@@ -261,8 +275,12 @@ int main(int argc, char **argv) {
 
   sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
   for (uint seed = begin; seed < end; seed++) {
-    World result = makeseed(seed);
-
+    World result;
+    try {
+      makeseed(result, seed);
+    } catch (CannotPlaceItem &e) {
+      return 1;
+    }
     result.sqlite3_write(stmt, seed);
 
     if (seed % 1000 == 0) {

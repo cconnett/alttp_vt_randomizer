@@ -13,3 +13,19 @@ new_http_archive(
     strip_prefix = "sqlite-amalgamation-3210000",
     url = "http://sqlite.org/2017/sqlite-amalgamation-3210000.zip",
 )
+
+new_http_archive(
+    name = "spdlog",
+    build_file = "spdlog.BUILD",
+    sha256 = "b88d7be261d9089c817fc8cee6c000d69f349b357828e4c7f66985bc5d5360b8",
+    strip_prefix = "spdlog-0.16.3",
+    url = "https://github.com/gabime/spdlog/archive/v0.16.3.tar.gz",
+)
+
+new_http_archive(
+    name = "fmtlib",
+    build_file = "fmtlib.BUILD",
+    sha256 = "46628a2f068d0e33c716be0ed9dcae4370242df135aed663a180b9fd8e36733d",
+    strip_prefix = "fmt-4.1.0",
+    url = "https://github.com/fmtlib/fmt/archive/4.1.0.tar.gz",
+)
