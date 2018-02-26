@@ -8,6 +8,7 @@ cc_binary(
         ":locations",
         ":mt_rand",
         ":world",
+        "@spdlog",
         "@sqlite3",
     ],
 )
@@ -62,6 +63,7 @@ cc_library(
         ":errors",
         ":items",
         ":locations",
+        "@spdlog",
         "@sqlite3",
     ],
 )

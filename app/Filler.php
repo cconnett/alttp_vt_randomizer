@@ -59,6 +59,10 @@ abstract class Filler {
 				break;
 			}
 			$location->setItem($item);
+            $lname = preg_replace("/[^A-Za-z0-9]/", "", $location->getName());
+            $iname = preg_replace("/[^A-Za-z0-9]/", "", $item->getName());
+            printf("%s := %s\n", $lname, $iname);
+
 		}
 	}
 }

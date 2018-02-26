@@ -8,6 +8,7 @@
 #include "errors.h"
 #include "items.h"
 #include "locations.h"
+#include "spdlog/spdlog.h"
 #include "sqlite3.h"
 #include "world.h"
 
@@ -40,10 +41,11 @@ bool dungeon_item_in_dungeon_location(Item item, Location location) {
   return true;
 }
 
-World::World() {
+World::World() : log(spdlog::get("trace")) {
   clear_assumed();
   clear_reachability_cache();
   memset(assignments, 0, sizeof(assignments));
+  memset(constraints, 0, sizeof(constraints));
 
   raw_set_item(Location::HyruleCastleTowerPrize, Item::DefeatAgahnim);
   raw_set_item(Location::GanonsTowerPrize, Item::DefeatAgahnim2);
@@ -106,16 +108,25 @@ void World::set_item(Location location, Item item) {
 }
 
 bool World::check_and_set_item(Location location, Item item) {
-  if (has_item(location)) {
+  if (has_item(location) || !dungeon_item_in_dungeon_location(item, location)) {
     return false;
   }
+
+  SPDLOG_TRACE(log, "Trying {} for {}", LOCATION_NAMES[(int)location],
+               ITEM_NAMES[(int)item]);
+  if (always_allow(location, item)) {
+    SPDLOG_TRACE(log, "{} always allowed in {}", ITEM_NAMES[(int)item],
+                 LOCATION_NAMES[(int)location]);
+  }
+
   if (always_allow(location, item) ||
-      (dungeon_item_in_dungeon_location(item, location) &&
-       can_fill(location, item) && can_reach(location))) {
+      (can_fill(location, item) && can_reach(location))) {
     incr_assumed(item);
     set_item(location, item);
     return true;
   }
+  SPDLOG_TRACE(log, "{} /= {}", LOCATION_NAMES[(int)location],
+               ITEM_NAMES[(int)item]);
   return false;
 }
 
@@ -150,26 +161,40 @@ void World::set_medallion(Location location, Item item) {
 bool World::can_reach(Location location) {
   assert(location != Location::INVALID);
   assert(location != Location::NUM_LOCATIONS);
+
   if (reachability_cache[(int)location]) {
+    SPDLOG_TRACE(log, "Cached. {}",
+                 reachability_cache[(int)location] > 0 ? "Good." : "Bad.");
     return reachability_cache[(int)location] > 0;
   }
   // Set it to -1 while we calculate reachability so that loops in the graph
   // see it as unreachable.
+  SPDLOG_TRACE(log, "Descending.");
   reachability_cache[(int)location] = -1;
   reachability_cache[(int)location] = uncached_can_reach(location);
-  return reachability_cache[(int)location];
+  SPDLOG_TRACE(log, "Answer found: {} is{} reachable.",
+               LOCATION_NAMES[(int)location],
+               reachability_cache[(int)location] > 0 ? "" : " not");
+  return reachability_cache[(int)location] > 0;
 }
 
 int World::num_reachable(Item item) {
   assert(item != Item::INVALID);
   assert(item != Item::NUM_ITEMS);
+
   int count = num_unplaced[(int)item];
-  for (auto i = where_is[(int)item].cbegin(); i != where_is[(int)item].cend();
-       i++) {
-    if (can_reach(*i)) {
+
+  SPDLOG_TRACE(log, "Searching for {}. {} unplaced and assumed reachable.",
+               ITEM_NAMES[(int)item], count);
+
+  for (auto loc = where_is[(int)item].cbegin();
+       loc != where_is[(int)item].cend(); loc++) {
+    SPDLOG_TRACE(log, "Looking in {}", LOCATION_NAMES[(int)*loc]);
+    if (can_reach(*loc)) {
       count += 1;
     }
   }
+  SPDLOG_TRACE(log, "Found {} of {}", count, ITEM_NAMES[(int)item]);
   return count;
 }
 

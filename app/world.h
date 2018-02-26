@@ -1,6 +1,7 @@
 #include <vector>
 
 #include "items.h"
+#include "spdlog/spdlog.h"
 #include "sqlite3.h"
 
 using namespace std;
@@ -17,6 +18,10 @@ class World {
   void set_item(Location location, Item item);
   // Assign `item` only if there are unplaced instances available.
   bool check_and_set_item(Location location, Item item);
+  // Constrain generation to always have `item` at `location`.
+  void constrain(Location location, Item item) {
+    constraints[(int)item].push_back(location);
+  }
 
   // Manage the list of items to assume are reachable.
   void clear_assumed();
@@ -59,6 +64,8 @@ class World {
   // Override other reachability and placement checks to always allow
   bool always_allow(Location location, Item item);
 
+  vector<Location> constraints[(int)Item::NUM_ITEMS];
+
  private:
   Item assignments[(int)Location::NUM_LOCATIONS];
   vector<Location> where_is[(int)Item::NUM_ITEMS];
@@ -74,4 +81,6 @@ class World {
 
   // Uncached version that's easier to generate.
   bool uncached_can_reach(Location location);
+
+  std::shared_ptr<spdlog::logger> log;
 };
