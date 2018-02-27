@@ -102,6 +102,10 @@ bool World::has_item(Location location) {
 }
 
 void World::set_item(Location location, Item item) {
+  if (constraints[(int)location] != Item::INVALID &&
+      constraints[(int)location] != item) {
+    throw ConstraintViolation();
+  }
   raw_set_item(location, item);
   num_unplaced[(int)item]--;
   clear_reachability_cache();
@@ -137,10 +141,8 @@ void World::raw_set_item(Location location, Item item) {
   assert(item != Item::NUM_ITEMS);
   assignments[(int)location] = item;
   where_is[(int)item].push_back(location);
-#ifndef NDEBUG
-  cout << LOCATION_NAMES[(int)location] << " := " << ITEM_NAMES[(int)item]
-       << endl;
-#endif
+  SPDLOG_TRACE(log, "{} := {}", LOCATION_NAMES[(int)location],
+               ITEM_NAMES[(int)item]);
 }
 
 void World::clear_assumed() { memset(num_unplaced, 0, sizeof(num_unplaced)); }

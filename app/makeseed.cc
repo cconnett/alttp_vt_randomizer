@@ -65,20 +65,15 @@ void fill_items_in_locations(World &world, const Item *items,
     SPDLOG_TRACE(log, "Placing {}", ITEM_NAMES[(int)*i]);
 
     world.decr_assumed(*i);
-    if (!world.constraints[(int)*i].empty()) {
-      world.check_and_set_item(world.constraints[(int)*i].back(), *i);
-      world.constraints[(int)*i].pop_back();
-    } else {
-      Location *l;
-      for (l = locations; *l != Location::INVALID; l++) {
-        if (world.check_and_set_item(*l, *i)) {
-          break;
-        }
+    Location *l;
+    for (l = locations; *l != Location::INVALID; l++) {
+      if (world.check_and_set_item(*l, *i)) {
+        break;
       }
-      if (*l == Location::INVALID) {
-        cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
-        throw CannotPlaceItem();
-      }
+    }
+    if (*l == Location::INVALID) {
+      cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
+      throw CannotPlaceItem();
     }
   }
 }
@@ -264,22 +259,31 @@ int main(int argc, char **argv) {
                      &stmt, nullptr);
 
   sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+  bool flag = true;
   for (uint seed = begin; seed < end; seed++) {
     World result;
     try {
+      result.constrain(Location::LinksHouse, Item::PegasusBoots);
       makeseed(result, seed);
     } catch (CannotPlaceItem &e) {
       return 1;
+    } catch (ConstraintViolation &e) {
+      continue;
     }
-    result.sqlite3_write(stmt, seed);
+    // result.sqlite3_write(stmt, seed);
 
     if (seed % 1000 == 0) {
-      sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
+      flag = true;
+    }
+    if (flag) {
+      // sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
       cout << seed << endl;
-      sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+      // sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+      flag = false;
     }
   }
   sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
   sqlite3_finalize(stmt);
   sqlite3_close(conn);
+  return 0;
 }
