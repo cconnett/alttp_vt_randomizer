@@ -259,24 +259,31 @@ int main(int argc, char **argv) {
                      &stmt, nullptr);
 
   sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+  bool flag = true;
   for (uint seed = begin; seed < end; seed++) {
     World result;
     try {
+      result.constrain(Location::LinksHouse, Item::PegasusBoots);
       makeseed(result, seed);
     } catch (ConstraintViolation &e) {
       continue;
     } catch (CannotPlaceItem &e) {
       return 1;
     }
-    result.sqlite3_write(stmt, seed);
+    // result.sqlite3_write(stmt, seed);
 
     if (seed % 1000 == 0) {
-      sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
+      flag = true;
+    }
+    if (flag) {
+      // sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
       cout << seed << endl;
-      sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+      // sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+      flag = false;
     }
   }
   sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
   sqlite3_finalize(stmt);
   sqlite3_close(conn);
+  return 0;
 }

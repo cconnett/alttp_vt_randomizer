@@ -141,10 +141,8 @@ void World::raw_set_item(Location location, Item item) {
   assert(item != Item::NUM_ITEMS);
   assignments[(int)location] = item;
   where_is[(int)item].push_back(location);
-#ifndef NDEBUG
-  cout << LOCATION_NAMES[(int)location] << " := " << ITEM_NAMES[(int)item]
-       << endl;
-#endif
+  SPDLOG_TRACE(log, "{} := {}", LOCATION_NAMES[(int)location],
+               ITEM_NAMES[(int)item]);
 }
 
 void World::clear_assumed() {
