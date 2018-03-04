@@ -143,7 +143,9 @@ void World::raw_set_item(Location location, Item item) {
 #endif
 }
 
-void World::clear_assumed() { memset(num_unplaced, 0, sizeof(num_unplaced)); }
+void World::clear_assumed() {
+  memset(num_unplaced, 0, sizeof(num_unplaced));
+}
 void World::add_assumed(const Item *items, size_t n_items) {
   for (size_t i = 0; i < n_items; i++) {
     num_unplaced[(int)items[i]]++;
