@@ -202,6 +202,32 @@ int World::num_reachable(Item item) {
   return count;
 }
 
+int World::is_num_reachable(int n, Item item) {
+  assert(item != Item::INVALID);
+  assert(item != Item::NUM_ITEMS);
+
+  int count = num_unplaced[(int)item];
+  if (count >= n) {
+    return true;
+  }
+
+  SPDLOG_TRACE(log, "Searching for {}. {} unplaced and assumed reachable.",
+               ITEM_NAMES[(int)item], count);
+
+  for (auto loc = where_is[(int)item].cbegin();
+       loc != where_is[(int)item].cend(); loc++) {
+    SPDLOG_TRACE(log, "Looking in {}", LOCATION_NAMES[(int)*loc]);
+    if (can_reach(*loc)) {
+      count += 1;
+      if (count >= n) {
+        return true;
+      }
+    }
+  }
+  SPDLOG_TRACE(log, "Found {} of {}", count, ITEM_NAMES[(int)item]);
+  return false;
+}
+
 int World::bottle_count() {
   return num_reachable(Item::Bottle) + num_reachable(Item::BottleWithBee) +
          num_reachable(Item::BottleWithBluePotion) +
