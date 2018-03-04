@@ -65,20 +65,15 @@ void fill_items_in_locations(World &world, const Item *items,
     SPDLOG_TRACE(log, "Placing {}", ITEM_NAMES[(int)*i]);
 
     world.decr_assumed(*i);
-    if (!world.constraints[(int)*i].empty()) {
-      world.check_and_set_item(world.constraints[(int)*i].back(), *i);
-      world.constraints[(int)*i].pop_back();
-    } else {
-      Location *l;
-      for (l = locations; *l != Location::INVALID; l++) {
-        if (world.check_and_set_item(*l, *i)) {
-          break;
-        }
+    Location *l;
+    for (l = locations; *l != Location::INVALID; l++) {
+      if (world.check_and_set_item(*l, *i)) {
+        break;
       }
-      if (*l == Location::INVALID) {
-        cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
-        throw CannotPlaceItem();
-      }
+    }
+    if (*l == Location::INVALID) {
+      cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
+      throw CannotPlaceItem();
     }
   }
 }
@@ -268,6 +263,8 @@ int main(int argc, char **argv) {
     World result;
     try {
       makeseed(result, seed);
+    } catch (ConstraintViolation &e) {
+      continue;
     } catch (CannotPlaceItem &e) {
       return 1;
     }

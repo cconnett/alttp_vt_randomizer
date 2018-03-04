@@ -20,7 +20,7 @@ class World {
   bool check_and_set_item(Location location, Item item);
   // Constrain generation to always have `item` at `location`.
   void constrain(Location location, Item item) {
-    constraints[(int)item].push_back(location);
+    constraints[(int)location] = item;
   }
 
   // Manage the list of items to assume are reachable.
@@ -64,7 +64,7 @@ class World {
   // Override other reachability and placement checks to always allow
   bool always_allow(Location location, Item item);
 
-  vector<Location> constraints[(int)Item::NUM_ITEMS];
+  Item constraints[(int)Location::NUM_LOCATIONS];
 
  private:
   Item assignments[(int)Location::NUM_LOCATIONS];
