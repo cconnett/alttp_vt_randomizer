@@ -116,12 +116,14 @@ bool World::check_and_set_item(Location location, Item item) {
     return false;
   }
 
+#ifdef SPDLOG_TRACE_ON
   SPDLOG_TRACE(log, "Trying {} for {}", LOCATION_NAMES[(int)location],
                ITEM_NAMES[(int)item]);
   if (always_allow(location, item)) {
     SPDLOG_TRACE(log, "{} always allowed in {}", ITEM_NAMES[(int)item],
                  LOCATION_NAMES[(int)location]);
   }
+#endif
 
   if (always_allow(location, item) ||
       (can_fill(location, item) && can_reach(location))) {
