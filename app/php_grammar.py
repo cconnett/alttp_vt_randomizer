@@ -306,8 +306,9 @@ def ExpandToC(d):
       result = result.format(foodiebar=foodiebar)
     return result
   elif name == 'has':
-    return 'this->num_reachable(Item::{}) >= {}'.format(value['item'],
-                                                        value.get('count', 1))
+    return 'this->is_num_reachable({n}, Item::{item})'.format(
+      item=value['item'],
+      n=value.get('count', 1))
   elif name == 'location_has_item':
     return '(' + ' || '.join(
         'assignments[(int)Location::{location}] == Item::{item}'.format(
