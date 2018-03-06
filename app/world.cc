@@ -14,34 +14,35 @@
 
 using namespace std;
 
-// Returns the implication:
-//(`item` is a dungeon item) -> (`location` is in the `item`'s dungeon)
-bool dungeon_item_in_dungeon_location(Item item, Location location) {
+Region dungeon_of(Item item) {
   for (int r = (int)Region::HyruleCastleEscape; r <= (int)Region::GanonsTower;
        r++) {
     for (const Item *dungeon_item = DUNGEON_ITEMS[r];
          *dungeon_item != Item::INVALID; dungeon_item++) {
       if (item == *dungeon_item) {
-        // `item` is a dungeon item belonging to dungeon `r`. Return (`location`
-        // in dungeon `r`).
-        for (const Location *dungeon_location = DUNGEON_LOCATIONS[r];
-             *dungeon_location != Location::INVALID; dungeon_location++) {
-          if (location == *dungeon_location) {
-            // Item belongs in dungeon `r`, and `location` is in dungeon `r`.
-            return true;
-          }
-        }
-        // Item belongs in dungeon `r`, but `location` is not in dungeon `r`.
-        return false;
+        return (Region)r;
       }
     }
-    // Item doesn't belong to dungeon `r`.
   }
-  // Item doesn't belong to any dungeon.
-  return true;
+  return Region::INVALID;
 }
 
-World::~World() { delete generator; }
+Region dungeon_of(Location location) {
+  for (int r = (int)Region::HyruleCastleEscape; r <= (int)Region::GanonsTower;
+       r++) {
+    for (const Location *dungeon_location = DUNGEON_LOCATIONS[r];
+         *dungeon_location != Location::INVALID; dungeon_location++) {
+      if (location == *dungeon_location) {
+        return (Region)r;
+      }
+    }
+  }
+  return Region::INVALID;
+}
+
+World::~World() {
+  delete generator;
+}
 
 World::World(int seed) : generator(new mt_rand(seed)) {
   clear_assumed();
@@ -97,12 +98,36 @@ World::World(int seed) : generator(new mt_rand(seed)) {
   // Shuffle the real locations (not the null terminator).
   generator->shuffle(locations, NUM_FILLABLE_LOCATIONS);
 
-  // Fill dungeon items.  Fill the items into each dungeon separately, since
-  // dungeon items can only go in their respective dungeons.
-  clear_assumed();
-  add_assumed(FLAT_DUNGEON_ITEMS, ARRAY_LENGTH(FLAT_DUNGEON_ITEMS));
-  add_assumed(ADVANCEMENT_ITEMS, ARRAY_LENGTH(ADVANCEMENT_ITEMS));
-  fill_items_in_locations(FLAT_DUNGEON_ITEMS, locations);
+  // For each dungeon:
+  //   Extract its locations from `locations`.
+  // For each FLAT_DUNGEON_ITEMS:
+  //   Apply fill_items_in_locations(world, single item,
+  //   shuffled_locations[dungeon_of(item)])
+  Location shuffled_locations_by_dungeon[NUM_DUNGEONS + 1]
+                                        [MAX_DUNGEON_LOCATIONS + 1] = {
+                                            Location::INVALID};
+  Location *next_location_per_dungeon[NUM_DUNGEONS + 1];
+  for (int d = (int)Region::HyruleCastleEscape; d <= (int)Region::GanonsTower;
+       d++) {
+    next_location_per_dungeon[d] = &shuffled_locations_by_dungeon[d][0];
+  }
+  for (Location *loc = locations; *loc != Location::INVALID; loc++) {
+    Region dungeon = dungeon_of(*loc);
+    if (dungeon != Region::INVALID) {
+      *next_location_per_dungeon[(int)dungeon]++ = *loc;
+    }
+  }
+  for (int d = (int)Region::HyruleCastleEscape; d <= (int)Region::GanonsTower;
+       d++) {
+    *next_location_per_dungeon[d] = Location::INVALID;
+  }
+
+  Item single_item[2] = {Item::INVALID};
+  for (const Item *item = FLAT_DUNGEON_ITEMS; *item != Item::INVALID; item++) {
+    single_item[0] = *item;
+    fill_items_in_locations(
+        single_item, shuffled_locations_by_dungeon[(int)dungeon_of(*item)]);
+  }
 
   // Random junk fill in Ganon's tower.
   Location ganons_tower_empty[MAX_DUNGEON_LOCATIONS];
@@ -162,9 +187,9 @@ World::World(int seed) : generator(new mt_rand(seed)) {
   generator->shuffle(nice, ARRAY_LENGTH(nice));
   fast_fill_items_in_locations(nice, ARRAY_LENGTH(nice), empty_locations);
 
-  // fast_fill_items_in_locations the shuffled remaining trash items. The first
-  // `gt_junk` of them were already placed in Ganon's Tower, so offset by
-  // `gt_junk`.
+  // fast_fill_items_in_locations the shuffled remaining trash
+  // items. The first `gt_junk` of them were already placed in Ganon's
+  // Tower, so offset by `gt_junk`.
   Item *trash = extra + gt_junk;
   int num_trash = ARRAY_LENGTH(extra) - gt_junk;
   generator->shuffle(trash, num_trash);
@@ -226,7 +251,7 @@ void World::set_item(Location location, Item item) {
 }
 
 bool World::check_and_set_item(Location location, Item item) {
-  if (has_item(location) || !dungeon_item_in_dungeon_location(item, location)) {
+  if (has_item(location)) {
     return false;
   }
 
@@ -259,7 +284,9 @@ void World::raw_set_item(Location location, Item item) {
                ITEM_NAMES[(int)item]);
 }
 
-void World::clear_assumed() { memset(num_unplaced, 0, sizeof(num_unplaced)); }
+void World::clear_assumed() {
+  memset(num_unplaced, 0, sizeof(num_unplaced));
+}
 void World::add_assumed(const Item *items, size_t n_items) {
   for (size_t i = 0; i < n_items; i++) {
     num_unplaced[(int)items[i]]++;
