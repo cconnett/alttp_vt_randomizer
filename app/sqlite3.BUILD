@@ -18,7 +18,10 @@ cc_library(
         "sqlite3.h",
         "sqlite3ext.h",
     ],
-    copts = ["-DSQLITE_CORE"] + COMPILER_OPTS,
+    copts = [
+        "-DSQLITE_CORE",
+        "-DSQLITE_THREADSAFE=2",
+    ] + COMPILER_OPTS,
     linkopts = [
         "-lpthread",
         "-ldl",
