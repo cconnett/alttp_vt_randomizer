@@ -40,9 +40,7 @@ Region dungeon_of(Location location) {
   return Region::INVALID;
 }
 
-World::~World() {
-  delete generator;
-}
+World::~World() { delete generator; }
 
 World::World(int seed) : generator(new mt_rand(seed)) {
   clear_assumed();
@@ -286,9 +284,7 @@ void World::raw_set_item(Location location, Item item) {
                ITEM_NAMES[(int)item]);
 }
 
-void World::clear_assumed() {
-  memset(num_unplaced, 0, sizeof(num_unplaced));
-}
+void World::clear_assumed() { memset(num_unplaced, 0, sizeof(num_unplaced)); }
 void World::add_assumed(const Item *items, size_t n_items) {
   for (size_t i = 0; i < n_items; i++) {
     num_unplaced[(int)items[i]]++;
