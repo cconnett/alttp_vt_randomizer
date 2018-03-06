@@ -67,7 +67,7 @@ void *populate_seed_range(void *range_struct) {
     }
     sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
     cout << "Completed " << base << "-"
-         << min(base + TRANSACTION_SIZE - 1, myrange.end) << endl;
+         << min(base + TRANSACTION_SIZE, myrange.end) << endl;
   }
   sqlite3_close(conn);
   return nullptr;
