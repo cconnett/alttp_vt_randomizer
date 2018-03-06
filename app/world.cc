@@ -14,33 +14,6 @@
 
 using namespace std;
 
-// Returns the implication:
-//(`item` is a dungeon item) -> (`location` is in the `item`'s dungeon)
-bool dungeon_item_in_dungeon_location(Item item, Location location) {
-  for (int r = (int)Region::HyruleCastleEscape; r <= (int)Region::GanonsTower;
-       r++) {
-    for (const Item *dungeon_item = DUNGEON_ITEMS[r];
-         *dungeon_item != Item::INVALID; dungeon_item++) {
-      if (item == *dungeon_item) {
-        // `item` is a dungeon item belonging to dungeon `r`. Return (`location`
-        // in dungeon `r`).
-        for (const Location *dungeon_location = DUNGEON_LOCATIONS[r];
-             *dungeon_location != Location::INVALID; dungeon_location++) {
-          if (location == *dungeon_location) {
-            // Item belongs in dungeon `r`, and `location` is in dungeon `r`.
-            return true;
-          }
-        }
-        // Item belongs in dungeon `r`, but `location` is not in dungeon `r`.
-        return false;
-      }
-    }
-    // Item doesn't belong to dungeon `r`.
-  }
-  // Item doesn't belong to any dungeon.
-  return true;
-}
-
 World::World() : log(spdlog::get("trace")) {
   clear_assumed();
   clear_reachability_cache();
@@ -112,7 +85,7 @@ void World::set_item(Location location, Item item) {
 }
 
 bool World::check_and_set_item(Location location, Item item) {
-  if (has_item(location) || !dungeon_item_in_dungeon_location(item, location)) {
+  if (has_item(location)) {
     return false;
   }
 

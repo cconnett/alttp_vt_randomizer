@@ -26,6 +26,32 @@ Item get_bottle(int filled) {
   return bottles[mt_rand(filled, 6)];
 }
 
+Region dungeon_of(Item item) {
+  for (int r = (int)Region::HyruleCastleEscape; r <= (int)Region::GanonsTower;
+       r++) {
+    for (const Item *dungeon_item = DUNGEON_ITEMS[r];
+         *dungeon_item != Item::INVALID; dungeon_item++) {
+      if (item == *dungeon_item) {
+        return (Region)r;
+      }
+    }
+  }
+  return Region::INVALID;
+}
+
+Region dungeon_of(Location location) {
+  for (int r = (int)Region::HyruleCastleEscape; r <= (int)Region::GanonsTower;
+       r++) {
+    for (const Location *dungeon_location = DUNGEON_LOCATIONS[r];
+         *dungeon_location != Location::INVALID; dungeon_location++) {
+      if (location == *dungeon_location) {
+        return (Region)r;
+      }
+    }
+  }
+  return Region::INVALID;
+}
+
 void set_medallions(World &world) {
   const Item medallions[] = {Item::Ether, Item::Bombos, Item::Quake};
   world.set_medallion(Location::TurtleRockMedallion, medallions[mt_rand(0, 2)]);
@@ -148,8 +174,37 @@ void makeseed(World &world, int seed) {
   world.clear_assumed();
   world.add_assumed(FLAT_DUNGEON_ITEMS, ARRAY_LENGTH(FLAT_DUNGEON_ITEMS));
   world.add_assumed(ADVANCEMENT_ITEMS, ARRAY_LENGTH(ADVANCEMENT_ITEMS));
-  fill_items_in_locations(world, FLAT_DUNGEON_ITEMS, locations);
+  // For each dungeon:
+  //   Extract its locations from `locations`.
+  // For each FLAT_DUNGEON_ITEMS:
+  //   Apply fill_items_in_locations(world, single item,
+  //   shuffled_locations[dungeon_of(item)])
+  Location shuffled_locations_by_dungeon[NUM_DUNGEONS + 1]
+                                        [MAX_DUNGEON_LOCATIONS + 1] = {
+                                            Location::INVALID};
+  Location *next_location_per_dungeon[NUM_DUNGEONS + 1];
+  for (int d = (int)Region::HyruleCastleEscape; d <= (int)Region::GanonsTower;
+       d++) {
+    next_location_per_dungeon[d] = &shuffled_locations_by_dungeon[d][0];
+  }
+  for (Location *loc = locations; *loc != Location::INVALID; loc++) {
+    Region dungeon = dungeon_of(*loc);
+    if (dungeon != Region::INVALID) {
+      *next_location_per_dungeon[(int)dungeon]++ = *loc;
+    }
+  }
+  for (int d = (int)Region::HyruleCastleEscape; d <= (int)Region::GanonsTower;
+       d++) {
+    *next_location_per_dungeon[d] = Location::INVALID;
+  }
 
+  Item single_item[2] = {Item::INVALID};
+  for (const Item *item = FLAT_DUNGEON_ITEMS; *item != Item::INVALID; item++) {
+    single_item[0] = *item;
+    fill_items_in_locations(
+        world, single_item,
+        shuffled_locations_by_dungeon[(int)dungeon_of(*item)]);
+  }
   // Random junk fill in Ganon's tower.
   Location ganons_tower_empty[MAX_DUNGEON_LOCATIONS];
   size_t num_empty_gt_locations = 0;
@@ -209,9 +264,9 @@ void makeseed(World &world, int seed) {
   fast_fill_items_in_locations(world, nice, ARRAY_LENGTH(nice),
                                empty_locations);
 
-  // fast_fill_items_in_locations the shuffled remaining trash items. The first
-  // `gt_junk` of them were already placed in Ganon's Tower, so offset by
-  // `gt_junk`.
+  // fast_fill_items_in_locations the shuffled remaining trash
+  // items. The first `gt_junk` of them were already placed in Ganon's
+  // Tower, so offset by `gt_junk`.
   Item *trash = extra + gt_junk;
   int num_trash = ARRAY_LENGTH(extra) - gt_junk;
   mt_shuffle(trash, num_trash);
