@@ -98,11 +98,13 @@ World::World(int seed) : generator(new mt_rand(seed)) {
   // Shuffle the real locations (not the null terminator).
   generator->shuffle(locations, NUM_FILLABLE_LOCATIONS);
 
+  add_assumed(FLAT_DUNGEON_ITEMS, ARRAY_LENGTH(FLAT_DUNGEON_ITEMS));
+  add_assumed(ADVANCEMENT_ITEMS, ARRAY_LENGTH(ADVANCEMENT_ITEMS));
   // For each dungeon:
   //   Extract its locations from `locations`.
   // For each FLAT_DUNGEON_ITEMS:
   //   Apply fill_items_in_locations(world, single item,
-  //   shuffled_locations[dungeon_of(item)])
+  //                                 shuffled_locations[dungeon_of(item)])
   Location shuffled_locations_by_dungeon[NUM_DUNGEONS + 1]
                                         [MAX_DUNGEON_LOCATIONS + 1] = {
                                             Location::INVALID};
