@@ -23,19 +23,19 @@ cc_library(
 
 cc_library(
     name = "arraylength",
-    srcs = ["arraylength.h"],
+    hdrs = ["arraylength.h"],
 )
 
 cc_library(
     name = "errors",
-    srcs = [
+    hdrs = [
         "errors.h",
     ],
 )
 
 cc_library(
     name = "locations",
-    srcs = [
+    hdrs = [
         "locations.h",
     ],
     deps = [":arraylength"],
@@ -43,7 +43,7 @@ cc_library(
 
 cc_library(
     name = "items",
-    srcs = [
+    hdrs = [
         "items.h",
     ],
     deps = [
