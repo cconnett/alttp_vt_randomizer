@@ -30,15 +30,15 @@ shared_mutex m_shuffle;
 int stop;
 bool done = false;
 
-queue<pair<int, int>> shuffle_stage[(int)Item::NUM_ITEMS];
-condition_variable consumer_waiting[(int)Item::NUM_ITEMS];
-mutex channel_mutex[(int)Item::NUM_ITEMS];
+queue<pair<int, int>> shuffle_stage[(int)Location::NUM_LOCATIONS];
+condition_variable consumer_waiting[(int)Location::NUM_LOCATIONS];
+mutex channel_mutex[(int)Location::NUM_LOCATIONS];
 
-void consumer(int item) {
+void consumer(int location) {
   sqlite3 *conn;
 
   char filename[80];
-  sprintf(filename, "results/item-%03d.db", item);
+  sprintf(filename, "results/location-%03d.db", location);
 
   int status = sqlite3_open(filename, &conn);
   if (status != SQLITE_OK) {
@@ -57,33 +57,32 @@ void consumer(int item) {
   sqlite3_prepare_v2(conn, "BEGIN;", 16, &begin, nullptr);
   sqlite3_prepare_v2(conn, "COMMIT;", 16, &commit, nullptr);
 
-  sqlite3_stmt *stmt[(int)Location::NUM_LOCATIONS];
+  sqlite3_stmt *stmt[(int)Item::NUM_ITEMS];
 
   char buffer[256];
-  for (int location = 1; location < (int)Location::NUM_LOCATIONS; location++) {
-    sprintf(buffer, "INSERT OR REPLACE INTO location%03d VALUES (?);",
-            location);
-    sqlite3_prepare_v2(conn, buffer, 256, &stmt[location], nullptr);
+  for (int item = 1; item < (int)Item::NUM_ITEMS; item++) {
+    sprintf(buffer, "INSERT OR REPLACE INTO item%03d VALUES (?);", item);
+    sqlite3_prepare_v2(conn, buffer, 256, &stmt[item], nullptr);
   }
 
   while (!done) {
     sqlite3_reset(begin);
     sqlite3_reset(commit);
 
-    while (shuffle_stage[item].empty() && !done) {
-      unique_lock<mutex> channel_lock(channel_mutex[item]);
-      consumer_waiting[item].wait(channel_lock);
+    while (shuffle_stage[location].empty() && !done) {
+      unique_lock<mutex> channel_lock(channel_mutex[location]);
+      consumer_waiting[location].wait(channel_lock);
     }
     sqlite3_step(begin);
     shared_lock<shared_mutex> lock(m_shuffle);
-    while (!shuffle_stage[item].empty()) {
-      int location = shuffle_stage[item].front().first;
-      int seed = shuffle_stage[item].front().second;
+    while (!shuffle_stage[location].empty()) {
+      int item = shuffle_stage[location].front().first;
+      int seed = shuffle_stage[location].front().second;
 
-      sqlite3_reset(stmt[location]);
-      sqlite3_bind_int(stmt[location], 1, seed);
-      sqlite3_step(stmt[location]);
-      shuffle_stage[item].pop();
+      sqlite3_reset(stmt[item]);
+      sqlite3_bind_int(stmt[item], 1, seed);
+      sqlite3_step(stmt[item]);
+      shuffle_stage[location].pop();
     }
     sqlite3_step(commit);
   }
@@ -91,8 +90,8 @@ void consumer(int item) {
   // Clean up.
   sqlite3_finalize(begin);
   sqlite3_finalize(commit);
-  for (int location = 1; location < (int)Location::NUM_LOCATIONS; location++) {
-    sqlite3_finalize(stmt[location]);
+  for (int item = 1; item < (int)Item::NUM_ITEMS; item++) {
+    sqlite3_finalize(stmt[item]);
   }
   sqlite3_close(conn);
 }
@@ -132,8 +131,8 @@ void producer() {
         for (int location = 1; location < (int)Location::NUM_LOCATIONS;
              location++) {
           int item = (int)assignments[location];
-          shuffle_stage[item].push(make_pair(location, base + offset));
-          consumer_waiting[item].notify_one();
+          shuffle_stage[location].push(make_pair(item, base + offset));
+          consumer_waiting[location].notify_one();
         }
         delete result[offset];
       }
@@ -177,7 +176,7 @@ int main(int argc, char **argv) {
   stop = atoi(argv[2]) + 1;
 
   thread producers[PRODUCER_THREADS];
-  thread writers[(int)Item::NUM_ITEMS];
+  thread writers[(int)Location::NUM_LOCATIONS];
 
   for (int block = start; block < stop; block += TRANSACTION_SIZE) {
     work.push(block);
@@ -186,7 +185,7 @@ int main(int argc, char **argv) {
   for (int t = 0; t < PRODUCER_THREADS; t++) {
     producers[t] = thread(producer);
   }
-  for (int t = 1; t < (int)Item::NUM_ITEMS; t++) {
+  for (int t = 1; t < (int)Location::NUM_LOCATIONS; t++) {
     writers[t] = thread(consumer, t);
   }
 
@@ -194,7 +193,7 @@ int main(int argc, char **argv) {
     producers[t].join();
   }
   done = true;
-  for (int t = 1; t < (int)Item::NUM_ITEMS; t++) {
+  for (int t = 1; t < (int)Location::NUM_LOCATIONS; t++) {
     consumer_waiting[t].notify_all();
     writers[t].join();
   }
