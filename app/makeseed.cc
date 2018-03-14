@@ -39,16 +39,18 @@ condition_variable consumer_waiting[(int)Item::NUM_ITEMS];
 mutex channel_mutex[(int)Item::NUM_ITEMS];
 
 void consumer(int item) {
-  char filename[80];
-  sprintf(filename, "results/item-%03d.bin", item);
-
-  char data_buffer[sizeof(struct location_and_seed) + 1] = {0};
-
-  FILE *sink = fopen(filename, "a");
-
-  if (!sink) {
-    cerr << "Couldn't open " << filename << endl;
-    exit(1);
+  FILE *sink[(int)Location::NUM_LOCATIONS];
+  {
+    char filename[32];
+    for (int location = 1; location < (int)Location::NUM_LOCATIONS;
+         location++) {
+      sprintf(filename, "results/item%03d-location%03d.bin", item, location);
+      sink[location] = fopen(filename, "a");
+      if (!sink[location]) {
+        cerr << "Couldn't open " << filename << endl;
+        exit(1);
+      }
+    }
   }
 
   while (!done) {
@@ -58,13 +60,14 @@ void consumer(int item) {
     }
     shared_lock<shared_mutex> lock(m_shuffle);
     while (!shuffle_stage[item].empty()) {
-      struct location_and_seed *foo = (struct location_and_seed *)&data_buffer;
-      *foo = shuffle_stage[item].front();
-      fputs(data_buffer, sink);
+      int location = (int)shuffle_stage[item].front().location;
+      fwrite(&shuffle_stage[item].front().seed, sizeof(int), 1, sink[location]);
       shuffle_stage[item].pop();
     }
   }
-  fclose(sink);
+  for (int location = 1; location < (int)Location::NUM_LOCATIONS; location++) {
+    fclose(sink[location]);
+  }
 }
 
 void producer() {
