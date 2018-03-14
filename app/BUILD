@@ -2,6 +2,7 @@ cc_binary(
     name = "makeseed",
     srcs = ["makeseed.cc"],
     copts = ["-std=c++17"],
+    linkopts = ["-lpthread"],
     deps = [
         ":arraylength",
         ":errors",
@@ -9,7 +10,6 @@ cc_binary(
         ":locations",
         ":world",
         "@spdlog",
-        "@sqlite3",
     ],
 )
 
@@ -65,7 +65,6 @@ cc_library(
         ":locations",
         ":mt_rand",
         "@spdlog",
-        "@sqlite3",
     ],
 )
 
