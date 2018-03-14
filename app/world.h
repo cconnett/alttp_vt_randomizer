@@ -14,8 +14,7 @@ class World {
 
   void print();
   void compact_print();
-  void sqlite3_write(sqlite3_stmt *stmt[][(int)Location::NUM_LOCATIONS],
-                     int seed);
+  const Item *view_assignments() const;
 
   bool has_item(Location location);
 
