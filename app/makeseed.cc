@@ -15,7 +15,6 @@
 #include "items.h"
 #include "locations.h"
 #include "spdlog/spdlog.h"
-#include "sqlite3.h"
 #include "world.h"
 
 using namespace std;
@@ -24,77 +23,48 @@ using namespace std;
 #define TRANSACTION_SIZE (1000)
 #define MAX_QUEUE_LENGTH 10000
 
+struct location_and_seed {
+  Location location;
+  int seed;
+};
+
 queue<int> work;
 mutex m_work, m_cout;
 shared_mutex m_shuffle;
 int stop;
 bool done = false;
 
-queue<pair<int, int>> shuffle_stage[(int)Item::NUM_ITEMS];
+queue<struct location_and_seed> shuffle_stage[(int)Item::NUM_ITEMS];
 condition_variable consumer_waiting[(int)Item::NUM_ITEMS];
 mutex channel_mutex[(int)Item::NUM_ITEMS];
 
 void consumer(int item) {
-  sqlite3 *conn;
-
   char filename[80];
-  sprintf(filename, "results/item-%03d.db", item);
+  sprintf(filename, "results/item-%03d.bin", item);
 
-  int status = sqlite3_open(filename, &conn);
-  if (status != SQLITE_OK) {
-    cerr << "Cannot open DB." << endl;
-    exit(status);
-  }
+  char data_buffer[sizeof(struct location_and_seed) + 1] = {0};
 
-  status = sqlite3_exec(conn, "PRAGMA journal_mode = OFF;", nullptr, nullptr,
-                        nullptr);
-  if (status != SQLITE_OK) {
-    cerr << "Bad pragma." << endl;
-    exit(status);
-  }
+  FILE *sink = fopen(filename, "a");
 
-  sqlite3_stmt *begin, *commit;
-  sqlite3_prepare_v2(conn, "BEGIN;", 16, &begin, nullptr);
-  sqlite3_prepare_v2(conn, "COMMIT;", 16, &commit, nullptr);
-
-  sqlite3_stmt *stmt[(int)Location::NUM_LOCATIONS];
-
-  char buffer[256];
-  for (int location = 1; location < (int)Location::NUM_LOCATIONS; location++) {
-    sprintf(buffer, "INSERT OR REPLACE INTO location%03d VALUES (?);",
-            location);
-    sqlite3_prepare_v2(conn, buffer, 256, &stmt[location], nullptr);
+  if (!sink) {
+    cerr << "Couldn't open " << filename << endl;
+    exit(1);
   }
 
   while (!done) {
-    sqlite3_reset(begin);
-    sqlite3_reset(commit);
-
     while (shuffle_stage[item].empty() && !done) {
       unique_lock<mutex> channel_lock(channel_mutex[item]);
       consumer_waiting[item].wait(channel_lock);
     }
-    sqlite3_step(begin);
     shared_lock<shared_mutex> lock(m_shuffle);
     while (!shuffle_stage[item].empty()) {
-      int location = shuffle_stage[item].front().first;
-      int seed = shuffle_stage[item].front().second;
-
-      sqlite3_reset(stmt[location]);
-      sqlite3_bind_int(stmt[location], 1, seed);
-      sqlite3_step(stmt[location]);
+      struct location_and_seed *foo = (struct location_and_seed *)&data_buffer;
+      *foo = shuffle_stage[item].front();
+      fputs(data_buffer, sink);
       shuffle_stage[item].pop();
     }
-    sqlite3_step(commit);
   }
-
-  // Clean up.
-  sqlite3_finalize(begin);
-  sqlite3_finalize(commit);
-  for (int location = 1; location < (int)Location::NUM_LOCATIONS; location++) {
-    sqlite3_finalize(stmt[location]);
-  }
-  sqlite3_close(conn);
+  fclose(sink);
 }
 
 void producer() {
@@ -132,7 +102,10 @@ void producer() {
         for (int location = 1; location < (int)Location::NUM_LOCATIONS;
              location++) {
           int item = (int)assignments[location];
-          shuffle_stage[item].push(make_pair(location, base + offset));
+          struct location_and_seed temp;
+          temp.location = (Location)location;
+          temp.seed = base + offset;
+          shuffle_stage[item].push(temp);
           consumer_waiting[item].notify_one();
         }
         delete result[offset];
