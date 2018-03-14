@@ -228,17 +228,7 @@ void World::print() {
   }
 }
 
-void World::sqlite3_write(sqlite3_stmt *stmt[][(int)Location::NUM_LOCATIONS],
-                          int seed) {
-  for (uint location = 1; location < ARRAY_LENGTH(assignments); location++) {
-    if (assignments[location] != Item::INVALID) {
-      auto s = stmt[(int)assignments[location]][location];
-      sqlite3_reset(s);
-      sqlite3_bind_int(s, 1, seed);
-      sqlite3_step(s);
-    }
-  }
-}
+const Item *World::view_assignments() const { return assignments; }
 
 bool World::has_item(Location location) {
   assert(location != Location::INVALID);
