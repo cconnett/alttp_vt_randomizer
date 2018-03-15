@@ -2,7 +2,9 @@
 
 from __future__ import print_function
 
+import pdb
 import re
+import sys
 
 import pyparsing as p
 
@@ -24,11 +26,12 @@ def DelimitedList(token, delimiter=','):
 
 
 def ConvertInfixListToPrefixDict(pr):
+  """Convert an infix list from `infixNotation` to a prefix-notation dict."""
   if not isinstance(pr, p.ParseResults):
-    #print('Got non-pr:', pr)
-    #print('Returning it unchanged.')
+    # print('Got non-pr:', pr)
+    # print('Returning it unchanged.')
     return pr
-  #print('Got', pr.dump())
+  # print('Got', pr.dump())
 
   if pr.haskeys():
     result = pr.asDict()
@@ -60,17 +63,17 @@ def ConvertInfixListToPrefixDict(pr):
     try:
       result = ConvertInfixListToPrefixDict(pr[0])
     except Exception as e:
+      _ = e
       print('Poo poo.')
-      import pdb
       pdb.set_trace()
       print()
+      raise
 
   if isinstance(result, dict):
-    #print('Returning', result)
+    # print('Returning', result)
     return result
   else:
-    #print('I should return a dict, but I am actually returning', result)
-    import pdb
+    # print('I should return a dict, but I am actually returning', result)
     pdb.set_trace()
 
 
@@ -219,6 +222,7 @@ meta_method = G('public function ' + p.Combine(p.oneOf('can has') + identifier)
 
 
 def GetItemCollectionMethods():
+  """Extract parse trees for the general purpose methods from ItemCollection."""
   item_collection = open('Support/ItemCollection.php').read()
   ret = {}
 
@@ -230,7 +234,6 @@ def GetItemCollectionMethods():
     print(e.line)
     print(' ' * (e.col - 1) + '^')
     print(e)
-    import sys
     sys.exit()
   for result in method_results:
     n = result[0].asDict()
@@ -307,8 +310,7 @@ def ExpandToC(d):
     return result
   elif name == 'has':
     return 'this->is_num_reachable({n}, Item::{item})'.format(
-      item=value['item'],
-      n=value.get('count', 1))
+        item=value['item'], n=value.get('count', 1))
   elif name == 'location_has_item':
     return '(' + ' || '.join(
         'assignments[(int)Location::{location}] == Item::{item}'.format(
