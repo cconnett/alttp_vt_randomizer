@@ -6,6 +6,9 @@ use ALttP\Support\ItemCollection as Items;
 use Log;
 
 class RandomAssumed extends Filler {
+	private $ganon_junk_lower = 0;
+	private $ganon_junk_upper = 15;
+
 	/**
 	 * This fill places items in the first available location that it can possibly be in, assuming that unplaced
 	 * items will be reachable. Those items will then have a smaller set of places that they can be placed.
@@ -19,10 +22,12 @@ class RandomAssumed extends Filler {
 	 */
 	public function fill(array $dungeon, array $required, array $nice, array $extra) {
 		$randomized_order_locations = $this->shuffleLocations($this->world->getEmptyLocations());
+
 		$this->fillItemsInLocations($dungeon, $randomized_order_locations, array_merge($required, $nice));
 
 		// random junk fill
-		$gt_locations = $this->world->getRegion('Ganons Tower')->getEmptyLocations()->randomCollection(mt_rand2(0, 15));
+		$gt_locations = $this->world->getRegion('Ganons Tower')->getEmptyLocations()
+			->randomCollection(mt_rand2($this->ganon_junk_lower, $this->ganon_junk_upper));
 		$extra = $this->shuffleItems($extra);
 		$trash = array_splice($extra, 0, $gt_locations->count());
 		$this->fastFillItemsInLocations($trash, $gt_locations);
@@ -38,15 +43,32 @@ class RandomAssumed extends Filler {
 		$this->fastFillItemsInLocations($this->shuffleItems($extra), $randomized_order_locations->getEmptyLocations());
 	}
 
+	/**
+	 * This fill places items in the first available location that it can possibly be in, assuming that unplaced
+	 * items will be reachable. Those items will then have a smaller set of places that they can be placed.
+	 *
+	 * @param int $min minimum junk items to be placed
+	 * @param int $max maximum junk items to be placed
+	 *
+	 * @return $this
+	 */
+	public function setGanonJunkLimits(int $min, int $max) {
+		$this->ganon_junk_lower = $min;
+		$this->ganon_junk_upper = $max;
+
+		return $this;
+	}
+
 	protected function fillItemsInLocations($fill_items, $locations, $base_assumed_items = []) {
-		$remaining_fill_items = new Items($fill_items);
+		$remaining_fill_items = new Items($fill_items, $this->world);
 		Log::debug(sprintf("Filling %s items in %s locations", $remaining_fill_items->count(),
-                           $locations->getEmptyLocations()->count()));
+			$locations->getEmptyLocations()->count()));
+
+		$this->world->setCurrentlyFillingItems($remaining_fill_items);
 
 		if ($remaining_fill_items->count() > $locations->getEmptyLocations()->count()) {
-            throw new \Exception("Trying to fill more items than available locations.");
-        }
-        $remaining_fill_items = $remaining_fill_items->merge($base_assumed_items);
+			throw new \Exception("Trying to fill more items than available locations.");
+		}
 
         // The items to fill are already in a shuffled order.
         foreach ($fill_items as $key => $item) {
@@ -70,8 +92,16 @@ class RandomAssumed extends Filler {
                 }
 			}
 			if ($fill_location === null) {
-				throw new \Exception(sprintf('No Available Locations: "%s"', $item->getNiceName()));
+				throw new \Exception(sprintf('No Available Locations: "%s" %s', $item->getNiceName(),
+					json_encode($remaining_fill_items->map(function($i){return $i->getName();}))));
 			}
+
+			if ($item instanceof Item\Compass || $item instanceof Item\Map) {
+				$fill_location = $fillable_locations->random();
+			} else {
+				$fill_location = $fillable_locations->first();
+			}
+
 			Log::debug(sprintf("Placing Item: %s in %s", $item->getNiceName(), $fill_location->getName()));
             $lname = preg_replace("/[^A-Za-z0-9]/", "", $fill_location->getName());
             $iname = preg_replace("/[^A-Za-z0-9]/", "", $item->getName());
