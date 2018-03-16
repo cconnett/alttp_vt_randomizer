@@ -153,26 +153,25 @@ int main(int argc, char **argv) {
   stop = atoi(argv[2]) + 1;
 
   thread producers[PRODUCER_THREADS];
-  thread writers[(int)Item::NUM_ITEMS];
+  thread consumers[(int)Item::NUM_ITEMS];
 
   for (int block = start; block < stop; block += TRANSACTION_SIZE) {
     work.push(block);
   }
 
+  for (int t = 1; t < (int)Item::NUM_ITEMS; t++) {
+    consumers[t] = thread(consumer, t);
+  }
   for (int t = 0; t < PRODUCER_THREADS; t++) {
     producers[t] = thread(producer);
   }
-  for (int t = 1; t < (int)Item::NUM_ITEMS; t++) {
-    writers[t] = thread(consumer, t);
-  }
-
   for (int t = 0; t < PRODUCER_THREADS; t++) {
     producers[t].join();
   }
   done = true;
   for (int t = 1; t < (int)Item::NUM_ITEMS; t++) {
     consumer_waiting[t].notify_all();
-    writers[t].join();
+    consumers[t].join();
   }
 
   return 0;
