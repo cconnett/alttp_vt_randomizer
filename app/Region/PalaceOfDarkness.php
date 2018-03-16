@@ -105,7 +105,13 @@ class PalaceOfDarkness extends Region {
 				return $items->has('KeyD1');
 			}
 
-			return (($items->has('Hammer') && $items->canShootArrows() && $items->has('Lamp', $this->world->config('item.require.Lamp', 1))) ? $items->has('KeyD1', 6) : $items->has('KeyD1', 5));
+			return (($items->has('Hammer') &&
+                     $items->canShootArrows() &&
+                     $items->has('Lamp',
+                                 $this->world->config('item.require.Lamp', 1))
+                     ) ?
+                    $items->has('KeyD1', 6) :
+                    $items->has('KeyD1', 5));
 		})->setAlwaysAllow(function($item, $items) {
 			return $item == Item::get('KeyD1') && $items->has('KeyD1', 5);
 		});

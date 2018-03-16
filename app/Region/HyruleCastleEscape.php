@@ -156,7 +156,10 @@ class HyruleCastleEscape extends Region {
 		});
 
 		$this->locations["Link's Uncle"]->setFillRules(function($item, $locations, $items) {
-			return $this->locations["Sanctuary"]->canAccess($this->world->collectItems())
+			return
+                // Assuming open...
+                // $this->locations["Sanctuary"]->canAccess($this->world->collectItems())
+                true
 				&& !((!$this->world->config('region.wildKeys', false) && $item instanceof Item\Key)
 					|| (!$this->world->config('region.wildBigKeys', false) && $item instanceof Item\BigKey)
 					|| (!$this->world->config('region.wildMaps', false) && $item instanceof Item\Map)

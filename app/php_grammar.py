@@ -6,6 +6,7 @@ import pdb
 import re
 import sys
 
+import infix_notation
 import pyparsing as p
 
 
@@ -20,6 +21,9 @@ s = p.Suppress
 LEFT = p.opAssoc.LEFT
 RIGHT = p.opAssoc.RIGHT
 
+def MakeConstant(s):
+  """Make a string into A_CONSTANT_NAME."""
+  return re.sub(r'[^\w]', '_', s).upper()
 
 def DelimitedList(token, delimiter=','):
   return token + p.ZeroOrMore(s(delimiter) + token) - s(opt(delimiter))
@@ -79,38 +83,56 @@ def ConvertInfixListToPrefixDict(pr):
 
 p.quotedString.addParseAction(p.removeQuotes)
 
+php_expr = p.Forward()
+
 # Common structures. These are not in groups and often appear as subexpressions.
 boolean = p.oneOf('true false').setName('boolean').setParseAction(
     lambda pr: pr[0] == 'true')
 integer = p.Word(
     p.nums).setName('integer').setParseAction(lambda pr: int(pr[0]))
+enum_string = p.Literal("'uncle'") | "'swordless'"
 identifier = p.Word(p.alphas + '_', p.alphanums + '_').setName('identifier')
 location_def = ((s('$this->locations[') - p.quotedString - s(']')) |
                 p.Literal('$this->prize_location').setParseAction(
                     p.replaceWith('Prize')))
+item_ref = (s('Item::get(') - p.quotedString - s(')')).setName('item reference')
+
+# Common structure that _is_ labeled.
+php_var = G(s('$') + identifier('symbol')).setName('variable')
+
 # Reduced to true/false under assumption of open mode.
-game_mode = ((p.Literal("config('game-mode') == 'swordless'").setParseAction(
-    p.replaceWith({
-        'boolean': False
-    })) | p.Literal("in_array(config('game-mode'), ['open', 'swordless'])")
-              .setParseAction(p.replaceWith({
-                  'boolean': True
-              })))).setName('game mode assertion')
+game_mode_true = (p.Literal("in_array(config('game-mode'), ['open'])") |
+                  "$this->world->getGoal() == 'ganon'").setParseAction(
+                      p.replaceWith({
+                          'boolean': True
+                      }))
+game_mode_false = (
+    p.Literal("$this->world->getGoal() == 'dungeons'")).setParseAction(
+        p.replaceWith({
+            'boolean': False
+        }))
+game_mode = game_mode_true | game_mode_false
+in_array_expr = (s('in_array') + '(' + php_expr('member') - ',' - '[' -
+                 DelimitedList(item_ref | enum_string)('elements') - ']' - ')')
 
 # Item classification: Group items into sets in source code and do class lookup.
 item_is_a = (('is_a($item, Item\\' - identifier - '::class)') |
              ('$item instanceof Item\\' - identifier)).setName('item_is_a')
-item_ref = (s('Item::get(') - p.quotedString - s(')')).setName('item reference')
 item_is_not = G('$item !=' - item_ref('item')).setName(
     'negative item assertion')
-item_is = G(('in_array($item, [' - G(DelimitedList(item_ref))('items') - '])') |
-            ('$item ==' - G(item_ref)('items'))).setName('item assertion')
-
+item_is = G('$item ==' - G(item_ref)('items')).setName('item assertion')
 # End of ungrouped structures.
 
+
+# Configuration options. The code generator will support the options and turn
+# the PHP option queries into compile time constants.
+world_config = G(
+    opt('$this->world->') + 'config(' - p.quotedString('option') -
+    opt(',' - (boolean | integer)('default')) - ')')
+
 # Reduce to true/false with generation-time config options.
-world_config = G('$this->world->config(' - p.quotedString('option') - ',' - (
-    boolean | integer)('default') - ')').setName('config expression')
+sword_left_to_place = p.Literal(
+    '($this->world->getCurrentlyFillingItems()->hasSword())')
 
 # Top-level expression alternates. These should be in groups so they get
 # substructures.
@@ -118,15 +140,21 @@ item_in_locations = G('$locations->itemInLocations(Item::get(' - p.quotedString(
     'item') - ')' - ',' - '[' - DelimitedList(p.quotedString)(
         'allowable_locations') - ']' - ')').setName('item_in_location')
 
-# Lookup into item count array.
+# Lookup into item count array. The major hack here is to replace a common
+# sub-expression for a config option for dark room navigation with 1 (yes, one
+# lamp is always required).
+num_required_lamps = s(
+    "$this->world->config('item.require.Lamp', 1)").setParseAction(
+        p.replaceWith(1))
 has_item = G(
-    p.oneOf('$items $this') + '->has(' + p.quotedString('item') +
-    opt(',' + integer('count')) + ')').setName('has_item')
+    p.oneOf('$items $this') + '->has(' + p.quotedString('item') -
+    opt(',' + (num_required_lamps | integer | php_var)('count')) - ')').setName(
+        'has_item')
 # Lookup into placement array.
-location_has = (G('$locations[' + p.quotedString('location') +
-                  ']->hasItem(Item::get(' + G(p.quotedString)('items') + '))') |
-                G('in_array($locations[' - p.quotedString('location') -
-                  ']->getItem(), [' - DelimitedList(item_ref)('items') - '])'))
+location_has = (
+    G('$locations[' + p.quotedString('location') + ']->hasItem(Item::get(' +
+      G(p.quotedString)('items') + '))') |
+    G('in_array($locations[' - p.quotedString('location') - ']->getItem(), '))
 
 can_access = G(location_def('location') + '->canAccess($items)').setName(
     'reachability assertion')
@@ -142,9 +170,9 @@ method_call = G(
         'call to method of ItemCollection')
 can_enter_or_complete = G('$this->' + p.oneOf('can_enter can_complete')
                           ('method_name')).setName('region_method')
+boss_can_beat = p.Literal('$this->boss->canBeat($items, $locations)')
 
 php_block = p.Forward().setName('block')
-php_var = G(s('$') + identifier('symbol')).setName('variable')
 php_callable_expression = G(
     can_enter_or_complete('call_to_region_method') | (p.oneOf([
         'function($locations, $items)',
@@ -153,16 +181,17 @@ php_callable_expression = G(
     ]) - G(php_block)('body'))).setName('callable')
 
 php_atom = G(
-    has_item('has') | location_has('location_has_item') |
+    has_item('has_item') | location_has('location_has_item') |
     region_can_enter('access_to_region') | can_access('access_to_location') |
     method_call('call_builtin') | item_in_locations('item_in_locations') |
-    game_mode('mode') | item_is_a('item_is_a') | item_is_not('item_is_not') |
-    item_is('item_is') | world_config('config') | boolean('boolean') |
-    integer('integer') | php_callable_expression('callable') |
-    php_var('var')).setName('atom')
+    game_mode('game_mode') | in_array_expr('in_array') |
+    item_is_a('item_is_a') | item_is('item_is') | item_is_not('item_is_not') |
+    world_config('config') | sword_left_to_place('sword_left_to_place') |
+    boss_can_beat('boss') | boolean('boolean') | integer('integer') |
+    php_callable_expression('callable') | php_var('var') |
+    enum_string('enum')).setName('atom')
 
-php_expr = p.Forward()  # Removing this Forward messes up the output types.
-php_expr <<= p.infixNotation(
+php_expr <<= infix_notation.infixNotation(
     php_atom,
     [
         ('!', 1, RIGHT),
@@ -181,7 +210,7 @@ php_expr <<= p.infixNotation(
     ]).setParseAction(ConvertInfixListToPrefixDict)
 
 return_stmt = G('return' - php_expr('return') - ';').setName('return statement')
-if_stmt = G('if (' - php_expr('condition') - ')' - G(php_block)
+if_stmt = G('if' - s('(') - php_expr('condition') - ')' - G(php_block)
             ('body')).setName('if statement')
 php_stmt = (return_stmt | G(if_stmt('if'))).setName('statement')
 php_block <<= s('{') + p.OneOrMore(php_stmt) + s('}')
@@ -283,7 +312,7 @@ def ExpandToC(d):
     return 'if ({condition}) {{ {body} }} '.format(
         condition=ExpandToC(value['condition']),
         body='\n'.join(ExpandToC(stmt) for stmt in value['body']))
-  elif name in ('<', '>='):
+  elif name in ('<', '>=', '=='):
     return '(({left}){operator}({right}))'.format(
         left=ExpandToC(value[0]), operator=name, right=ExpandToC(value[1]))
   elif name == 'ternary':
@@ -295,22 +324,34 @@ def ExpandToC(d):
     return 'true' if value else 'false'
   # PHP constructs.
   elif name == 'var':
-    return '{%s}' % 'foodiebar'
+    # The var reference is returned as a formattable string piece. Other
+    # constructs that expect a variable reference will substitute in the named
+    # parameter 'foodiebar'.
+    return '{%s}' % value['symbol']
   elif name == 'integer':
     return str(value)
+  elif name == 'enum':
+    return MakeConstant(value)
   # ALTTP specifics.
+  elif name == 'config':
+    return 'CONFIG_OPTION_' + MakeConstant(value['option'])
   elif name == 'call_to_region_method':
     return 'return this->{method_name}(Region::{region});'.format(**value)
   elif name == 'call_builtin':
-    result = ExpandToC(methods[value['method_name']]['body'][0]['return'])
-    foodiebar = value.get('actual_parameter',
-                          methods[value['method_name']].get('default'))
-    if foodiebar:
-      result = result.format(foodiebar=foodiebar)
-    return result
-  elif name == 'has':
+    method_param = methods[value['method_name']].get('parameter')
+    method_body = ExpandToC(methods[value['method_name']]['body'][0]['return'])
+    if method_param:
+      parameter_name = method_param['symbol']
+      actual_parameter = value.get('actual_parameter',
+                                   methods[value['method_name']].get('default'))
+      method_body = method_body.format(**{parameter_name: actual_parameter})
+    return method_body
+  elif name == 'has_item':
+    n = value.get('count', 1)
+    if isinstance(n, dict):
+      n = '{%s}' % n['symbol']
     return 'this->is_num_reachable({n}, Item::{item})'.format(
-        item=value['item'], n=value.get('count', 1))
+        item=value['item'], n=n)
   elif name == 'location_has_item':
     return '(' + ' || '.join(
         'assignments[(int)Location::{location}] == Item::{item}'.format(
@@ -337,7 +378,7 @@ def ExpandToC(d):
       return str(default)
     else:
       assert False
-  elif name == 'mode':
+  elif name == 'game_mode':
     return ExpandToC(value)
   elif name == 'item_is':
     return '({})'.format(' || '.join(
