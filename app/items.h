@@ -146,6 +146,7 @@ enum class Item {
   RedClock,
   RedMail,
   RedShield,
+  RescueZelda,
   Rupoor,
   Shovel,
   SilverArrowUpgrade,

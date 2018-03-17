@@ -84,7 +84,10 @@ py_library(
 
 genrule(
     name = "world-generated",
-    srcs = glob(["Region/**/*.php"]) + ["Support/ItemCollection.php"],
+    srcs = glob(["Region/**/*.php"]) + [
+        "Support/ItemCollection.php",
+        "Boss.php",
+    ],
     outs = ["world.gen.cc"],
     cmd = "$(location :build_index) | clang-format > $(OUTS)",
     tools = [

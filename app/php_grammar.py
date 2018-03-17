@@ -9,6 +9,8 @@ import sys
 import infix_notation
 import pyparsing as p
 
+current_region = [None]
+
 
 class Error(Exception):
   pass
@@ -21,9 +23,15 @@ s = p.Suppress
 LEFT = p.opAssoc.LEFT
 RIGHT = p.opAssoc.RIGHT
 
-def MakeConstant(s):
+config = {
+    'mode.weapons': 'RANDOM',
+}
+
+
+def MakeConstant(string):
   """Make a string into A_CONSTANT_NAME."""
-  return re.sub(r'[^\w]', '_', s).upper()
+  return re.sub(r'[^\w]', '_', string).upper()
+
 
 def DelimitedList(token, delimiter=','):
   return token + p.ZeroOrMore(s(delimiter) + token) - s(opt(delimiter))
@@ -90,7 +98,9 @@ boolean = p.oneOf('true false').setName('boolean').setParseAction(
     lambda pr: pr[0] == 'true')
 integer = p.Word(
     p.nums).setName('integer').setParseAction(lambda pr: int(pr[0]))
-enum_string = p.Literal("'uncle'") | "'swordless'"
+enum_string = (
+    p.Literal("'uncle'") |
+    "'swordless'").setParseAction(lambda pr: MakeConstant(pr[0].strip("'")))
 identifier = p.Word(p.alphas + '_', p.alphanums + '_').setName('identifier')
 location_def = ((s('$this->locations[') - p.quotedString - s(']')) |
                 p.Literal('$this->prize_location').setParseAction(
@@ -112,8 +122,9 @@ game_mode_false = (
             'boolean': False
         }))
 game_mode = game_mode_true | game_mode_false
-in_array_expr = (s('in_array') + '(' + php_expr('member') - ',' - '[' -
-                 DelimitedList(item_ref | enum_string)('elements') - ']' - ')')
+in_array_expr = G(
+    s('in_array') + '(' + php_expr('member') - ',' - '[' -
+    DelimitedList(item_ref | enum_string)('elements') - ']' - ')')
 
 # Item classification: Group items into sets in source code and do class lookup.
 item_is_a = (('is_a($item, Item\\' - identifier - '::class)') |
@@ -122,7 +133,6 @@ item_is_not = G('$item !=' - item_ref('item')).setName(
     'negative item assertion')
 item_is = G('$item ==' - G(item_ref)('items')).setName('item assertion')
 # End of ungrouped structures.
-
 
 # Configuration options. The code generator will support the options and turn
 # the PHP option queries into compile time constants.
@@ -170,7 +180,8 @@ method_call = G(
         'call to method of ItemCollection')
 can_enter_or_complete = G('$this->' + p.oneOf('can_enter can_complete')
                           ('method_name')).setName('region_method')
-boss_can_beat = p.Literal('$this->boss->canBeat($items, $locations)')
+boss_can_beat = p.Literal('$this->boss->canBeat($items, $locations)'
+                         ).setParseAction(lambda pr: current_region[0])
 
 php_block = p.Forward().setName('block')
 php_callable_expression = G(
@@ -248,6 +259,8 @@ parameter = (s(opt(php_type)) + php_var('parameter') + '=' - integer('default'))
 meta_method = G('public function ' + p.Combine(p.oneOf('can has') + identifier)
                 ('name') + '(' + opt(parameter) - ')' - opt(s(':') - php_type) -
                 php_block('body'))
+boss_entry = G('new static(' - p.quotedString('boss_name') - ',' -
+               php_callable_expression('function') - '),')
 
 
 def GetItemCollectionMethods():
@@ -270,6 +283,27 @@ def GetItemCollectionMethods():
   return ret
 
 
+def GetBossRequirements():
+  """Extract boss requirements."""
+
+  item_collection = open('Boss.php').read()
+  ret = {}
+  try:
+    boss_entries = boss_entry.searchString(item_collection)
+  except (p.ParseException, p.ParseSyntaxException) as e:
+    print('Bad Boss')
+    print(e.lineno)
+    print(e.line)
+    print(' ' * (e.col - 1) + '^')
+    print(e)
+    sys.exit()
+  for result in boss_entries:
+    n = result[0].asDict()
+    ret[n['boss_name']] = n
+
+  return ret
+
+
 def Smoosh(string):
   string = re.sub(r'[^a-z0-9]', '', string, flags=re.I)
   string = re.sub(r'([a-z])Of([A-Z])', r'\1of\2', string)
@@ -284,6 +318,7 @@ methods['bottleCount'] = {
         }
     }]
 }
+bosses = GetBossRequirements()
 
 region_name_mapping = {
     'EastDeathMountain': 'DeathMountainEast',
@@ -294,6 +329,21 @@ region_name_mapping = {
     'SouthDarkWorld': 'DarkWorldSouth',
     'NorthEastDarkWorld': 'DarkWorldNorthEast',
     'NorthWestDarkWorld': 'DarkWorldNorthWest',
+}
+
+boss_name_mapping = {
+    'EasternPalace': 'Armos Knights',
+    'DesertPalace': 'Lanmolas',
+    'TowerofHera': 'Moldorm',
+    'CastleTower': 'Agahnim',
+    'PalaceofDarkness': 'Helmasaur King',
+    'SwampPalace': 'Arrghus',
+    'SkullWoods': 'Mothula',
+    'ThievesTown': 'Blind',
+    'IcePalace': 'Kholdstare',
+    'MiseryMire': 'Vitreous',
+    'TurtleRock': 'Trinexx',
+    'GanonsTower': 'Agahnim2',
 }
 
 
@@ -324,14 +374,22 @@ def ExpandToC(d):
     return 'true' if value else 'false'
   # PHP constructs.
   elif name == 'var':
-    # The var reference is returned as a formattable string piece. Other
-    # constructs that expect a variable reference will substitute in the named
-    # parameter 'foodiebar'.
+    # The var reference is returned as a formattable string piece.
     return '{%s}' % value['symbol']
   elif name == 'integer':
     return str(value)
   elif name == 'enum':
-    return MakeConstant(value)
+    return 'WeaponMode::' + MakeConstant(value)
+  elif name == 'in_array':
+    if value['member'] == {'var': {'symbol': 'item'}}:
+      return '(' + ' || '.join(
+          'item == Item::' + element for element in value['elements']) + ')'
+    else:
+      return '(' + ' || '.join(
+          '{} == WeaponMode::{}'.format(ExpandToC(value['member']), element)
+          for element in value['elements']) + ')'
+    import pdb
+    pdb.set_trace()
   # ALTTP specifics.
   elif name == 'config':
     return 'CONFIG_OPTION_' + MakeConstant(value['option'])
@@ -346,6 +404,11 @@ def ExpandToC(d):
                                    methods[value['method_name']].get('default'))
       method_body = method_body.format(**{parameter_name: actual_parameter})
     return method_body
+  elif name == 'boss':
+    return ExpandToC(
+        bosses[boss_name_mapping[value]]['function']['body'][0]['return'])
+  elif name == 'sword_left_to_place':
+    return '(num_unplaced[(int)Item::ProgressiveSword] > 0)'
   elif name == 'has_item':
     n = value.get('count', 1)
     if isinstance(n, dict):

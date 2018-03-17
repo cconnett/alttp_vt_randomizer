@@ -54,6 +54,7 @@ def BuildIndex():
           }]
       }
 
+    php_grammar.current_region[0] = region
     # Search for the initNoMajorGlitches function and read its code.
     try:
       init_nmg_block = php_grammar.init_no_major_glitches.searchString(source)[
