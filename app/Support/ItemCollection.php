@@ -402,8 +402,6 @@ class ItemCollection extends Collection {
                  || $this->has('BowAndSilverArrows');
 		}
 
-	}
-
 	/**
 	 * Requirements for blocking lasers
 	 *

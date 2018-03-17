@@ -83,24 +83,31 @@ class RandomAssumed extends Filler {
             // Step through canidate locations and place the item in the
             // first one reachable with the items we assumed in the
             // previous step.
-            $fill_location = null;
-            foreach($locations as $location) {
-                if (!$location->hasItem() &&
-                    $location->canFill($item, $assumed_items)) {
-                    $fill_location = $location;
-                    break;
-                }
-			}
-			if ($fill_location === null) {
-				throw new \Exception(sprintf('No Available Locations: "%s" %s', $item->getNiceName(),
-					json_encode($remaining_fill_items->map(function($i){return $i->getName();}))));
-			}
+
 
 			if ($item instanceof Item\Compass || $item instanceof Item\Map) {
-				$fill_location = $fillable_locations->random();
-			} else {
-				$fill_location = $fillable_locations->first();
+              $fillable_locations = $locations->filter(function($location) use ($item, $assumed_items) {
+				return !$location->hasItem() && $location->canFill($item, $assumed_items);
+			  });
+              $fill_location = $fillable_locations->random();
+            } else {
+              $fill_location = null;
+              foreach($locations as $location) {
+                if (!$location->hasItem() &&
+                    $location->canFill($item, $assumed_items)) {
+                  $fill_location = $location;
+                  break;
+                }
+              }
 			}
+
+            if ($fill_location === null) {
+              throw new \Exception(
+                  sprintf('No Available Locations: "%s" %s',
+                          $item->getNiceName(),
+                          json_encode($remaining_fill_items->map(
+                              function($i){return $i->getName();}))));
+            }
 
 			Log::debug(sprintf("Placing Item: %s in %s", $item->getNiceName(), $fill_location->getName()));
             $lname = preg_replace("/[^A-Za-z0-9]/", "", $fill_location->getName());
