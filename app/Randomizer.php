@@ -193,9 +193,6 @@ class Randomizer {
 			}
 		}
 
-		// HOT FOX FOR BROKEN CHEST GAME REVERT LATER
-		$locations["Chest Game"]->setItem(Item::get('TwentyRupees'));
-
 		// take out all the swords and silver arrows
 		$nice_items_swords = [];
 		$nice_items_bottles = [];
@@ -303,6 +300,10 @@ class Randomizer {
 				}
 			}
 		}
+        // foreach ($trash_items as $item) {
+        //   printf("Item::%s,\n",
+        //          preg_replace("/[^A-Za-z0-9]/", "", $item->getName()));
+        // }
 
 		$advancement_items = mt_shuffle($advancement_items);
 
@@ -512,7 +513,7 @@ class Randomizer {
 				continue;
 			}
 
-			$medallion = $medallions[mt_rand(0, 2)];
+			$medallion = $medallions[mt_rand2(0, 2)];
 			$medallion_location->setItem($medallion);
 		}
 	}
@@ -756,10 +757,10 @@ class Randomizer {
 		$rom->setCompassMode($this->config('rom.compassOnPickup', 'off'));
 		$rom->setFreeItemTextMode($this->config('rom.freeItemText', false));
 		$rom->setFreeItemMenu($this->config('rom.freeItemMenu', 0x00));
-		$rom->setDiggingGameRng(mt_rand(1, 30));
+		$rom->setDiggingGameRng(mt_rand2(1, 30));
 
 		$rom->writeRNGBlock(function() {
-			return mt_rand(0, 0x100);
+			return mt_rand2(0, 0x100);
 		});
 
 		if ($this->config('sprite.shufflePrizePack', true)) {
@@ -914,7 +915,7 @@ class Randomizer {
 			"woodfellas",
 		])));
 
-		switch (mt_rand(0, 1)) {
+		switch (mt_rand2(0, 1)) {
 			case 1:
 				$rom->setSwordsmithsCredits("the dwarven breadsmiths");
 				break;
@@ -954,7 +955,7 @@ class Randomizer {
 	public function setTexts(Rom $rom) {
 		$boots_location = $this->world->getLocationsWithItem(Item::get('PegasusBoots'))->first();
 
-		if ($this->config('spoil.BootsLocation', false) && mt_rand() % 20 == 0 && $boots_location) {
+		if ($this->config('spoil.BootsLocation', false) && mt_rand2() % 20 == 0 && $boots_location) {
 			Log::info('Boots revealed');
 			switch ($boots_location->getName()) {
 				case "Link's House":
@@ -1711,7 +1712,7 @@ class Randomizer {
 			if (!isset($bytes[$i]) || ($bytes[$i] & 0xF) == 0) {
 				continue;
 			}
-			$rom->write($offset + $i, pack('C*', ($bytes[$i] >> 4 << 4) + mt_rand(1, 7)));
+			$rom->write($offset + $i, pack('C*', ($bytes[$i] >> 4 << 4) + mt_rand2(1, 7)));
 		}
 
 		// Pack drop chance
@@ -1726,7 +1727,7 @@ class Randomizer {
 		}
 		$offset = 0x37A62;
 		for ($i = 0; $i < 7; $i++) {
-			$rom->write($offset + $i, pack('C*', pow(2, mt_rand($low, $high)) - 1));
+			$rom->write($offset + $i, pack('C*', pow(2, mt_rand2($low, $high)) - 1));
 		}
 	}
 
@@ -1774,10 +1775,10 @@ class Randomizer {
 		];
 
 		if ($this->config('bees', false)) {
-			return $bottles[mt_rand(4, 5)];
+			return $bottles[mt_rand2(4, 5)];
 		}
 
-		return $bottles[mt_rand($filled ? 1 : 0, count($bottles) - (($this->config('rom.HardMode', 0) > 0) ? 2 : 1))];
+		return $bottles[mt_rand2($filled ? 1 : 0, count($bottles) - (($this->config('rom.HardMode', 0) > 0) ? 2 : 1))];
 	}
 
 	/**

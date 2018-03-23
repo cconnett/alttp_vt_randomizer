@@ -361,8 +361,8 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canMeltThings() {
-		return ($this->world->config('mode.weapons') == 'swordless' ||
-              $this->hasSword());
+             return $this->has('FireRod')
+                 || ($this->has('Bombos') && ($this->world->config('mode.weapons') == 'swordless' || $this->hasSword()));
 	}
 
 	/**
@@ -439,8 +439,8 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canKillMostThings($enemies = 5) {
-		return in_array($this->world->config('mode.weapons'), ['uncle', 'swordless'])
-					|| !($this->world->getCurrentlyFillingItems()->hasSword())
+             return ($this->hasSword() && in_array($this->world->config('mode.weapons'), ['uncle', 'swordless'])
+                     || !($this->world->getCurrentlyFillingItems()->hasSword()))
 			|| $this->has('CaneOfSomaria')
 			|| ($this->has('TenBombs') && $enemies < 6)
 			|| ($this->has('CaneOfByrna') && ($enemies < 6 || $this->canExtendMagic()))

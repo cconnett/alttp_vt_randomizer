@@ -78,13 +78,17 @@ class RandomAssumed extends Filler {
             //    $base_assumed_items.
             //
             // The one we're currently placing is not part of that.
-            $assumed_items = $this->world->collectItems(
-                $remaining_fill_items->removeItem($item->getName()));
+            $assumed_items =
+                $this->world->collectItems(
+                    $remaining_fill_items->removeItem($item->getName())
+                    ->merge($base_assumed_items));
             // Step through canidate locations and place the item in the
             // first one reachable with the items we assumed in the
             // previous step.
 
-
+            // printf("Filling %s\n", $item->getName());
+            // printf("Collected: %s\n", json_encode($assumed_items->map(
+            // function($i){return $i->getName();}))) ;
 			if ($item instanceof Item\Compass || $item instanceof Item\Map) {
               $fillable_locations = $locations->filter(function($location) use ($item, $assumed_items) {
 				return !$location->hasItem() && $location->canFill($item, $assumed_items);
