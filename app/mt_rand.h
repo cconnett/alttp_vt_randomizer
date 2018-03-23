@@ -33,7 +33,7 @@ class mt_rand {
   }
 
   template <typename T>
-  std::vector<T> sample(T *population, size_t popsize, size_t k) {
+  std::vector<T> sample(const T *population, size_t popsize, size_t k) {
     assert(k <= popsize);
     std::vector<T> urn, ret;
     for (unsigned int i = 0; i < popsize; i++) {
