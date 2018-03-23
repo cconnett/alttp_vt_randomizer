@@ -307,6 +307,7 @@ const std::string ITEM_NAMES[] = {
     "RedClock",
     "RedMail",
     "RedShield",
+    "RescueZelda",
     "Rupoor",
     "Shovel",
     "SilverArrowUpgrade",
