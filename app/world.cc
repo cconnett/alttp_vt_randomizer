@@ -230,8 +230,8 @@ void World::print() {
 const Item *World::view_assignments() const { return assignments; }
 
 bool World::has_item(Location location) {
-  assert(location != Location::INVALID);
-  assert(location != Location::NUM_LOCATIONS);
+  assert(Location::INVALID < location);
+  assert(location < Location::NUM_LOCATIONS);
   return (bool)assignments[(int)location];
 }
 
@@ -265,10 +265,10 @@ bool World::check_and_set_item(Location location, Item item) {
 }
 
 void World::raw_set_item(Location location, Item item) {
-  assert(location != Location::INVALID);
-  assert(location != Location::NUM_LOCATIONS);
-  assert(item != Item::INVALID);
-  assert(item != Item::NUM_ITEMS);
+  assert(Location::INVALID < location);
+  assert(location < Location::NUM_LOCATIONS);
+  assert(Item::INVALID < item);
+  assert(item < Item::NUM_ITEMS);
   assignments[(int)location] = item;
   where_is[(int)item].push_back(location);
   SPDLOG_TRACE(log, "{} := {}", LOCATION_NAMES[(int)location],
@@ -285,16 +285,16 @@ void World::add_assumed(const Item *items, size_t n_items) {
 }
 
 void World::set_medallion(Location location, Item item) {
-  assert(location != Location::INVALID);
-  assert(location != Location::NUM_LOCATIONS);
-  assert(item != Item::INVALID);
-  assert(item != Item::NUM_ITEMS);
+  assert(Location::INVALID < location);
+  assert(location < Location::NUM_LOCATIONS);
+  assert(Item::INVALID < item);
+  assert(item < Item::NUM_ITEMS);
   assignments[(int)location] = item;
 }
 
 bool World::can_reach(Location location) {
-  assert(location != Location::INVALID);
-  assert(location != Location::NUM_LOCATIONS);
+  assert(Location::INVALID < location);
+  assert(location < Location::NUM_LOCATIONS);
 
   if (reachability_cache[(int)location]) {
     SPDLOG_TRACE(log, "Cached. {}",
@@ -313,8 +313,8 @@ bool World::can_reach(Location location) {
 }
 
 int World::num_reachable(Item item) {
-  assert(item != Item::INVALID);
-  assert(item != Item::NUM_ITEMS);
+  assert(Item::INVALID < item);
+  assert(item < Item::NUM_ITEMS);
 
   int count = num_unplaced[(int)item];
 
@@ -333,8 +333,8 @@ int World::num_reachable(Item item) {
 }
 
 int World::is_num_reachable(int n, Item item) {
-  assert(item != Item::INVALID);
-  assert(item != Item::NUM_ITEMS);
+  assert(Item::INVALID < item);
+  assert(item < Item::NUM_ITEMS);
 
   int count = num_unplaced[(int)item];
   if (count >= n) {
