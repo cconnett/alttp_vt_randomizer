@@ -48,6 +48,7 @@ World::World(int seed) : generator(new mt_rand(seed)) {
   clear_reachability_cache();
   memset(assignments, 0, sizeof(assignments));
 
+  raw_set_item(Location::HyruleCastleEscapePrize, Item::RescueZelda);
   raw_set_item(Location::HyruleCastleTowerPrize, Item::DefeatAgahnim);
   raw_set_item(Location::GanonsTowerPrize, Item::DefeatAgahnim2);
   raw_set_item(Location::DarkWorldNorthEastPrize, Item::DefeatGanon);
@@ -77,7 +78,6 @@ World::World(int seed) : generator(new mt_rand(seed)) {
       nice[i] = get_bottle(0);
     }
   }
-
   for (int i = 0; i < num_advancement; i++) {
     if (advancement[i] == Item::Bottle) {
       advancement[i] = get_bottle(0);
