@@ -389,9 +389,12 @@ void World::set_medallions() {
 }
 
 void World::fill_prizes() {
+  auto prize_locations =
+      generator->sample(PRIZE_LOCATIONS, ARRAY_LENGTH(PRIZE_LOCATIONS),
+                        ARRAY_LENGTH(PRIZE_LOCATIONS));
+
   Item prizes[ARRAY_LENGTH(PRIZES)];
   memcpy(prizes, PRIZES, sizeof(PRIZES));
-
   generator->shuffle<Item>(prizes, ARRAY_LENGTH(prizes));
 
   // PHP: There are 40 extra calls to getAdvancementItems->...->getBottle calls
@@ -405,9 +408,12 @@ void World::fill_prizes() {
   }
 
   add_assumed(prizes, ARRAY_LENGTH(PRIZES));
-  for (uint i = 0; i < ARRAY_LENGTH(prizes); i++) {
-    // The PHP pops from the end of its shuffled array of prizes.
-    set_item(PRIZE_LOCATIONS[i], prizes[ARRAY_LENGTH(PRIZES) - i - 1]);
+  Item *next_prize = prizes + ARRAY_LENGTH(PRIZES) - 1;
+  for (uint i = 0; i < prize_locations.size(); i++) {
+    if (!has_item(prize_locations[i])) {
+      // The PHP pops from the end of its shuffled array of prizes.
+      set_item(prize_locations[i], *next_prize--);
+    }
   }
 }
 
