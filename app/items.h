@@ -481,6 +481,7 @@ const Item ADVANCEMENT_ITEMS[] = {
     Item::ProgressiveShield,
     Item::ProgressiveShield,
     Item::CaneOfByrna,
+    Item::TenBombs,
     Item::HalfMagic,
     Item::ProgressiveSword,
     Item::ProgressiveSword,
@@ -563,7 +564,6 @@ const Item TRASH_ITEMS[] = {
     Item::TenArrows,
     Item::TenArrows,
 
-    Item::ThreeBombs,
     Item::ThreeBombs,
     Item::ThreeBombs,
     Item::ThreeBombs,
