@@ -11,7 +11,8 @@ enum class WeaponMode {
   UNCLE,
   SWORDLESS,
 };
-#define KEYSANITY true
+
+#define KEYSANITY false
 #define CONFIG_OPTION_MODE_WEAPONS WeaponMode::RANDOM
 #define CONFIG_OPTION_REGION_CANTTAKEDAMAGE false
 #define CONFIG_OPTION_REGION_REQUIREBETTERSWORD false
