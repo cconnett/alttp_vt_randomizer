@@ -62,7 +62,7 @@ World::World(int seed)
   // all random calls have to match PHP exactly, so determine the contents here.
   int num_advancement = ARRAY_LENGTH(ADVANCEMENT_ITEMS);
   Item advancement[num_advancement + 1];
-  memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(advancement));
+  memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(ADVANCEMENT_ITEMS));
   advancement[num_advancement] = Item::INVALID;
 
   // Initialize nice items, too.
@@ -124,7 +124,7 @@ World::World(int seed)
     *next_location_per_dungeon[d] = Location::INVALID;
   }
 
-  Item single_item[2] = {Item::INVALID};
+  Item single_item[2] = {Item::INVALID, Item::INVALID};
   for (const Item *item = FLAT_DUNGEON_ITEMS; *item != Item::INVALID; item++) {
     single_item[0] = *item;
     fill_items_in_locations(
@@ -132,7 +132,7 @@ World::World(int seed)
   }
 
   // Random junk fill in Ganon's tower.
-  Location ganons_tower_empty[MAX_DUNGEON_LOCATIONS];
+  Location ganons_tower_empty[MAX_DUNGEON_LOCATIONS] = {Location::INVALID};
   size_t num_empty_gt_locations = 0;
   for (uint i = 0;
        DUNGEON_LOCATIONS[(int)Region::GanonsTower][i] != Location::INVALID;
@@ -333,7 +333,7 @@ int World::num_reachable(Item item) {
   return count;
 }
 
-int World::is_num_reachable(int n, Item item) {
+bool World::is_num_reachable(int n, Item item) {
   assert(Item::INVALID < item);
   assert(item < Item::NUM_ITEMS);
 

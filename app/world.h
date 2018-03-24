@@ -42,7 +42,7 @@ class World {
   // How many instances of `item` can be reached?
   int num_reachable(Item item);
   // Can `n` instances of `item` can be reached?
-  int is_num_reachable(int n, Item item);
+  bool is_num_reachable(int n, Item item);
 
   // How many bottles can be reached (including variations with contents)?
   int bottle_count();
