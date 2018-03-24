@@ -130,6 +130,7 @@ void producer() {
 
 int main(int argc, char **argv) {
   spdlog::stdout_color_mt("console");
+  spdlog::set_pattern("%L%m%d %H:%M:%S.%f %v");
   if (argc == 2) {
     int seed = atoi(argv[1]);
     try {
