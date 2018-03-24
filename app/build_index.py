@@ -191,6 +191,7 @@ def CodeFor(methods, namespace='Location::', injection=None):
 
 def main():
   can_reach, can_enter, can_complete, fill_rules, always_allow = BuildIndex()
+  del can_reach['Zelda']
 
   code = open('world_template.cc').read()
   code = re.sub(

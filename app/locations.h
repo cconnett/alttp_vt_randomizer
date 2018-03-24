@@ -241,7 +241,6 @@ enum class Location {
   TurtleRockTrinexx,
   WaterfallFairyLeft,
   WaterfallFairyRight,
-  Zelda,
   ZorasLedge,
   NUM_LOCATIONS,  // Must be last
 };
@@ -934,7 +933,6 @@ const std::string LOCATION_NAMES[] = {
     "TurtleRockTrinexx",
     "WaterfallFairyLeft",
     "WaterfallFairyRight",
-    "Zelda",
     "ZorasLedge",
 };
 
