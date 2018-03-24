@@ -254,6 +254,7 @@ bool World::check_item(Location location, Item item) {
   if (always_allow(location, item)) {
     SPDLOG_TRACE(log, "{} always allowed in {}", ITEM_NAMES[(int)item],
                  LOCATION_NAMES[(int)location]);
+    return true;
   }
 
   if (always_allow(location, item) ||
