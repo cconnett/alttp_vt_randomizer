@@ -43,7 +43,8 @@ World::~World() {
   delete generator;
 }
 
-World::World(int seed) : generator(new mt_rand(seed)) {
+World::World(int seed)
+    : generator(new mt_rand(seed)), log(spdlog::get("console")) {
   clear_assumed();
   clear_reachability_cache();
   memset(assignments, 0, sizeof(assignments));
@@ -227,7 +228,9 @@ void World::print() {
   }
 }
 
-const Item *World::view_assignments() const { return assignments; }
+const Item *World::view_assignments() const {
+  return assignments;
+}
 
 bool World::has_item(Location location) {
   assert(Location::INVALID < location);
@@ -241,7 +244,7 @@ void World::set_item(Location location, Item item) {
   clear_reachability_cache();
 }
 
-bool World::check_and_set_item(Location location, Item item) {
+bool World::check_item(Location location, Item item) {
   if (has_item(location)) {
     return false;
   }
@@ -255,8 +258,6 @@ bool World::check_and_set_item(Location location, Item item) {
 
   if (always_allow(location, item) ||
       (can_fill(location, item) && can_reach(location))) {
-    incr_assumed(item);
-    set_item(location, item);
     return true;
   }
   SPDLOG_TRACE(log, "{} /= {}", LOCATION_NAMES[(int)location],
@@ -271,8 +272,8 @@ void World::raw_set_item(Location location, Item item) {
   assert(item < Item::NUM_ITEMS);
   assignments[(int)location] = item;
   where_is[(int)item].push_back(location);
-  SPDLOG_TRACE(log, "{} := {}", LOCATION_NAMES[(int)location],
-               ITEM_NAMES[(int)item]);
+  // log->info("{} := {}", LOCATION_NAMES[(int)location],
+  // ITEM_NAMES[(int)item]);
 }
 
 void World::clear_assumed() {
@@ -420,22 +421,33 @@ void World::fill_prizes() {
 void World::fill_items_in_locations(const Item *items, Location *locations) {
   auto log = spdlog::get("trace");
   for (const Item *i = items; *i != Item::INVALID; i++) {
-    // Caution: The `assumed` count is decremented here, incremented in
-    // check_and_set_item when it succeeds, and finally decremented again in
-    // set_item.
     SPDLOG_TRACE(log, "Placing {}", ITEM_NAMES[(int)*i]);
 
     decr_assumed(*i);
     Location *l;
+    vector<Location> legal_locations;
     for (l = locations; *l != Location::INVALID; l++) {
-      if (check_and_set_item(*l, *i)) {
-        break;
+      if (check_item(*l, *i)) {
+        if ((Item::Compass <= *i && *i <= Item::CompassP3) ||
+            (Item::MapA2 <= *i && *i <= Item::MapP3)) {
+          // Maps and compasses are placed uniformly from all allowable
+          // placements.
+          legal_locations.push_back(*l);
+        } else {
+          incr_assumed(*i);
+          set_item(*l, *i);
+          goto next_item;
+        }
       }
     }
-    if (*l == Location::INVALID) {
+    if (legal_locations.empty()) {
       cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
       throw CannotPlaceItem();
     }
+    incr_assumed(*i);
+    set_item(legal_locations[generator->rand(0, legal_locations.size() - 1)],
+             *i);
+  next_item:;
   }
 }
 

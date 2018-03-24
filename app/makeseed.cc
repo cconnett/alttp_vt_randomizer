@@ -129,7 +129,7 @@ void producer() {
 }
 
 int main(int argc, char **argv) {
-  spdlog::stdout_color_mt("trace");
+  spdlog::stdout_color_mt("console");
   if (argc == 2) {
     int seed = atoi(argv[1]);
     try {

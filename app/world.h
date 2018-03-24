@@ -73,8 +73,8 @@ class World {
   void raw_set_item(Location location, Item item);
   // Assign to `location` the item `item`. Invalidate the reachability cache.
   void set_item(Location location, Item item);
-  // Assign `item` only if there are unplaced instances available.
-  bool check_and_set_item(Location location, Item item);
+  // Check if item can be placed in location.
+  bool check_item(Location location, Item item);
 
   // Manage the list of items to assume are reachable.
   void clear_assumed();
@@ -107,5 +107,5 @@ class World {
   void set_medallions();
   void fill_prizes();
 
-  // std::shared_ptr<spdlog::logger> log;
+  std::shared_ptr<spdlog::logger> log;
 };
