@@ -257,8 +257,11 @@ bool World::check_item(Location location, Item item) {
     return true;
   }
 
-  if (always_allow(location, item) ||
-      (can_fill(location, item) && can_reach(location))) {
+  Item old_item = assignments[(int)location];
+  assignments[(int)location] = item;
+  // clear_reachability_cache();
+  if (can_fill(location, item) && can_reach(location)) {
+    assignments[(int)location] = old_item;
     return true;
   }
   SPDLOG_TRACE(log, "{} /= {}", LOCATION_NAMES[(int)location],
