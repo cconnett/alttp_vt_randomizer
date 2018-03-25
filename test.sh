@@ -1,10 +1,7 @@
-PATH=/usr/local/silly/bin:$PATH
-
 function runtest {
   seed="$1"
   shift
-  php artisan -v alttp:randomize --skip-md5 /dev/null /tmp --no-rom --spoiler --seed=${seed} --mode=open \
-    | fgrep -v "mt_rand" \
+  php7.0 artisan -v alttp:randomize --skip-md5 /dev/null /tmp --no-rom --spoiler --seed=${seed} --mode=open \
     | fgrep " := " \
     | egrep -v "(Waterfall|Pyramid)Bottle" \
     | egrep -v "= Defeat|PyramidFairy(Bow|Sword)" \
@@ -13,7 +10,6 @@ function runtest {
     > /tmp/php
   app/bazel-bin/makeseed "${seed}" \
     | fgrep " = " \
-    | fgrep -v "mt_rand" \
     | fgrep -v "SkullWoodsPinballRoom =" \
     | egrep -v "Defeat|Rescue|PyramidFairy(Bow|Sword)" \
     | egrep -v "(TurtleRock|MiseryMire)Medallion" \

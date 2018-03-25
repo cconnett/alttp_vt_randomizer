@@ -19,7 +19,7 @@ cc_library(
         "mt_rand.cc",
         "mt_rand.h",
     ],
-    deps = ["@untwister//:mt_rand"],
+    deps = ["@untwister//:php-mt_rand"],
 )
 
 cc_library(
