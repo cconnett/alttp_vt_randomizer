@@ -264,8 +264,8 @@ bool World::check_item(Location location, Item item) {
     assignments[(int)location] = old_item;
     return true;
   }
-  SPDLOG_TRACE(log, "{} /= {}", LOCATION_NAMES[(int)location],
-               ITEM_NAMES[(int)item]);
+  log->info("{} /= {}", LOCATION_NAMES[(int)location], ITEM_NAMES[(int)item]);
+  assignments[(int)location] = old_item;
   return false;
 }
 
@@ -276,8 +276,7 @@ void World::raw_set_item(Location location, Item item) {
   assert(item < Item::NUM_ITEMS);
   assignments[(int)location] = item;
   where_is[(int)item].push_back(location);
-  // log->info("{} := {}", LOCATION_NAMES[(int)location],
-  // ITEM_NAMES[(int)item]);
+  log->info("{} := {}", LOCATION_NAMES[(int)location], ITEM_NAMES[(int)item]);
 }
 
 void World::clear_assumed() {
