@@ -407,28 +407,54 @@ class Randomizer {
 			});
 
 		$empty_crystal_locations = $crystal_locations->getEmptyLocations();
+        // Let's place prizes in the crystal _locations_ first.
 		foreach ($empty_crystal_locations as $location) {
+            // Let's try to place a prize in this dungeon.
+
+            // Store an initial count of prize supply.
 			$total_prizes = count($place_prizes);
 			for ($i = 0; $i < $total_prizes; ++$i) {
+                // Try to place the prize from the end of the list.
 				$place_prize = array_pop($place_prizes);
+                printf("Running 4 bottles:\n");
 				$assumed_items = $world->collectItems(new ItemCollection(array_merge(
 					$this->getDungeonPool(),
 					$this->getAdvancementItems(),
 					$place_prizes), $world));
 				if ($location->canAccess($assumed_items)) {
+                    // If the world is sane with the prize in this dungeon,
+                    // we're happy with this placement; leave it there.
 					break;
 				}
+                // Otherwise, return it at the front of the prize list.
 				array_unshift($place_prizes, $place_prize);
+                // We will cycle through the entire prize list this way.
 			}
+            // What does the prize list look like here? Case one: we found a
+            // spot; any prizes we rejected have been rotated to the front of
+            // the list. Case two: we didn't find a spot; the list is unchanged.
+
+            // We need to cycle the rejected prizes around to the front.
+
+
 			if ($total_prizes == count($place_prizes)) {
+                // If we got through the loop without placing it (putting it
+                // back every time so we have the same number as the initial
+                // count), move on to the next dungeon.
 				continue;
+                // This leaves an empty dungeon location behind.
 			}
 
+            // Place it.
 			$location->setItem($place_prize);
 			Log::debug(sprintf("Placing: %s in %s", $location->getItem()->getNiceName(), $location->getName()));
-
+            printf("Placing: %s in %s\n", $location->getItem()->getNiceName(), $location->getName());
 			if (!$world->checkWinCondition($assumed_items)) {
 				if ($attempts > 0) {
+                    // If we can't meet our mode-specific goal under this
+                    // placement (either Triforce or # of Triforce pieces),
+                    // clear all the prizes, then restart the search. Repeat up
+                    // to 5 times, then give up.
 					$empty_crystal_locations->each(function($location) {
 						$location->setItem();
 					});
@@ -438,7 +464,10 @@ class Randomizer {
 				throw new \Exception("Cannot Place Prize: " . $location->getName());
 			}
 		}
+        // We got through the loop.
 		if ($crystal_locations->getEmptyLocations()->count()) {
+            // But we left an empty dungeon behind! So, using the attempt budget
+            // from before, clear them all out and try again.
 			if ($attempts > 0) {
 				$empty_crystal_locations->each(function($location) {
 					$location->setItem();
@@ -449,6 +478,7 @@ class Randomizer {
 			throw new \Exception("Cannot Place Prize: " . $crystal_locations->getEmptyLocations()->first()->getName());
 		}
 
+        // Repeat the whole shebang for pendant _locations_.
 		$place_prizes = ($this->config('prize.crossWorld', true))
 			? $place_prizes
 			: array_filter($remaining_prizes, function($item) {
