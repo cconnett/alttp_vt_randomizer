@@ -422,10 +422,11 @@ void World::fill_prizes() {
 
   add_assumed(prizes, ARRAY_LENGTH(PRIZES));
   Item *next_prize = prizes + ARRAY_LENGTH(PRIZES) - 1;
-  for (uint i = 0; i < prize_locations.size(); i++) {
-    if (!has_item(prize_locations[i])) {
+  for (auto dest = prize_locations.begin(); dest < prize_locations.end();
+       dest++) {
+    if (!has_item(*dest)) {
       // The PHP pops from the end of its shuffled array of prizes.
-      set_item(prize_locations[i], *next_prize--);
+      set_item(*dest, *next_prize--);
     }
   }
 }
