@@ -21,7 +21,6 @@ using namespace std;
 
 #define PRODUCER_THREADS (12)
 #define TRANSACTION_SIZE (1000)
-#define MAX_QUEUE_LENGTH 10000
 
 struct location_and_seed {
   Location location;
