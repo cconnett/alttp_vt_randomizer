@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <deque>
 #include <iomanip>
 #include <iostream>
 #include <vector>
@@ -403,30 +404,69 @@ void World::fill_prizes() {
                         ARRAY_LENGTH(PRIZE_LOCATIONS));
   stable_sort(prize_locations.begin(), prize_locations.end(), pendants_last);
 
-  Item prizes[ARRAY_LENGTH(PRIZES)];
-  memcpy(prizes, PRIZES, sizeof(PRIZES));
-  generator->shuffle<Item>(prizes, ARRAY_LENGTH(prizes));
+  for (int attempt = 0; attempt < 5; attempt++) {
+    Item prizes[ARRAY_LENGTH(PRIZES)];
+    memcpy(prizes, PRIZES, sizeof(PRIZES));
+    generator->shuffle<Item>(prizes, ARRAY_LENGTH(prizes));
 
-  // PHP: There are 40 extra calls to getAdvancementItems->...->getBottle calls
-  // that are wasted.
-  for (int i = 0; i < 40; i++) {
-    get_bottle(0);
-  }
-  // Then two more for setting fountain prizes that we don't care about.
-  for (int i = 0; i < 2; i++) {
-    get_bottle(1);
-  }
+    clear_assumed();
+    add_assumed(prizes, ARRAY_LENGTH(PRIZES));
+    add_assumed(FLAT_DUNGEON_ITEMS, ARRAY_LENGTH(FLAT_DUNGEON_ITEMS));
+    add_assumed(ADVANCEMENT_ITEMS, ARRAY_LENGTH(ADVANCEMENT_ITEMS));
+    deque<Item> prizes_to_place(prizes, prizes + ARRAY_LENGTH(PRIZES));
+    for (size_t i = 0; i < prize_locations.size(); i++) {
+      if (has_item(prize_locations[i])) {
+        continue;
+      }
+      // The PHP doesn't cache the advancement items and constructs the set each
+      // time through this loop. That call makes 4 get_bottle calls, which we
+      // have to account for.
+      for (int i = 0; i < 4; i++) {
+        get_bottle(0);
+      }
 
-  add_assumed(prizes, ARRAY_LENGTH(PRIZES));
-  Item *next_prize = prizes + ARRAY_LENGTH(PRIZES) - 1;
-  for (uint i = 0; i < prize_locations.size(); i++) {
-    if (!has_item(prize_locations[i])) {
-      // The PHP pops from the end of its shuffled array of prizes.
-      set_item(prize_locations[i], *next_prize--);
+      for (size_t prize_count = prizes_to_place.size(); prize_count > 0;
+           prize_count--) {
+        if (check_item(prize_locations[i], prizes_to_place.back()) &&
+            is_num_reachable(1, Item::DefeatGanon)) {
+          set_item(prize_locations[i], prizes_to_place.back());
+          prizes_to_place.pop_back();
+          break;
+        } else {
+          prizes_to_place.push_front(prizes_to_place.back());
+          prizes_to_place.pop_back();
+        }
+      }
+      if (!has_item(prize_locations[i])) {
+        // No prize fits in this location. The php finishes the outer loop
+        // before restarting, but there's no need (no RNG advancement).
+        for (int k = i; k >= 0; k--) {
+          for (const Item *resettable_prizes = PRIZES;
+               resettable_prizes != PRIZES + ARRAY_LENGTH(PRIZES);
+               resettable_prizes++) {
+            if (assignments[(int)prize_locations[k]] == *resettable_prizes) {
+              assignments[(int)prize_locations[k]] = Item::INVALID;
+              break;
+            }
+          }
+        }
+        for (const Item *prize = PRIZES; prize != PRIZES + ARRAY_LENGTH(PRIZES);
+             prize++) {
+          where_is[(int)*prize].clear();
+        }
+        goto next_attempt;
+      }
     }
+    // O! Happy day! We're done. Just two more get_bottle calls for setting
+    // fountain prizes that we don't care about.
+    for (int i = 0; i < 2; i++) {
+      get_bottle(1);
+    }
+    return;
+
+  next_attempt:;
   }
 }
-
 void World::fill_items_in_locations(const Item *items, Location *locations) {
   auto log = spdlog::get("trace");
   for (const Item *i = items; *i != Item::INVALID; i++) {
