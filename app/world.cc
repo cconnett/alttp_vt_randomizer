@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <iomanip>
@@ -391,11 +392,16 @@ void World::set_medallions() {
   set_medallion(Location::MiseryMireMedallion,
                 medallions[generator->rand(0, 2)]);
 }
+bool pendants_last(Location a, Location b) {
+  return b == Location::EasternPalacePrize ||
+         b == Location::DesertPalacePrize || b == Location::TowerofHeraPrize;
+}
 
 void World::fill_prizes() {
   auto prize_locations =
       generator->sample(PRIZE_LOCATIONS, ARRAY_LENGTH(PRIZE_LOCATIONS),
                         ARRAY_LENGTH(PRIZE_LOCATIONS));
+  stable_sort(prize_locations.begin(), prize_locations.end(), pendants_last);
 
   Item prizes[ARRAY_LENGTH(PRIZES)];
   memcpy(prizes, PRIZES, sizeof(PRIZES));
