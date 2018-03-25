@@ -35,10 +35,7 @@ class mt_rand {
   template <typename T>
   std::vector<T> sample(const T *population, size_t popsize, size_t k) {
     assert(k <= popsize);
-    std::vector<T> urn, ret;
-    for (unsigned int i = 0; i < popsize; i++) {
-      urn.push_back(population[i]);
-    }
+    std::vector<T> urn(population, population + popsize), ret;
     while (k-- > 0) {
       unsigned int pos = rand(0, urn.size() - 1);
       ret.push_back(urn[pos]);
