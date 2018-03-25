@@ -460,6 +460,9 @@ void World::fill_items_in_locations(const Item *items, Location *locations) {
     set_item(legal_locations[generator->rand(0, legal_locations.size() - 1)],
              *i);
   next_item:;
+    if (l == locations) {
+      locations++;
+    };
   }
 }
 
