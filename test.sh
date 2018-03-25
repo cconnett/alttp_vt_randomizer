@@ -10,9 +10,8 @@ function runtest {
     > /tmp/php
   app/bazel-bin/makeseed "${seed}" \
     | fgrep " = " \
-    | fgrep -v "Prize =" \
     | fgrep -v "SkullWoodsPinballRoom =" \
-    | egrep -v "= Defeat|PyramidFairy(Bow|Sword)" \
+    | egrep -v "Defeat|Rescue|PyramidFairy(Bow|Sword)" \
     | egrep -v "(TurtleRock|MiseryMire)Medallion" \
     | sort \
     > /tmp/c
