@@ -86,9 +86,6 @@ class RandomAssumed extends Filler {
             // first one reachable with the items we assumed in the
             // previous step.
 
-            // printf("Filling %s\n", $item->getName());
-            // printf("Collected: %s\n", json_encode($assumed_items->map(
-            // function($i){return $i->getName();}))) ;
 			if ($item instanceof Item\Compass || $item instanceof Item\Map) {
               $fillable_locations = $locations->filter(function($location) use ($item, $assumed_items) {
 				return !$location->hasItem() && $location->canFill($item, $assumed_items);
@@ -97,10 +94,17 @@ class RandomAssumed extends Filler {
             } else {
               $fill_location = null;
               foreach($locations as $location) {
-                if (!$location->hasItem() &&
-                    $location->canFill($item, $assumed_items)) {
+                if ($location->hasItem() || !$location->getRegion()->canFill($item)) {
+                  continue;
+                }
+                if ($location->canFill($item, $assumed_items)) {
                   $fill_location = $location;
                   break;
+                } else {
+                  $lname = preg_replace("/[^A-Za-z0-9]/", "", $location->getName());
+                  $iname = preg_replace("/[^A-Za-z0-9]/", "", $item->getName());
+                  printf("%s /= %s\n", $lname, $iname);
+                  printf("Based on: %s\n", json_encode($assumed_items->map(function($i){return $i->getName();}))) ;
                 }
               }
 			}

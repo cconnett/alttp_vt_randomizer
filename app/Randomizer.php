@@ -426,6 +426,10 @@ class Randomizer {
 
 			$location->setItem($place_prize);
 			Log::debug(sprintf("Placing: %s in %s", $location->getItem()->getNiceName(), $location->getName()));
+            $lname = preg_replace("/[^A-Za-z0-9]/", "", $location->getName());
+            $iname = preg_replace("/[^A-Za-z0-9]/", "", $location->getItem()->getName());
+			printf("%s := %s\n", $lname, $iname);
+
 
 			if (!$world->checkWinCondition($assumed_items)) {
 				if ($attempts > 0) {
@@ -475,6 +479,9 @@ class Randomizer {
 
 			$location->setItem($place_prize);
 			Log::debug(sprintf("Placing: %s in %s", $location->getItem()->getNiceName(), $location->getName()));
+            $lname = preg_replace("/[^A-Za-z0-9]/", "", $location->getName());
+            $iname = preg_replace("/[^A-Za-z0-9]/", "", $location->getItem()->getName());
+			printf("%s := %s\n", $lname, $iname);
 
 			if (!$world->checkWinCondition($assumed_items)) {
 				if ($attempts > 0) {
