@@ -9,8 +9,7 @@ uint scale(uint n, uint min, uint max) {
 }
 
 unsigned int mt_rand::rand(uint min, uint max) {
-  max -= min;
-  max++;
+  max -= min - 1;
 
   uint result = ((Mt19937 *)generator)->random();
   if ((max & (max - 1)) == 0) {
