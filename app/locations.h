@@ -284,14 +284,19 @@ enum class Region {
 };
 
 const Location PRIZE_LOCATIONS[] = {
+    Location::HyruleCastleEscapePrize,
+
+    Location::EasternPalacePrize,      Location::DesertPalacePrize,
+    Location::TowerofHeraPrize,
+
+    Location::HyruleCastleTowerPrize,  Location::DarkWorldNorthEastPrize,
+
     Location::PalaceofDarknessPrize,   Location::SwampPalacePrize,
     Location::SkullWoodsPrize,         Location::ThievesTownPrize,
     Location::IcePalacePrize,          Location::MiseryMirePrize,
-    Location::TurtleRockPrize,         Location::EasternPalacePrize,
-    Location::DesertPalacePrize,       Location::TowerofHeraPrize,
-    Location::HyruleCastleEscapePrize, Location::HyruleCastleTowerPrize,
-    Location::GanonsTowerPrize,        Location::DarkWorldNorthEastPrize,
+    Location::TurtleRockPrize,
 
+    Location::GanonsTowerPrize,
 };
 
 // The base order that the PHP code has before the shuffle.
