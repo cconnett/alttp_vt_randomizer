@@ -2,7 +2,10 @@ cc_binary(
     name = "makeseed",
     srcs = ["makeseed.cc"],
     copts = ["-std=c++17"],
-    linkopts = ["-lpthread"],
+    linkopts = [
+        "-lpthread",
+        "-lstdc++fs",
+    ],
     deps = [
         ":arraylength",
         ":errors",

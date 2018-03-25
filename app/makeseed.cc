@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <condition_variable>
 #include <cstring>
+#include <experimental/filesystem>
 #include <iostream>
 #include <mutex>
 #include <queue>
@@ -18,10 +19,14 @@
 #include "world.h"
 
 using namespace std;
+namespace filesystem = std::experimental::filesystem;
+using filesystem::path;
 
 #define PRODUCER_THREADS (12)
 #define TRANSACTION_SIZE (1000)
 #define MAX_QUEUE_LENGTH 10000
+
+constexpr long FILE_SIZE_TARGET = 1024 * 1024 * 32;  // 32 MiB
 
 struct location_and_seed {
   Location location;
@@ -38,14 +43,28 @@ queue<struct location_and_seed> shuffle_stage[(int)Item::NUM_ITEMS];
 condition_variable consumer_waiting[(int)Item::NUM_ITEMS];
 mutex channel_mutex[(int)Item::NUM_ITEMS];
 
+path get_next_filename(path dir) {
+  int max_file = 0;
+  for (auto &dir_ent : filesystem::directory_iterator(dir)) {
+    max_file = max(max_file, atoi(dir_ent.path().filename().c_str()));
+  }
+  char filename[10];
+  sprintf(filename, "%d", max_file + 1);
+  return dir / path(filename);
+}
+
 void consumer(int item) {
   FILE *sink[(int)Location::NUM_LOCATIONS];
+  path dirs[(int)Location::NUM_LOCATIONS];
   {
-    char filename[32];
+    char dirname[32];
     for (int location = 1; location < (int)Location::NUM_LOCATIONS;
          location++) {
-      sprintf(filename, "results/item%03d-location%03d.bin", item, location);
-      sink[location] = fopen(filename, "a");
+      sprintf(dirname, "results/item%03d-location%03d", item, location);
+      dirs[location] = path(dirname);
+      filesystem::create_directories(dirs[location]);
+      path filename = get_next_filename(dirs[location]);
+      sink[location] = fopen(filename.c_str(), "w");
       if (!sink[location]) {
         cerr << "Couldn't open " << filename << endl;
         exit(1);
@@ -63,6 +82,13 @@ void consumer(int item) {
       int location = (int)shuffle_stage[item].front().location;
       fwrite(&shuffle_stage[item].front().seed, sizeof(int), 1, sink[location]);
       shuffle_stage[item].pop();
+    }
+    for (int location = 1; location < (int)Location::NUM_LOCATIONS;
+         location++) {
+      if (ftell(sink[location]) > FILE_SIZE_TARGET) {
+        fclose(sink[location]);
+        sink[location] = fopen(get_next_filename(dirs[location]).c_str(), "w");
+      }
     }
   }
   for (int location = 1; location < (int)Location::NUM_LOCATIONS; location++) {
