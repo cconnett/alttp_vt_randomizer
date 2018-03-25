@@ -393,8 +393,11 @@ void World::set_medallions() {
                 medallions[generator->rand(0, 2)]);
 }
 bool pendants_last(Location a, Location b) {
-  return b == Location::EasternPalacePrize ||
-         b == Location::DesertPalacePrize || b == Location::TowerofHeraPrize;
+  return (!(a == Location::EasternPalacePrize ||
+            a == Location::DesertPalacePrize ||
+            a == Location::TowerofHeraPrize)) &&
+         (b == Location::EasternPalacePrize ||
+          b == Location::DesertPalacePrize || b == Location::TowerofHeraPrize);
 }
 
 void World::fill_prizes() {
