@@ -90,6 +90,7 @@ class IcePalace extends Region {
                 (!$this->world->config('region.cantTakeDamage', false)
                  || $items->has('CaneOfByrna') || $items->has('Cape') || $items->has('Hookshot'))
                 && ($items->has('Hookshot')
+					|| $items->has('KeyD5', 2)
                     || ($items->has('KeyD5', 1) &&
                         (!$items->has('BigKeyD5') ||
                          $locations->itemInLocations(Item::get('BigKeyD5'),
@@ -102,6 +103,7 @@ class IcePalace extends Region {
 				&& (!$this->world->config('region.cantTakeDamage', false)
 					|| $items->has('CaneOfByrna') || $items->has('Cape') || $items->has('Hookshot'))
 				&& ($items->has('Hookshot')
+					|| $items->has('KeyD5', 2)
 					|| ($items->has('KeyD5', 1) &&
                         (!$items->has('BigKeyD5') ||
                          $locations->itemInLocations(Item::get('BigKeyD5'),
@@ -113,6 +115,7 @@ class IcePalace extends Region {
 			return (!$this->world->config('region.cantTakeDamage', false)
 					|| $items->has('CaneOfByrna') || $items->has('Cape') || $items->has('Hookshot'))
 				&& ($items->has('Hookshot')
+					|| $items->has('KeyD5', 2)
 					|| ($items->has('KeyD5', 1) &&
                         (!$items->has('BigKeyD5') ||
                          $locations->itemInLocations(Item::get('BigKeyD5'),
