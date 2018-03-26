@@ -13,6 +13,10 @@ unsigned int mt_rand::rand(uint min, uint max) {
 
   uint result = ((Mt19937 *)generator)->random();
   if ((max & (max - 1)) == 0) {
+#ifdef RAND_SYNC
+    std::cout << "mt_rand(" << min << ", " << max + min - 1
+              << ") = " << result % max + min << std::endl;
+#endif
     return result & (max - 1);
   }
   uint limit = 0xffffffff - (0xffffffff % max) - 1;
@@ -20,7 +24,7 @@ unsigned int mt_rand::rand(uint min, uint max) {
     result = ((Mt19937 *)generator)->random();
   }
 #ifdef RAND_SYNC
-  std::cout << "mt_rand(" << min << ", " << max + min
+  std::cout << "mt_rand(" << min << ", " << max + min - 1
             << ") = " << result % max + min << std::endl;
 #endif
   return result % max + min;
