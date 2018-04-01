@@ -165,7 +165,7 @@ location_has = (
       G(p.quotedString)('items') + '))') |
     G('in_array($locations[' - p.quotedString('location') - ']->getItem(), '))
 
-can_access = G(location_def('location') + '->canAccess($items)').setName(
+can_access = G(location_def('location') + '->canAccess(' + (p.Literal('$items') | '$this->world->collectItems()') + ')').setName(
     'reachability assertion')
 
 # Generated global functions (or macros).
