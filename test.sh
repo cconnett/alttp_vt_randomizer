@@ -26,7 +26,7 @@ done
 
 # These seeds have a tricky issue. Adding access to a BigKeyD5 can increase the
 # requirements for another chest.
-SEEDS="992839880 365791332 635470466"
+SEEDS="992839880 365791332 635470466 265824031"
 for i in $SEEDS; do
   echo $i
   runtest $i || exit $?
