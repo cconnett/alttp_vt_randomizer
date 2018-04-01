@@ -104,7 +104,7 @@ class World {
   bool uncached_can_reach(Location location);
   void fill_items_in_locations(const Item *items, Location *locations);
   void fast_fill_items_in_locations(const Item *items, size_t n,
-                                    Location *locations);
+                                    Location *const locations);
   Item get_bottle(int filled);
   void set_medallions();
   void fill_prizes();

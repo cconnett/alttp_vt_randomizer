@@ -468,7 +468,7 @@ void World::fill_items_in_locations(const Item *items, Location *locations) {
 }
 
 void World::fast_fill_items_in_locations(const Item *items, size_t n,
-                                         Location *locations) {
+                                         Location *const locations) {
   add_assumed(items, n);
   Location *next = locations;
   for (const Item *item_to_place = items + n - 1; item_to_place >= items;
