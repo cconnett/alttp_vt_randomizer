@@ -324,7 +324,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate {
 	 * @return bool
 	 */
 	public function offsetExists($offset) {
-		return array_key_exists($offset, $this->items);
+		return isset($this->items[$offset]);
 	}
 
 	/**
@@ -347,7 +347,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate {
 	 * @return void
 	 */
 	public function offsetSet($offset, $value) {
-		if (is_null($offset)) {
+		if ($offset === null) {
 			$this->items[] = $value;
 		} else {
 			$this->items[$offset] = $value;
@@ -392,7 +392,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate {
 	 */
 	protected function getArrayableItems($items) {
 		if ($items instanceof self) {
-			return $items->all();
+			return $items->values();
 		}
 
 		return (array) $items;
