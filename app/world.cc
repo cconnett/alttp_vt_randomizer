@@ -45,7 +45,7 @@ World::~World() {
 }
 
 World::World(int seed)
-    : generator(new mt_rand(seed)), log(spdlog::get("console")) {
+    : seed(seed), generator(new mt_rand(seed)), log(spdlog::get("console")) {
   clear_assumed();
   clear_reachability_cache();
   memset(assignments, 0, sizeof(assignments));
@@ -477,8 +477,9 @@ void World::fast_fill_items_in_locations(const Item *items, size_t n,
       next++;
     }
     if (*next == Location::INVALID) {
-      print();
-      cerr << "Ran out of locations." << endl;
+      cerr << "Ran out of locations on seed " << seed << " while placing "
+           << ITEM_NAMES[(int)*item_to_place] << "." << endl;
+      cerr << item_to_place - items << " left to place." << endl;
       throw CannotPlaceItem();
     }
     set_item(*next, *item_to_place);

@@ -65,6 +65,7 @@ class World {
   bool always_allow(Location location, Item item);
 
  private:
+  int seed;
   Item assignments[(int)Location::NUM_LOCATIONS];
   vector<Location> where_is[(int)Item::NUM_ITEMS];
   int num_unplaced[(int)Item::NUM_ITEMS];
