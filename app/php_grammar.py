@@ -111,13 +111,12 @@ item_ref = (s('Item::get(') - p.quotedString - s(')')).setName('item reference')
 php_var = G(s('$') + identifier('symbol')).setName('variable')
 
 # Reduced to true/false under assumption of open mode.
-game_mode_true = (p.Literal("in_array(config('game-mode'), ['open'])") |
-                  "$this->world->getGoal() == 'ganon'").setParseAction(
+game_mode_true = p.Literal("$this->world->getGoal() == 'ganon'").setParseAction(
                       p.replaceWith({
                           'boolean': True
                       }))
 game_mode_false = (
-    p.Literal("$this->world->getGoal() == 'dungeons'")).setParseAction(
+    p.Literal("$this->world->getGoal() == 'dungeons'")|p.Literal("in_array(config('game-mode'), ['open'])")).setParseAction(
         p.replaceWith({
             'boolean': False
         }))
