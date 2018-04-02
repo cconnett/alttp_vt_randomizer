@@ -260,7 +260,6 @@ bool World::check_item(Location location, Item item) {
 
   Item old_item = assignments[(int)location];
   assignments[(int)location] = item;
-  // clear_reachability_cache();
   if (can_fill(location, item) && can_reach(location)) {
     assignments[(int)location] = old_item;
     return true;
