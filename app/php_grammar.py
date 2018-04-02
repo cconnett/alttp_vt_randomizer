@@ -165,7 +165,10 @@ location_has = (
       G(p.quotedString)('items') + '))') |
     G('in_array($locations[' - p.quotedString('location') - ']->getItem(), '))
 
-can_access = G(location_def('location') + '->canAccess(' + (p.Literal('$items') | '$this->world->collectItems()') + ')').setName(
+can_access = G(location_def('location') + '->canAccess(' + (
+  p.Literal('$items').setParseAction(p.replaceWith('all_items')) |
+  p.Literal('$this->world->collectItems()').setParseAction(p.replaceWith('uncle_item_only'))
+  )('with_what') + ')').setName(
     'reachability assertion')
 
 # Generated global functions (or macros).
@@ -431,7 +434,20 @@ def ExpandToC(d):
       return 'this->can_enter({})'.format('Region::' + region_name_mapping.get(
           Smoosh(value['region']), Smoosh(value['region'])))
   elif name == 'access_to_location':
-    return 'this->can_reach(Location::{})'.format(Smoosh(value['location']))
+    if value['with_what'] == 'all_items':
+      return 'this->can_reach(Location::{})'.format(Smoosh(value['location']))
+    elif value['with_what'] == 'uncle_item_only':
+      # Special casing standard uncle weapons.
+      other_terms = ' || '.join(
+        'assignments[(int)Location::LinksUncle] == Item::{}'.format(weapon)
+        for weapon in [
+          'CaneOfByrna', 'CaneOfSomaria', 'TenBombs', 'Bow',
+          'Hammer', 'FireRod',
+          ])
+      sword_term = '(assignments[(int)Location::LinksUncle] == Item::ProgressiveSword && num_unplaced[(int)Item::ProgressiveSword] == 0)'
+      return '({sword} || {other})'.format(sword=sword_term, other=other_terms)
+    else:
+      raise Exception('Missed a case.')
   elif name == 'config':
     default = value['default']
     if isinstance(default, bool):
