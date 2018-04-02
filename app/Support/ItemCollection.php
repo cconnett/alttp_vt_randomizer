@@ -436,8 +436,14 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canKillMostThings($enemies = 5) {
-             return ($this->hasSword() && in_array($this->world->config('mode.weapons'), ['uncle', 'swordless'])
-                     || !($this->world->getCurrentlyFillingItems()->hasSword()))
+        // Interpretation of the first term: the sword we have only
+        // counts if it's the last sword we're placing in this
+        // step. Presumably they don't want to skew the distribution of
+        // uncle weapons toward sword owing to there's two of them in the
+        // progression pool.
+             return ($this->hasSword() &&
+                     (in_array($this->world->config('mode.weapons'), ['uncle', 'swordless'])
+                      || !($this->world->getCurrentlyFillingItems()->hasSword())))
 			|| $this->has('CaneOfSomaria')
 			|| ($this->has('TenBombs') && $enemies < 6)
 			|| ($this->has('CaneOfByrna') && ($enemies < 6 || $this->canExtendMagic()))
