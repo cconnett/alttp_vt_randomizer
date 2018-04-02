@@ -265,7 +265,7 @@ bool World::check_item(Location location, Item item) {
     assignments[(int)location] = old_item;
     return true;
   }
-  log->info("{} /= {}", LOCATION_NAMES[(int)location], ITEM_NAMES[(int)item]);
+  log->debug("{} /= {}", LOCATION_NAMES[(int)location], ITEM_NAMES[(int)item]);
   assignments[(int)location] = old_item;
   return false;
 }
