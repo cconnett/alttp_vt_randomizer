@@ -10,6 +10,7 @@
 #include "items.h"
 #include "locations.h"
 #include "spdlog/spdlog.h"
+#include "sqlite3.h"
 #include "world.h"
 
 using namespace std;

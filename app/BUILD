@@ -13,6 +13,7 @@ cc_binary(
         ":locations",
         ":world",
         "@spdlog",
+        "@sqlite3",
     ],
 )
 
@@ -71,6 +72,7 @@ cc_library(
         ":locations",
         ":mt_rand",
         "@spdlog",
+        "@sqlite3",
     ],
 )
 

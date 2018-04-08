@@ -3,6 +3,7 @@
 #include "items.h"
 #include "mt_rand.h"
 #include "spdlog/spdlog.h"
+#include "sqlite3.h"
 
 using namespace std;
 
