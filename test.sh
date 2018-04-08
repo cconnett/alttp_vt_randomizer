@@ -3,7 +3,7 @@ PATH=/usr/local/silly/bin:$PATH
 function runtest {
   seed="$1"
   shift
-  php artisan -v alttp:randomize --skip-md5 /dev/null /tmp --no-rom --spoiler --seed=${seed} --mode=standard \
+  php7.0 artisan -v alttp:randomize --skip-md5 /dev/null /tmp --no-rom --spoiler --seed=${seed} --mode=standard \
     | fgrep -v "mt_rand" \
     | fgrep " := " \
     | egrep -v "(Waterfall|Pyramid)Bottle" \
