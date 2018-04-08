@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS assignments (item int, location int, seed int);
+CREATE TABLE IF NOT EXISTS constraints (item int, location int);
