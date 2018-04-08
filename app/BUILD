@@ -1,15 +1,18 @@
 cc_binary(
     name = "makeseed",
     srcs = ["makeseed.cc"],
+    copts = ["-std=c++17"],
+    linkopts = [
+        "-lpthread",
+        "-lstdc++fs",
+    ],
     deps = [
         ":arraylength",
         ":errors",
         ":items",
         ":locations",
-        ":mt_rand",
         ":world",
         "@spdlog",
-        "@sqlite3",
     ],
 )
 
@@ -19,24 +22,27 @@ cc_library(
         "mt_rand.cc",
         "mt_rand.h",
     ],
-    deps = ["@untwister//:php-mt_rand"],
+    deps = [
+      "@untwister//:mt_rand",
+      "@untwister//:php-mt_rand",
+    ],
 )
 
 cc_library(
     name = "arraylength",
-    srcs = ["arraylength.h"],
+    hdrs = ["arraylength.h"],
 )
 
 cc_library(
     name = "errors",
-    srcs = [
+    hdrs = [
         "errors.h",
     ],
 )
 
 cc_library(
     name = "locations",
-    srcs = [
+    hdrs = [
         "locations.h",
     ],
     deps = [":arraylength"],
@@ -44,7 +50,7 @@ cc_library(
 
 cc_library(
     name = "items",
-    srcs = [
+    hdrs = [
         "items.h",
     ],
     deps = [
@@ -63,8 +69,8 @@ cc_library(
         ":errors",
         ":items",
         ":locations",
+        ":mt_rand",
         "@spdlog",
-        "@sqlite3",
     ],
 )
 
@@ -84,7 +90,10 @@ py_library(
 
 genrule(
     name = "world-generated",
-    srcs = glob(["Region/**/*.php"]) + ["Support/ItemCollection.php"],
+    srcs = glob(["Region/**/*.php"]) + [
+        "Support/ItemCollection.php",
+        "Boss.php",
+    ],
     outs = ["world.gen.cc"],
     cmd = "$(location :build_index) | clang-format > $(OUTS)",
     tools = [

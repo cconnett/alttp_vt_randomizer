@@ -1,5 +1,6 @@
 <?php namespace ALttP\Region;
 
+use ALttP\Boss;
 use ALttP\Item;
 use ALttP\Location;
 use ALttP\Region;
@@ -14,6 +15,8 @@ class IcePalace extends Region {
 	public $music_addresses = [
 		0x155BF,
 	];
+
+	protected $map_reveal = 0x0040;
 
 	protected $region_items = [
 		'BigKey',
@@ -35,6 +38,8 @@ class IcePalace extends Region {
 	 */
 	public function __construct(World $world) {
 		parent::__construct($world);
+
+		$this->boss = Boss::get("Kholdstare");
 
 		$this->locations = new LocationCollection([
 			new Location\Chest("Ice Palace - Big Key Chest", 0xE9A4, null, $this),
@@ -85,6 +90,7 @@ class IcePalace extends Region {
                 (!$this->world->config('region.cantTakeDamage', false)
                  || $items->has('CaneOfByrna') || $items->has('Cape') || $items->has('Hookshot'))
                 && ($items->has('Hookshot')
+					|| $items->has('KeyD5', 2)
                     || ($items->has('KeyD5', 1) &&
                         (!$items->has('BigKeyD5') ||
                          $locations->itemInLocations(Item::get('BigKeyD5'),
@@ -97,6 +103,7 @@ class IcePalace extends Region {
 				&& (!$this->world->config('region.cantTakeDamage', false)
 					|| $items->has('CaneOfByrna') || $items->has('Cape') || $items->has('Hookshot'))
 				&& ($items->has('Hookshot')
+					|| $items->has('KeyD5', 2)
 					|| ($items->has('KeyD5', 1) &&
                         (!$items->has('BigKeyD5') ||
                          $locations->itemInLocations(Item::get('BigKeyD5'),
@@ -108,6 +115,7 @@ class IcePalace extends Region {
 			return (!$this->world->config('region.cantTakeDamage', false)
 					|| $items->has('CaneOfByrna') || $items->has('Cape') || $items->has('Hookshot'))
 				&& ($items->has('Hookshot')
+					|| $items->has('KeyD5', 2)
 					|| ($items->has('KeyD5', 1) &&
                         (!$items->has('BigKeyD5') ||
                          $locations->itemInLocations(Item::get('BigKeyD5'),
@@ -124,28 +132,33 @@ class IcePalace extends Region {
 		});
 
 		$this->can_complete = function($locations, $items) {
+			return $this->locations["Ice Palace - Kholdstare"]->canAccess($items)
+				&& (!$this->world->config('region.wildCompasses', false) || $items->has('CompassD5'))
+				&& (!$this->world->config('region.wildMaps', false) || $items->has('MapD5'));
+		};
+
+		$this->locations["Ice Palace - Kholdstare"]->setRequirements(function($locations, $items) {
 			return $this->canEnter($locations, $items)
 				&& $items->has('Hammer') && $items->canMeltThings() && $items->canLiftRocks()
+				&& $this->boss->canBeat($items, $locations)
 				&& $items->has('BigKeyD5') && (
 					($items->has('CaneOfSomaria') && $items->has('KeyD5'))
 					|| $items->has('KeyD5', 2)
 				);
-		};
+		})->setFillRules(function($item, $locations, $items) {
+			if (!$this->world->config('region.bossNormalLocation', true)
+				&& (is_a($item, Item\Key::class) || is_a($item, Item\BigKey::class)
+					|| is_a($item, Item\Map::class) || is_a($item, Item\Compass::class))) {
+				return false;
+			}
 
-		$this->locations["Ice Palace - Kholdstare"]->setRequirements($this->can_complete)
-			->setFillRules(function($item, $locations, $items) {
-				if (!$this->world->config('region.bossNormalLocation', true)
-					&& (is_a($item, Item\Key::class) || is_a($item, Item\BigKey::class)
-						|| is_a($item, Item\Map::class) || is_a($item, Item\Compass::class))) {
-					return false;
-				}
-
-				return true;
-			});
+			return true;
+		});
 
 
 		$this->can_enter = function($locations, $items) {
-			return $items->has('MoonPearl') && $items->has('Flippers')
+			return $items->has('RescueZelda')
+				&& $items->has('MoonPearl') && $items->has('Flippers')
 				&& $items->canLiftDarkRocks() && $items->canMeltThings();
 		};
 
@@ -164,12 +177,11 @@ class IcePalace extends Region {
 		$this->initNoMajorGlitches();
 
 		$this->can_enter = function($locations, $items) {
-			return $items->canLiftDarkRocks()
-				|| ($items->has('MagicMirror') && $items->glitchedLinkInDarkWorld()
-					&& $this->world->getRegion('South Dark World')->canEnter($locations, $items));
+			return $items->has('RescueZelda')
+				&& ($items->canLiftDarkRocks()
+					|| ($items->has('MagicMirror') && $items->glitchedLinkInDarkWorld()
+						&& $this->world->getRegion('South Dark World')->canEnter($locations, $items)));
 		};
-
-		$this->prize_location->setRequirements($this->can_complete);
 
 		return $this;
 	}
@@ -184,7 +196,8 @@ class IcePalace extends Region {
 		$this->initNoMajorGlitches();
 
 		$this->can_enter = function($locations, $items) {
-			return $items->canLiftDarkRocks() && $items->canMeltThings();
+			return $items->has('RescueZelda')
+				&& $items->canLiftDarkRocks() && $items->canMeltThings();
 		};
 
 		return $this;

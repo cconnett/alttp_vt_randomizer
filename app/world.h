@@ -1,43 +1,41 @@
 #include <vector>
 
 #include "items.h"
+#include "mt_rand.h"
 #include "spdlog/spdlog.h"
-#include "sqlite3.h"
 
 using namespace std;
 
+enum class WeaponMode {
+  RANDOM,
+  UNCLE,
+  SWORDLESS,
+};
+
+#define KEYSANITY false
+#define CONFIG_OPTION_MODE_WEAPONS WeaponMode::RANDOM
+#define CONFIG_OPTION_REGION_CANTTAKEDAMAGE false
+#define CONFIG_OPTION_REGION_REQUIREBETTERSWORD false
+#define CONFIG_OPTION_REGION_REQUIREBETTERBOW false
+
+#define CONFIG_OPTION_REGION_BOSSNORMALLOCATION true
+#define CONFIG_OPTION_ITEM_OVERFLOW_COUNT_SHIELD 3
+
+#define CONFIG_OPTION_REGION_WILDCOMPASSES KEYSANITY
+#define CONFIG_OPTION_REGION_WILDMAPS KEYSANITY
+#define CONFIG_OPTION_REGION_WILDKEYS KEYSANITY
+#define CONFIG_OPTION_REGION_WILDBIGKEYS KEYSANITY
+
 class World {
  public:
-  World();
+  World(int seed);
+  ~World();
+
   void print();
   void compact_print();
-  void sqlite3_write(sqlite3_stmt *stmt, int seed);
+  const Item *view_assignments() const;
 
   bool has_item(Location location);
-  // Assign to `location` the item `item`. Invalidate the reachability cache.
-  void set_item(Location location, Item item);
-  // Assign `item` only if there are unplaced instances available.
-  bool check_and_set_item(Location location, Item item);
-  // Constrain generation to always have `item` at `location`.
-  void constrain(Location location, Item item) {
-    constraints[(int)location] = item;
-  }
-
-  // Manage the list of items to assume are reachable.
-  void clear_assumed();
-  void add_assumed(const Item *items, size_t n_items);
-  void decr_assumed(Item item) {
-    clear_reachability_cache();
-    num_unplaced[(int)item]--;
-  }
-  void incr_assumed(Item item) {
-    clear_reachability_cache();
-    num_unplaced[(int)item]++;
-  }
-
-  // Assign to `location` the medallion `item`. Don't add it to the where_is
-  // structure to avoid it being seen as collectible.
-  void set_medallion(Location location, Item item);
 
   // Can `location` be reached?
   bool can_reach(Location location);
@@ -45,7 +43,7 @@ class World {
   // How many instances of `item` can be reached?
   int num_reachable(Item item);
   // Can `n` instances of `item` can be reached?
-  int is_num_reachable(int n, Item item);
+  bool is_num_reachable(int n, Item item);
 
   // How many bottles can be reached (including variations with contents)?
   int bottle_count();
@@ -66,14 +64,35 @@ class World {
   // Override other reachability and placement checks to always allow
   bool always_allow(Location location, Item item);
 
-  Item constraints[(int)Location::NUM_LOCATIONS];
-
  private:
+  int seed;
   Item assignments[(int)Location::NUM_LOCATIONS];
   vector<Location> where_is[(int)Item::NUM_ITEMS];
   int num_unplaced[(int)Item::NUM_ITEMS];
 
+  mt_rand *generator;
+
   void raw_set_item(Location location, Item item);
+  // Assign to `location` the item `item`. Invalidate the reachability cache.
+  void set_item(Location location, Item item);
+  // Check if item can be placed in location.
+  bool check_item(Location location, Item item);
+
+  // Manage the list of items to assume are reachable.
+  void clear_assumed();
+  void add_assumed(const Item *items, size_t n_items);
+  void decr_assumed(Item item) {
+    clear_reachability_cache();
+    num_unplaced[(int)item]--;
+  }
+  void incr_assumed(Item item) {
+    clear_reachability_cache();
+    num_unplaced[(int)item]++;
+  }
+
+  // Assign to `location` the medallion `item`. Don't add it to the where_is
+  // structure to avoid it being seen as collectible.
+  void set_medallion(Location location, Item item);
 
   // 1 = Reachable
   // 0 = Unknown
@@ -83,6 +102,12 @@ class World {
 
   // Uncached version that's easier to generate.
   bool uncached_can_reach(Location location);
+  void fill_items_in_locations(const Item *items, Location *locations);
+  void fast_fill_items_in_locations(const Item *items, size_t n,
+                                    Location *const locations);
+  Item get_bottle(int filled);
+  void set_medallions();
+  void fill_prizes();
 
   std::shared_ptr<spdlog::logger> log;
 };

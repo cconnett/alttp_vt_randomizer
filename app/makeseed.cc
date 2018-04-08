@@ -1,344 +1,229 @@
+#include <stdio.h>
+#include <condition_variable>
 #include <cstring>
+#include <experimental/filesystem>
 #include <iostream>
+#include <mutex>
+#include <queue>
+#include <shared_mutex>
+#include <string>
+#include <thread>
+#include <utility>
 #include <vector>
 
 #include "arraylength.h"
 #include "errors.h"
 #include "items.h"
 #include "locations.h"
-#include "mt_rand.h"
 #include "spdlog/spdlog.h"
-#include "sqlite3.h"
 #include "world.h"
 
 using namespace std;
+namespace filesystem = std::experimental::filesystem;
+using filesystem::path;
 
-Item get_bottle(int filled) {
-  Item bottles[] = {
-      Item::Bottle,
-      Item::BottleWithRedPotion,
-      Item::BottleWithGreenPotion,
-      Item::BottleWithBluePotion,
-      Item::BottleWithBee,
-      Item::BottleWithGoldBee,
-      Item::BottleWithFairy,
-  };
-  return bottles[mt_rand(filled, 6)];
+#define PRODUCER_THREADS (12)
+#define TRANSACTION_SIZE (1000)
+
+constexpr long FILE_SIZE_TARGET = 1024 * 1024 * 32;  // 32 MiB
+
+struct location_and_seed {
+  Location location;
+  int seed;
+};
+
+queue<int> work;
+mutex m_work, m_cout;
+shared_mutex m_shuffle;
+int stop;
+bool done = false;
+
+queue<struct location_and_seed> shuffle_stage[(int)Item::NUM_ITEMS];
+condition_variable consumer_waiting[(int)Item::NUM_ITEMS];
+mutex channel_mutex[(int)Item::NUM_ITEMS];
+
+path get_next_filename(path dir) {
+  int max_file = 0;
+  for (auto &dir_ent : filesystem::directory_iterator(dir)) {
+    max_file = max(max_file, atoi(dir_ent.path().filename().c_str()));
+  }
+  char filename[10];
+  sprintf(filename, "%d", max_file + 1);
+  return dir / path(filename);
 }
 
-Region dungeon_of(Item item) {
-  for (int r = (int)Region::HyruleCastleEscape; r <= (int)Region::GanonsTower;
-       r++) {
-    for (const Item *dungeon_item = DUNGEON_ITEMS[r];
-         *dungeon_item != Item::INVALID; dungeon_item++) {
-      if (item == *dungeon_item) {
-        return (Region)r;
+void consumer(int item) {
+  FILE *sink[(int)Location::NUM_LOCATIONS];
+  path dirs[(int)Location::NUM_LOCATIONS];
+  {
+    char dirname[32];
+    for (int location = 1; location < (int)Location::NUM_LOCATIONS;
+         location++) {
+      sprintf(dirname, "results/item%03d-location%03d", item, location);
+      dirs[location] = path(dirname);
+      filesystem::create_directories(dirs[location]);
+      path filename = get_next_filename(dirs[location]);
+      sink[location] = fopen(filename.c_str(), "w");
+      if (!sink[location]) {
+        cerr << "Couldn't open " << filename << endl;
+        exit(1);
       }
     }
   }
-  return Region::INVALID;
-}
 
-Region dungeon_of(Location location) {
-  for (int r = (int)Region::HyruleCastleEscape; r <= (int)Region::GanonsTower;
-       r++) {
-    for (const Location *dungeon_location = DUNGEON_LOCATIONS[r];
-         *dungeon_location != Location::INVALID; dungeon_location++) {
-      if (location == *dungeon_location) {
-        return (Region)r;
+  while (!done) {
+    while (shuffle_stage[item].empty() && !done) {
+      unique_lock<mutex> channel_lock(channel_mutex[item]);
+      consumer_waiting[item].wait(channel_lock);
+    }
+    shared_lock<shared_mutex> lock(m_shuffle);
+    while (!shuffle_stage[item].empty()) {
+      int location = (int)shuffle_stage[item].front().location;
+      fwrite(&shuffle_stage[item].front().seed, sizeof(int), 1, sink[location]);
+      shuffle_stage[item].pop();
+    }
+    for (int location = 1; location < (int)Location::NUM_LOCATIONS;
+         location++) {
+      if (ftell(sink[location]) > FILE_SIZE_TARGET) {
+        fclose(sink[location]);
+        sink[location] = fopen(get_next_filename(dirs[location]).c_str(), "w");
       }
     }
   }
-  return Region::INVALID;
-}
-
-void set_medallions(World &world) {
-  const Item medallions[] = {Item::Ether, Item::Bombos, Item::Quake};
-  world.set_medallion(Location::TurtleRockMedallion, medallions[mt_rand(0, 2)]);
-  world.set_medallion(Location::MiseryMireMedallion, medallions[mt_rand(0, 2)]);
-}
-
-void fill_prizes(World &world) {
-  Item prizes[ARRAY_LENGTH(PRIZES)];
-  memcpy(prizes, PRIZES, sizeof(PRIZES));
-
-  mt_shuffle<Item>(prizes, ARRAY_LENGTH(prizes));
-
-  // PHP: There are 40 extra calls to getAdvancementItems->...->getBottle calls
-  // that are wasted.
-  for (int i = 0; i < 40; i++) {
-    get_bottle(0);
-  }
-  // Then two more for setting fountain prizes that we don't care about.
-  for (int i = 0; i < 2; i++) {
-    get_bottle(1);
-  }
-
-  world.add_assumed(prizes, ARRAY_LENGTH(PRIZES));
-  for (uint i = 0; i < ARRAY_LENGTH(prizes); i++) {
-    // The PHP pops from the end of its shuffled array of prizes.
-    world.set_item(PRIZE_LOCATIONS[i], prizes[ARRAY_LENGTH(PRIZES) - i - 1]);
+  for (int location = 1; location < (int)Location::NUM_LOCATIONS; location++) {
+    fclose(sink[location]);
   }
 }
 
-void fill_items_in_locations(World &world, const Item *items,
-                             Location *locations) {
-  auto log = spdlog::get("trace");
-  for (const Item *i = items; *i != Item::INVALID; i++) {
-    // Caution: The `assumed` count is decremented here, incremented in
-    // check_and_set_item when it succeeds, and finally decremented again in
-    // set_item.
-    SPDLOG_TRACE(log, "Placing {}", ITEM_NAMES[(int)*i]);
-
-    world.decr_assumed(*i);
-    Location *l;
-    for (l = locations; *l != Location::INVALID; l++) {
-      if (world.check_and_set_item(*l, *i)) {
+void producer() {
+  int base;
+  while (true) {
+    {
+      lock_guard<mutex> lock(m_work);
+      if (work.empty()) {
         break;
       }
+      base = work.front();
+      work.pop();
     }
-    if (*l == Location::INVALID) {
-      cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
-      throw CannotPlaceItem();
+    {
+      lock_guard<mutex> lock(m_cout);
+      cout << "Working on " << base << "-"
+           << min(base + TRANSACTION_SIZE, stop) - 1 << endl;
     }
-  }
-}
 
-void fast_fill_items_in_locations(World &world, const Item *items, size_t n,
-                                  Location *locations) {
-  world.add_assumed(items, n);
-  Location *next = locations;
-  for (const Item *item_to_place = items + n - 1; item_to_place >= items;
-       item_to_place--) {
-    while (*next != Location::INVALID && world.has_item(*next)) {
-      next++;
+    World *result[TRANSACTION_SIZE];
+    for (int offset = 0; offset < TRANSACTION_SIZE && base + offset < stop;
+         offset++) {
+      try {
+        result[offset] = new World(base + offset);
+      } catch (CannotPlaceItem &e) {
+        exit(1);
+      }
     }
-    if (*next == Location::INVALID) {
-      world.print();
-      cerr << "Ran out of locations." << endl;
-      throw CannotPlaceItem();
+
+    {
+      lock_guard<shared_mutex> lock(m_shuffle);
+      for (int offset = 0; offset < TRANSACTION_SIZE && base + offset < stop;
+           offset++) {
+        auto assignments = result[offset]->view_assignments();
+        for (int location = 1; location < (int)Location::NUM_LOCATIONS;
+             location++) {
+          int item = (int)assignments[location];
+          struct location_and_seed temp;
+          temp.location = (Location)location;
+          temp.seed = base + offset;
+          shuffle_stage[item].push(temp);
+          consumer_waiting[item].notify_one();
+        }
+        delete result[offset];
+      }
     }
-    world.set_item(*next, *item_to_place);
-  }
-}
 
-void makeseed(World &world, int seed) {
-  mt_srand(seed);
-
-  set_medallions(world);
-  fill_prizes(world);
-
-  // Initialize the advancement items here.  Bottle contents are randomized and
-  // all random calls have to match PHP exactly, so determine the contents here.
-  int num_advancement = ARRAY_LENGTH(ADVANCEMENT_ITEMS);
-  Item advancement[num_advancement + 1];
-  memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(advancement));
-  advancement[num_advancement] = Item::INVALID;
-
-  // Initialize nice items, too.
-  Item nice[ARRAY_LENGTH(NICE_ITEMS)];
-  memcpy(nice, NICE_ITEMS, sizeof(nice));
-
-  // Assign actual bottle contents to the bottles in nice items and the one
-  // bottle in advancement. The PHP generates four bottles, pulls them off the
-  // advancement list, then puts the last one back on advancement and the other
-  // three on nice items. To recreate this, generate contents for nice, then
-  // advancement.
-  for (uint i = 0; i < ARRAY_LENGTH(nice); i++) {
-    if (nice[i] == Item::Bottle) {
-      nice[i] = get_bottle(0);
+    {
+      lock_guard<mutex> lock(m_cout);
+      cout << "Shipped " << base << "-"
+           << min(base + TRANSACTION_SIZE, stop) - 1 << endl;
     }
   }
 
-  for (int i = 0; i < num_advancement; i++) {
-    if (advancement[i] == Item::Bottle) {
-      advancement[i] = get_bottle(0);
-    }
+  {
+    lock_guard<mutex> lock(m_cout);
+    cout << "No more work. Shutting down." << endl;
   }
-
-  // Shuffle the advancement items.
-  mt_shuffle(advancement, num_advancement);
-
-  // Copy the fillable locations to a local array so we can shuffle it.
-  Location locations[NUM_FILLABLE_LOCATIONS + 1];
-  memcpy(locations, FILLABLE_LOCATIONS,
-         NUM_FILLABLE_LOCATIONS * sizeof(Location));
-  // Null terminate the list.
-  locations[NUM_FILLABLE_LOCATIONS] = Location::INVALID;
-
-  // Shuffle the real locations (not the null terminator).
-  mt_shuffle(locations, NUM_FILLABLE_LOCATIONS);
-
-  // Fill dungeon items.  Fill the items into each dungeon separately, since
-  // dungeon items can only go in their respective dungeons.
-  world.clear_assumed();
-  world.add_assumed(FLAT_DUNGEON_ITEMS, ARRAY_LENGTH(FLAT_DUNGEON_ITEMS));
-  world.add_assumed(ADVANCEMENT_ITEMS, ARRAY_LENGTH(ADVANCEMENT_ITEMS));
-  // For each dungeon:
-  //   Extract its locations from `locations`.
-  // For each FLAT_DUNGEON_ITEMS:
-  //   Apply fill_items_in_locations(world, single item,
-  //   shuffled_locations[dungeon_of(item)])
-  Location shuffled_locations_by_dungeon[NUM_DUNGEONS + 1]
-                                        [MAX_DUNGEON_LOCATIONS + 1] = {
-                                            Location::INVALID};
-  Location *next_location_per_dungeon[NUM_DUNGEONS + 1];
-  for (int d = (int)Region::HyruleCastleEscape; d <= (int)Region::GanonsTower;
-       d++) {
-    next_location_per_dungeon[d] = &shuffled_locations_by_dungeon[d][0];
-  }
-  for (Location *loc = locations; *loc != Location::INVALID; loc++) {
-    Region dungeon = dungeon_of(*loc);
-    if (dungeon != Region::INVALID) {
-      *next_location_per_dungeon[(int)dungeon]++ = *loc;
-    }
-  }
-  for (int d = (int)Region::HyruleCastleEscape; d <= (int)Region::GanonsTower;
-       d++) {
-    *next_location_per_dungeon[d] = Location::INVALID;
-  }
-
-  Item single_item[2] = {Item::INVALID};
-  for (const Item *item = FLAT_DUNGEON_ITEMS; *item != Item::INVALID; item++) {
-    single_item[0] = *item;
-    fill_items_in_locations(
-        world, single_item,
-        shuffled_locations_by_dungeon[(int)dungeon_of(*item)]);
-  }
-  // Random junk fill in Ganon's tower.
-  Location ganons_tower_empty[MAX_DUNGEON_LOCATIONS];
-  size_t num_empty_gt_locations = 0;
-  for (uint i = 0;
-       DUNGEON_LOCATIONS[(int)Region::GanonsTower][i] != Location::INVALID;
-       i++) {
-    if (!world.has_item(DUNGEON_LOCATIONS[(int)Region::GanonsTower][i])) {
-      ganons_tower_empty[num_empty_gt_locations++] =
-          DUNGEON_LOCATIONS[(int)Region::GanonsTower][i];
-    }
-  }
-  int gt_junk = mt_rand(0, 15);
-  vector<Location> gt_trash_locations =
-      mt_sample(ganons_tower_empty, num_empty_gt_locations, gt_junk);
-
-  Item extra[ARRAY_LENGTH(TRASH_ITEMS)];
-  memcpy(extra, TRASH_ITEMS, sizeof(extra));
-  mt_shuffle(extra, ARRAY_LENGTH(extra));
-  fast_fill_items_in_locations(world, extra, gt_trash_locations.size(),
-                               gt_trash_locations.data());
-
-  // The dungeon items were filled into locations starting at the front of the
-  // shuffled locations list. The PHP version then uses locations from the
-  // back of the shuffled list for placing the advancement items. Proceeding
-  // from the back of locations, take the empty ones into a new list.
-  Location empty_locations[NUM_FILLABLE_LOCATIONS + 1];
-  memset(empty_locations, 0, sizeof(empty_locations));
-  int num_empty = 0;
-  for (int offset = NUM_FILLABLE_LOCATIONS - 1; offset >= 0; offset--) {
-    if (!world.has_item(locations[offset])) {
-      empty_locations[num_empty++] = locations[offset];
-    }
-  }
-
-  // Shuffle the advancement items. (Yes, again; the PHP does this)
-  mt_shuffle(advancement, num_advancement);
-
-  // Fill advancement.
-  world.clear_assumed();
-  world.add_assumed(advancement, ARRAY_LENGTH(advancement));
-  fill_items_in_locations(world, advancement, empty_locations);
-
-  // Filter down to the empty locations again.
-  num_empty = 0;
-  for (int i = 0; empty_locations[i] != Location::INVALID; i++) {
-    if (!world.has_item(empty_locations[i])) {
-      empty_locations[num_empty++] = empty_locations[i];
-    }
-  }
-  // Null terminate empty_locations.
-  empty_locations[num_empty] = Location::INVALID;
-  // Shuffle them again.
-  mt_shuffle(empty_locations, num_empty);
-
-  // fast_fill_items_in_locations the shuffled nice items.
-  mt_shuffle(nice, ARRAY_LENGTH(nice));
-  fast_fill_items_in_locations(world, nice, ARRAY_LENGTH(nice),
-                               empty_locations);
-
-  // fast_fill_items_in_locations the shuffled remaining trash
-  // items. The first `gt_junk` of them were already placed in Ganon's
-  // Tower, so offset by `gt_junk`.
-  Item *trash = extra + gt_junk;
-  int num_trash = ARRAY_LENGTH(extra) - gt_junk;
-  mt_shuffle(trash, num_trash);
-  fast_fill_items_in_locations(world, trash, num_trash, empty_locations);
 }
 
 int main(int argc, char **argv) {
-  spdlog::stdout_color_mt("trace");
+  spdlog::stdout_color_mt("console");
+  spdlog::set_pattern("%L%m%d %H:%M:%S.%f %v");
+#ifndef NDEBUG
+  spdlog::set_level(spdlog::level::debug);
+#elif __OPTIMIZE__
+  spdlog::set_level(spdlog::level::err);
+#endif
+
   if (argc == 2) {
     int seed = atoi(argv[1]);
-    World result;
     try {
-      makeseed(result, seed);
+      World result(seed);
+      result.print();
     } catch (CannotPlaceItem &e) {
       return 1;
     }
-    result.print();
     return 0;
   }
-  uint begin = 1, end = 50000;
-  if (argc == 3) {
-    begin = atoi(argv[1]);
-    end = atoi(argv[2]);
+  if (argc == 1) {
+    for (int i = 0; i < 100000; i++) {
+      World w(i);
+    }
+    return 0;
   }
 
-  string filename = "seeds.db-";
-  filename += argv[1];
-  filename += "-";
-  filename += argv[2];
-
-  sqlite3 *conn;
-  int status = sqlite3_open(filename.c_str(), &conn);
-  if (status != SQLITE_OK) {
-    return status;
+  if (argc != 3) {
+    return 2;
   }
-  sqlite3_exec(conn,
-               "PRAGMA journal_mode = MEMORY;"
-               "CREATE TABLE IF NOT EXISTS assignments "
-               "(seed int, location int, item int);",
-               nullptr, nullptr, nullptr);
 
-  sqlite3_stmt *stmt;
-  sqlite3_prepare_v2(conn,
-                     "INSERT OR REPLACE INTO assignments VALUES (?, ?, ?)", 256,
-                     &stmt, nullptr);
+  int start = 1;
+  stop = 50001;
+  // Inclusive ranges for the command line. Convert to inclusive-exclusive as
+  // soon as possible.
+  start = atoi(argv[1]);
+  stop = atoi(argv[2]) + 1;
 
-  sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
-  bool flag = true;
-  for (uint seed = begin; seed < end; seed++) {
-    World result;
-    try {
-      result.constrain(Location::LinksHouse, Item::PegasusBoots);
-      makeseed(result, seed);
-    } catch (ConstraintViolation &e) {
-      continue;
-    } catch (CannotPlaceItem &e) {
-      return 1;
-    }
-    // result.sqlite3_write(stmt, seed);
+  // sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+  // bool flag = true;
+  // for (uint seed = begin; seed < end; seed++) {
+  //   World result;
+  //   try {
+  //     result.constrain(Location::LinksHouse, Item::PegasusBoots);
+  //     makeseed(result, seed);
+  //   } catch (ConstraintViolation &e) {
+  //     continue;
+  //   } catch (CannotPlaceItem &e) {
+  //     return 1;
+  //   }
+  //   // result.sqlite3_write(stmt, seed);
+  thread producers[PRODUCER_THREADS];
+  thread consumers[(int)Item::NUM_ITEMS];
 
-    if (seed % 1000 == 0) {
-      flag = true;
-    }
-    if (flag) {
-      // sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
-      cout << seed << endl;
-      // sqlite3_exec(conn, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
-      flag = false;
-    }
+  for (int block = start; block < stop; block += TRANSACTION_SIZE) {
+    work.push(block);
   }
-  sqlite3_exec(conn, "COMMIT TRANSACTION;", nullptr, nullptr, nullptr);
-  sqlite3_finalize(stmt);
-  sqlite3_close(conn);
+
+  for (int t = 1; t < (int)Item::NUM_ITEMS; t++) {
+    consumers[t] = thread(consumer, t);
+  }
+  for (int t = 0; t < PRODUCER_THREADS; t++) {
+    producers[t] = thread(producer);
+  }
+  for (int t = 0; t < PRODUCER_THREADS; t++) {
+    producers[t].join();
+  }
+  done = true;
+  for (int t = 1; t < (int)Item::NUM_ITEMS; t++) {
+    consumer_waiting[t].notify_all();
+    consumers[t].join();
+  }
+
   return 0;
 }

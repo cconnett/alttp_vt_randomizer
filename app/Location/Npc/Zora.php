@@ -25,6 +25,8 @@ class Zora extends Npc {
 				return "the world for sale";
 			case Item\Compass::class:
 				return "bearings for sale";
+			case Item\Egg::class:
+				return "Eggs for sale";
 		}
 
 		switch ($this->item) {
@@ -129,7 +131,7 @@ class Zora extends Npc {
 			case Item::get('Heart'):
 				return "affection for sale";
 			case Item::get('Arrow'):
-				return "sewing kit for sale";
+				return "sewing needle for sale";
 			case Item::get('TenArrows'):
 				return "sewing kit for sale";
 			case Item::get('SmallMagic'):

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <iomanip>
@@ -9,21 +10,193 @@
 #include "items.h"
 #include "locations.h"
 #include "spdlog/spdlog.h"
-#include "sqlite3.h"
 #include "world.h"
 
 using namespace std;
 
-World::World() : log(spdlog::get("trace")) {
+Region dungeon_of(Item item) {
+  for (int r = (int)Region::HyruleCastleEscape; r <= (int)Region::GanonsTower;
+       r++) {
+    for (const Item *dungeon_item = DUNGEON_ITEMS[r];
+         *dungeon_item != Item::INVALID; dungeon_item++) {
+      if (item == *dungeon_item) {
+        return (Region)r;
+      }
+    }
+  }
+  return Region::INVALID;
+}
+
+Region dungeon_of(Location location) {
+  for (int r = (int)Region::HyruleCastleEscape; r <= (int)Region::GanonsTower;
+       r++) {
+    for (const Location *dungeon_location = DUNGEON_LOCATIONS[r];
+         *dungeon_location != Location::INVALID; dungeon_location++) {
+      if (location == *dungeon_location) {
+        return (Region)r;
+      }
+    }
+  }
+  return Region::INVALID;
+}
+
+World::~World() {
+  delete generator;
+}
+
+World::World(int seed)
+    : seed(seed), generator(new mt_rand(seed)), log(spdlog::get("console")) {
   clear_assumed();
   clear_reachability_cache();
   memset(assignments, 0, sizeof(assignments));
-  memset(constraints, 0, sizeof(constraints));
 
+  raw_set_item(Location::HyruleCastleEscapePrize, Item::RescueZelda);
   raw_set_item(Location::HyruleCastleTowerPrize, Item::DefeatAgahnim);
   raw_set_item(Location::GanonsTowerPrize, Item::DefeatAgahnim2);
   raw_set_item(Location::DarkWorldNorthEastPrize, Item::DefeatGanon);
   raw_set_item(Location::SkullWoodsPinballRoom, Item::KeyD3);
+
+  set_medallions();
+  fill_prizes();
+
+  // Initialize the advancement items here.  Bottle contents are randomized and
+  // all random calls have to match PHP exactly, so determine the contents here.
+  int num_advancement = ARRAY_LENGTH(ADVANCEMENT_ITEMS);
+  Item advancement[num_advancement + 1];
+  memcpy(advancement, ADVANCEMENT_ITEMS, sizeof(ADVANCEMENT_ITEMS));
+  advancement[num_advancement] = Item::INVALID;
+
+  // Initialize nice items, too.
+  Item nice[ARRAY_LENGTH(NICE_ITEMS)];
+  memcpy(nice, NICE_ITEMS, sizeof(nice));
+
+  // Assign actual bottle contents to the bottles in nice items and the one
+  // bottle in advancement. The PHP generates four bottles, pulls them off the
+  // advancement list, then puts the last one back on advancement and the other
+  // three on nice items. To recreate this, generate contents for nice, then
+  // advancement.
+  for (uint i = 0; i < ARRAY_LENGTH(nice); i++) {
+    if (nice[i] == Item::Bottle) {
+      nice[i] = get_bottle(0);
+    }
+  }
+  for (int i = 0; i < num_advancement; i++) {
+    if (advancement[i] == Item::Bottle) {
+      advancement[i] = get_bottle(0);
+    }
+  }
+
+  // Shuffle the advancement items.
+  generator->shuffle(advancement, num_advancement);
+
+  // Copy the fillable locations to a local array so we can shuffle it.
+  Location locations[NUM_FILLABLE_LOCATIONS + 1];
+  memcpy(locations, FILLABLE_LOCATIONS,
+         NUM_FILLABLE_LOCATIONS * sizeof(Location));
+  // Null terminate the list.
+  locations[NUM_FILLABLE_LOCATIONS] = Location::INVALID;
+
+  // Shuffle the real locations (not the null terminator).
+  generator->shuffle(locations, NUM_FILLABLE_LOCATIONS);
+
+  add_assumed(FLAT_DUNGEON_ITEMS, ARRAY_LENGTH(FLAT_DUNGEON_ITEMS));
+  add_assumed(ADVANCEMENT_ITEMS, ARRAY_LENGTH(ADVANCEMENT_ITEMS));
+  // For each dungeon:
+  //   Extract its locations from `locations`.
+  // For each FLAT_DUNGEON_ITEMS:
+  //   Apply fill_items_in_locations(world, single item,
+  //                                 shuffled_locations[dungeon_of(item)])
+  Location shuffled_locations_by_dungeon[NUM_DUNGEONS + 1]
+                                        [MAX_DUNGEON_LOCATIONS + 1] = {
+                                            Location::INVALID};
+  Location *next_location_per_dungeon[NUM_DUNGEONS + 1];
+  for (int d = (int)Region::HyruleCastleEscape; d <= (int)Region::GanonsTower;
+       d++) {
+    next_location_per_dungeon[d] = &shuffled_locations_by_dungeon[d][0];
+  }
+  for (Location *loc = locations; *loc != Location::INVALID; loc++) {
+    Region dungeon = dungeon_of(*loc);
+    if (dungeon != Region::INVALID) {
+      *next_location_per_dungeon[(int)dungeon]++ = *loc;
+    }
+  }
+  for (int d = (int)Region::HyruleCastleEscape; d <= (int)Region::GanonsTower;
+       d++) {
+    *next_location_per_dungeon[d] = Location::INVALID;
+  }
+
+  Item single_item[2] = {Item::INVALID, Item::INVALID};
+  for (const Item *item = FLAT_DUNGEON_ITEMS; *item != Item::INVALID; item++) {
+    single_item[0] = *item;
+    fill_items_in_locations(
+        single_item, shuffled_locations_by_dungeon[(int)dungeon_of(*item)]);
+  }
+
+  // Random junk fill in Ganon's tower.
+  Location ganons_tower_empty[MAX_DUNGEON_LOCATIONS] = {Location::INVALID};
+  size_t num_empty_gt_locations = 0;
+  for (uint i = 0;
+       DUNGEON_LOCATIONS[(int)Region::GanonsTower][i] != Location::INVALID;
+       i++) {
+    if (!has_item(DUNGEON_LOCATIONS[(int)Region::GanonsTower][i])) {
+      ganons_tower_empty[num_empty_gt_locations++] =
+          DUNGEON_LOCATIONS[(int)Region::GanonsTower][i];
+    }
+  }
+  int gt_junk = generator->rand(0, 15);
+  vector<Location> gt_trash_locations =
+      generator->sample(ganons_tower_empty, num_empty_gt_locations, gt_junk);
+
+  Item extra[ARRAY_LENGTH(TRASH_ITEMS)];
+  memcpy(extra, TRASH_ITEMS, sizeof(extra));
+  generator->shuffle(extra, ARRAY_LENGTH(extra));
+  fast_fill_items_in_locations(extra, gt_trash_locations.size(),
+                               gt_trash_locations.data());
+
+  // The dungeon items were filled into locations starting at the front of the
+  // shuffled locations list. The PHP version then uses locations from the
+  // back of the shuffled list for placing the advancement items. Proceeding
+  // from the back of locations, take the empty ones into a new list.
+  Location empty_locations[NUM_FILLABLE_LOCATIONS + 1];
+  memset(empty_locations, 0, sizeof(empty_locations));
+  int num_empty = 0;
+  for (int offset = NUM_FILLABLE_LOCATIONS - 1; offset >= 0; offset--) {
+    if (!has_item(locations[offset])) {
+      empty_locations[num_empty++] = locations[offset];
+    }
+  }
+
+  // Shuffle the advancement items. (Yes, again; the PHP does this)
+  generator->shuffle(advancement, num_advancement);
+
+  // Fill advancement.
+  clear_assumed();
+  add_assumed(advancement, ARRAY_LENGTH(advancement));
+  fill_items_in_locations(advancement, empty_locations);
+
+  // Filter down to the empty locations again.
+  num_empty = 0;
+  for (int i = 0; empty_locations[i] != Location::INVALID; i++) {
+    if (!has_item(empty_locations[i])) {
+      empty_locations[num_empty++] = empty_locations[i];
+    }
+  }
+  // Null terminate empty_locations.
+  empty_locations[num_empty] = Location::INVALID;
+  // Shuffle them again.
+  generator->shuffle(empty_locations, num_empty);
+
+  // fast_fill_items_in_locations the shuffled nice items.
+  generator->shuffle(nice, ARRAY_LENGTH(nice));
+  fast_fill_items_in_locations(nice, ARRAY_LENGTH(nice), empty_locations);
+
+  // fast_fill_items_in_locations the shuffled remaining trash
+  // items. The first `gt_junk` of them were already placed in Ganon's
+  // Tower, so offset by `gt_junk`.
+  Item *trash = extra + gt_junk;
+  int num_trash = ARRAY_LENGTH(extra) - gt_junk;
+  generator->shuffle(trash, num_trash);
+  fast_fill_items_in_locations(trash, num_trash, empty_locations);
 }
 
 void World::clear_reachability_cache() {
@@ -56,35 +229,23 @@ void World::print() {
   }
 }
 
-void World::sqlite3_write(sqlite3_stmt *stmt, int seed) {
-  for (uint i = 1; i < ARRAY_LENGTH(assignments); i++) {
-    if (assignments[i] != Item::INVALID) {
-      sqlite3_reset(stmt);
-      sqlite3_bind_int(stmt, 1, seed);
-      sqlite3_bind_int(stmt, 2, i);
-      sqlite3_bind_int(stmt, 3, (int)assignments[i]);
-      sqlite3_step(stmt);
-    }
-  }
+const Item *World::view_assignments() const {
+  return assignments;
 }
 
 bool World::has_item(Location location) {
-  assert(location != Location::INVALID);
-  assert(location != Location::NUM_LOCATIONS);
+  assert(Location::INVALID < location);
+  assert(location < Location::NUM_LOCATIONS);
   return (bool)assignments[(int)location];
 }
 
 void World::set_item(Location location, Item item) {
-  if (constraints[(int)location] != Item::INVALID &&
-      constraints[(int)location] != item) {
-    throw ConstraintViolation();
-  }
   raw_set_item(location, item);
   num_unplaced[(int)item]--;
   clear_reachability_cache();
 }
 
-bool World::check_and_set_item(Location location, Item item) {
+bool World::check_item(Location location, Item item) {
   if (has_item(location)) {
     return false;
   }
@@ -95,29 +256,29 @@ bool World::check_and_set_item(Location location, Item item) {
   if (always_allow(location, item)) {
     SPDLOG_TRACE(log, "{} always allowed in {}", ITEM_NAMES[(int)item],
                  LOCATION_NAMES[(int)location]);
+    return true;
   }
 #endif
 
-  if (always_allow(location, item) ||
-      (can_fill(location, item) && can_reach(location))) {
-    incr_assumed(item);
-    set_item(location, item);
+  Item old_item = assignments[(int)location];
+  assignments[(int)location] = item;
+  if (can_fill(location, item) && can_reach(location)) {
+    assignments[(int)location] = old_item;
     return true;
   }
-  SPDLOG_TRACE(log, "{} /= {}", LOCATION_NAMES[(int)location],
-               ITEM_NAMES[(int)item]);
+  log->debug("{} /= {}", LOCATION_NAMES[(int)location], ITEM_NAMES[(int)item]);
+  assignments[(int)location] = old_item;
   return false;
 }
 
 void World::raw_set_item(Location location, Item item) {
-  assert(location != Location::INVALID);
-  assert(location != Location::NUM_LOCATIONS);
-  assert(item != Item::INVALID);
-  assert(item != Item::NUM_ITEMS);
+  assert(Location::INVALID < location);
+  assert(location < Location::NUM_LOCATIONS);
+  assert(Item::INVALID < item);
+  assert(item < Item::NUM_ITEMS);
   assignments[(int)location] = item;
   where_is[(int)item].push_back(location);
-  SPDLOG_TRACE(log, "{} := {}", LOCATION_NAMES[(int)location],
-               ITEM_NAMES[(int)item]);
+  log->info("{} := {}", LOCATION_NAMES[(int)location], ITEM_NAMES[(int)item]);
 }
 
 void World::clear_assumed() {
@@ -130,16 +291,16 @@ void World::add_assumed(const Item *items, size_t n_items) {
 }
 
 void World::set_medallion(Location location, Item item) {
-  assert(location != Location::INVALID);
-  assert(location != Location::NUM_LOCATIONS);
-  assert(item != Item::INVALID);
-  assert(item != Item::NUM_ITEMS);
+  assert(Location::INVALID < location);
+  assert(location < Location::NUM_LOCATIONS);
+  assert(Item::INVALID < item);
+  assert(item < Item::NUM_ITEMS);
   assignments[(int)location] = item;
 }
 
 bool World::can_reach(Location location) {
-  assert(location != Location::INVALID);
-  assert(location != Location::NUM_LOCATIONS);
+  assert(Location::INVALID < location);
+  assert(location < Location::NUM_LOCATIONS);
 
   if (reachability_cache[(int)location]) {
     SPDLOG_TRACE(log, "Cached. {}",
@@ -158,8 +319,8 @@ bool World::can_reach(Location location) {
 }
 
 int World::num_reachable(Item item) {
-  assert(item != Item::INVALID);
-  assert(item != Item::NUM_ITEMS);
+  assert(Item::INVALID < item);
+  assert(item < Item::NUM_ITEMS);
 
   int count = num_unplaced[(int)item];
 
@@ -177,9 +338,9 @@ int World::num_reachable(Item item) {
   return count;
 }
 
-int World::is_num_reachable(int n, Item item) {
-  assert(item != Item::INVALID);
-  assert(item != Item::NUM_ITEMS);
+bool World::is_num_reachable(int n, Item item) {
+  assert(Item::INVALID < item);
+  assert(item < Item::NUM_ITEMS);
 
   int count = num_unplaced[(int)item];
   if (count >= n) {
@@ -210,4 +371,118 @@ int World::bottle_count() {
          num_reachable(Item::BottleWithGoldBee) +
          num_reachable(Item::BottleWithGreenPotion) +
          num_reachable(Item::BottleWithRedPotion);
+}
+
+Item World::get_bottle(int filled) {
+  Item bottles[] = {
+      Item::Bottle,
+      Item::BottleWithRedPotion,
+      Item::BottleWithGreenPotion,
+      Item::BottleWithBluePotion,
+      Item::BottleWithBee,
+      Item::BottleWithGoldBee,
+      Item::BottleWithFairy,
+  };
+  return bottles[generator->rand(filled, 6)];
+}
+
+void World::set_medallions() {
+  const Item medallions[] = {Item::Ether, Item::Bombos, Item::Quake};
+  set_medallion(Location::TurtleRockMedallion,
+                medallions[generator->rand(0, 2)]);
+  set_medallion(Location::MiseryMireMedallion,
+                medallions[generator->rand(0, 2)]);
+}
+bool pendants_last(Location a, Location b) {
+  return (!(a == Location::EasternPalacePrize ||
+            a == Location::DesertPalacePrize ||
+            a == Location::TowerofHeraPrize)) &&
+         (b == Location::EasternPalacePrize ||
+          b == Location::DesertPalacePrize || b == Location::TowerofHeraPrize);
+}
+
+void World::fill_prizes() {
+  auto prize_locations =
+      generator->sample(PRIZE_LOCATIONS, ARRAY_LENGTH(PRIZE_LOCATIONS),
+                        ARRAY_LENGTH(PRIZE_LOCATIONS));
+  stable_sort(prize_locations.begin(), prize_locations.end(), pendants_last);
+
+  Item prizes[ARRAY_LENGTH(PRIZES)];
+  memcpy(prizes, PRIZES, sizeof(PRIZES));
+  generator->shuffle<Item>(prizes, ARRAY_LENGTH(prizes));
+
+  // PHP: There are 40 extra calls to getAdvancementItems->...->getBottle calls
+  // that are wasted.
+  for (int i = 0; i < 40; i++) {
+    get_bottle(0);
+  }
+  // Then two more for setting fountain prizes that we don't care about.
+  for (int i = 0; i < 2; i++) {
+    get_bottle(1);
+  }
+
+  add_assumed(prizes, ARRAY_LENGTH(PRIZES));
+  Item *next_prize = prizes + ARRAY_LENGTH(PRIZES) - 1;
+  for (auto dest = prize_locations.begin(); dest < prize_locations.end();
+       dest++) {
+    if (!has_item(*dest)) {
+      // The PHP pops from the end of its shuffled array of prizes.
+      set_item(*dest, *next_prize--);
+    }
+  }
+}
+
+void World::fill_items_in_locations(const Item *items, Location *locations) {
+  auto log = spdlog::get("trace");
+  for (const Item *i = items; *i != Item::INVALID; i++) {
+    SPDLOG_TRACE(log, "Placing {}", ITEM_NAMES[(int)*i]);
+
+    decr_assumed(*i);
+    Location *l;
+    vector<Location> legal_locations;
+    for (l = locations; *l != Location::INVALID; l++) {
+      if (check_item(*l, *i)) {
+        if ((Item::Compass <= *i && *i <= Item::CompassP3) ||
+            (Item::MapA2 <= *i && *i <= Item::MapP3)) {
+          // Maps and compasses are placed uniformly from all allowable
+          // placements.
+          legal_locations.push_back(*l);
+        } else {
+          incr_assumed(*i);
+          set_item(*l, *i);
+          goto next_item;
+        }
+      }
+    }
+    if (legal_locations.empty()) {
+      cerr << "Can't place " << ITEM_NAMES[(int)*i] << endl;
+      throw CannotPlaceItem();
+    }
+    incr_assumed(*i);
+    set_item(legal_locations[generator->rand(0, legal_locations.size() - 1)],
+             *i);
+  next_item:;
+    if (l == locations) {
+      locations++;
+    };
+  }
+}
+
+void World::fast_fill_items_in_locations(const Item *items, size_t n,
+                                         Location *const locations) {
+  add_assumed(items, n);
+  Location *next = locations;
+  for (const Item *item_to_place = items + n - 1; item_to_place >= items;
+       item_to_place--) {
+    while (*next != Location::INVALID && has_item(*next)) {
+      next++;
+    }
+    if (*next == Location::INVALID) {
+      cerr << "Ran out of locations on seed " << seed << " while placing "
+           << ITEM_NAMES[(int)*item_to_place] << "." << endl;
+      cerr << item_to_place - items << " left to place." << endl;
+      throw CannotPlaceItem();
+    }
+    set_item(*next, *item_to_place);
+  }
 }

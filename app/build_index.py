@@ -54,6 +54,7 @@ def BuildIndex():
           }]
       }
 
+    php_grammar.current_region[0] = region
     # Search for the initNoMajorGlitches function and read its code.
     try:
       init_nmg_block = php_grammar.init_no_major_glitches.searchString(source)[
@@ -190,6 +191,7 @@ def CodeFor(methods, namespace='Location::', injection=None):
 
 def main():
   can_reach, can_enter, can_complete, fill_rules, always_allow = BuildIndex()
+  del can_reach['Zelda']
 
   code = open('world_template.cc').read()
   code = re.sub(

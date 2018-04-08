@@ -1,2 +1,0 @@
-CREATE TABLE IF NOT EXISTS assignments (seed int, location int, item int);
---CREATE INDEX items on assignments (location, item);

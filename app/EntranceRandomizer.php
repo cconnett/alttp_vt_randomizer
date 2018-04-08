@@ -11,7 +11,7 @@ use Symfony\Component\Process\Process;
  */
 class EntranceRandomizer extends Randomizer {
 	const LOGIC = -1;
-	const VERSION = '0.5.2';
+	const VERSION = '0.6.1';
 	private $spoiler;
 	private $patch;
 	protected $shuffle;
@@ -38,14 +38,7 @@ class EntranceRandomizer extends Randomizer {
 		$this->timer_mode = 'none';
 		$this->seed = new Seed;
 		$this->keysanity = false;
-
-		// Add shuffle Ganon
-		switch ($this->shuffle) {
-			case 'madness':
-			case 'insanity':
-				$this->shuffle .= ' --shuffleganon';
-				break;
-		}
+		$this->retro = false;
 
 		switch ($this->variation) {
 			case 'timed-race':
@@ -63,6 +56,9 @@ class EntranceRandomizer extends Randomizer {
 			case 'key-sanity':
 				$this->keysanity = true;
 				break;
+			case 'retro':
+				$this->retro = true;
+				break;
 		}
 	}
 
@@ -76,6 +72,10 @@ class EntranceRandomizer extends Randomizer {
 		if ($this->keysanity) {
 			$keysanity_flag = ' --keysanity';
 		}
+		$retro_flag = '';
+		if ($this->retro) {
+			$retro_flag = ' --retro';
+		}
 
 		$proc = new Process('python3 '
 			. base_path('vendor/z3/entrancerandomizer/EntranceRandomizer.py')
@@ -85,12 +85,16 @@ class EntranceRandomizer extends Randomizer {
 			. ' --shuffle ' .  $this->shuffle
 			. ' --timer ' . $this->timer_mode
 			. $keysanity_flag
+			. $retro_flag
 			. ' --seed ' . $rng_seed
 			. ' --jsonout --loglevel error');
 
+		Log::debug($proc->getCommandLine());
 		$proc->run();
 
 		if (!$proc->isSuccessful()) {
+			Log::debug($proc->getOutput());
+			Log::debug($proc->getErrorOutput());
 			throw new \Exception("Unable to generate");
 		}
 
@@ -119,7 +123,7 @@ class EntranceRandomizer extends Randomizer {
 		switch ($this->logic) {
 			case 'noglitches': return 'er-no-glitches-' . static::VERSION;
 		}
-		return 'unknown-' . static::LOGIC;
+		return 'er-unknown-' . static::LOGIC;
 	}
 
 	/**
@@ -144,7 +148,7 @@ class EntranceRandomizer extends Randomizer {
 	 *
 	 * @return array
 	 */
-	public function getSpoiler() {
+	public function getSpoiler(array $meta = []) {
 		return json_decode(json_encode($this->spoiler), true);
 	}
 

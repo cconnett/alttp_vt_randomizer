@@ -1,6 +1,7 @@
 <?php namespace ALttP\Support;
 
 use ALttP\Item;
+use ALttP\World;
 use ArrayIterator;
 
 /**
@@ -8,18 +9,24 @@ use ArrayIterator;
  */
 class ItemCollection extends Collection {
 	protected $item_counts = [];
+	protected $world;
 
 	/**
 	 * Create a new collection.
 	 *
 	 * @param mixed $items
+	 * @param World $world if this is related to a world for config
 	 *
 	 * @return void
 	 */
-	public function __construct($items = []) {
+	public function __construct($items = [], World $world = null) {
 		foreach ($this->getArrayableItems($items) as $item) {
 			$this->addItem($item);
 		}
+		$this->world = $world ?? new class extends World {
+			public function __construct() {}
+			public function config(string $key, $default = NULL) { return null; }
+		};
 	}
 
 	/**
@@ -66,10 +73,10 @@ class ItemCollection extends Collection {
 	 */
 	public function filter(callable $callback = null) {
 		if ($callback) {
-			return new static(array_filter($this->values(), $callback));
+			return new static(array_filter($this->values(), $callback), $this->world);
 		}
 
-		return new static(array_filter($this->values()));
+		return new static(array_filter($this->values()), $this->world);
 	}
 
 	/**
@@ -126,7 +133,7 @@ class ItemCollection extends Collection {
 	 * @return static
 	 */
 	public function intersect($items) {
-		return new static(array_intersect($this->items, $this->getArrayableItems($items)));
+		return new static(array_intersect($this->items, $this->getArrayableItems($items)), $this->world);
 	}
 
 	/**
@@ -162,12 +169,8 @@ class ItemCollection extends Collection {
 			return $this->copy();
 		}
 
-		if (is_array($items)) {
-			return $this->merge(new static($items));
-		}
-
-		if (!is_a($items, static::class)) {
-			return parent::merge($items);
+		if (!$items instanceof static) {
+			return $this->merge(new static($items, $this->world));
 		}
 
 		$merged = $this->copy();
@@ -185,7 +188,8 @@ class ItemCollection extends Collection {
 	 * @return static
 	 */
 	public function copy() {
-		$new = new static($this->items);
+		$new = new static([], $this->world);
+		$new->items = $this->items;
 		$new->item_counts = $this->item_counts;
 
 		return $new;
@@ -211,6 +215,9 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function has($key, $at_least = 1) {
+		if ($key != 'KeyH2' && strpos($key, 'Key') === 0 && $this->world->config('rom.genericKeys', false)) {
+			return true;
+		}
 		return $this->offsetExists($key) && $this->item_counts[$key] >= $at_least;
 	}
 
@@ -294,12 +301,35 @@ class ItemCollection extends Collection {
 	}
 
 	/**
+	 * Get total collectable Health
+	 *
+	 * @param float $initial starting health
+	 *
+	 * @return float
+	 */
+	public function heartCount($initial = 3) {
+		$count = $initial;
+
+		$hearts = $this->filter(function($item) {
+			return $item instanceof Item\Upgrade\Health;
+		});
+
+		foreach ($hearts as $heart) {
+			$count += ($heart->getName() == 'PieceOfHeart') ? .25 : 1;
+		}
+
+		return $count;
+	}
+
+	/**
 	 * Requirements for lifting rocks
 	 *
 	 * @return bool
 	 */
 	public function canLiftRocks() {
-             return $this->has('ProgressiveGlove');
+		return $this->has('PowerGlove')
+			|| $this->has('ProgressiveGlove')
+			|| $this->has('TitansMitt');
 	}
 
 	/**
@@ -308,7 +338,8 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canLiftDarkRocks() {
-		return $this->has('ProgressiveGlove', 2);
+		return $this->has('TitansMitt')
+			|| $this->has('ProgressiveGlove', 2);
 	}
 
 	/**
@@ -327,8 +358,8 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canMeltThings() {
-		return $this->has('FireRod')
-			|| ($this->has('Bombos') && (config('game-mode') == 'swordless' || $this->hasSword()));
+             return $this->has('FireRod')
+                 || ($this->has('Bombos') && ($this->world->config('mode.weapons') == 'swordless' || $this->hasSword()));
 	}
 
 	/**
@@ -337,7 +368,7 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canFly() {
-		return $this->has('OcarinaInactive');
+		return $this->has('OcarinaActive') || $this->has('OcarinaInactive');
 	}
 
 	/**
@@ -353,11 +384,20 @@ class ItemCollection extends Collection {
 	/**
 	 * Requirements for lobbing arrows at things
 	 *
+	 * @param int $min_level minimum level of bow
+	 *
 	 * @return bool
 	 */
-	public function canShootArrows() {
-             return $this->has('Bow');
-	}
+	public function canShootArrows(int $min_level = 1) {
+             return $min_level == 2 ?
+				$this->has('BowAndSilverArrows')
+					|| ($this->has('SilverArrowUpgrade')
+						&& ($this->has('Bow') || $this->has('BowAndArrows'))):
+
+             $this->has('Bow')
+                 || $this->has('BowAndArrows')
+                 || $this->has('BowAndSilverArrows');
+		}
 
 	/**
 	 * Requirements for blocking lasers
@@ -365,7 +405,8 @@ class ItemCollection extends Collection {
 	 * @return bool
 	 */
 	public function canBlockLasers() {
-		return $this->has('ProgressiveShield', 3);
+		return $this->has('MirrorShield')
+			|| $this->has('ProgressiveShield', 3);
 	}
 
 	/**
@@ -392,21 +433,27 @@ class ItemCollection extends Collection {
 	/**
 	 * Requirements for killing most things
 	 *
-	 * @TODO: account for 10 bombs in escape
-	 *
 	 * @return bool
 	 */
 	public function canKillMostThings($enemies = 5) {
-		return $this->hasSword()
+        // Interpretation of the first term: the sword we have only
+        // counts if it's the last sword we're placing in this
+        // step. Presumably they don't want to skew the distribution of
+        // uncle weapons toward sword owing to there's two of them in the
+        // progression pool.
+             return ($this->hasSword() &&
+                     (in_array($this->world->config('mode.weapons'), ['uncle', 'swordless'])
+                      || !($this->world->getCurrentlyFillingItems()->hasSword())))
 			|| $this->has('CaneOfSomaria')
+			|| ($this->has('TenBombs') && $enemies < 6)
 			|| ($this->has('CaneOfByrna') && ($enemies < 6 || $this->canExtendMagic()))
-			|| $this->canShootArrows() // @TODO: fill arrows in standard escape
+			|| $this->canShootArrows()
 			|| $this->has('Hammer')
 			|| $this->has('FireRod');
 	}
 
 	/**
-	 * Can Get Golden Bee
+	 * Requirements for catching a Golden Bee
 	 *
 	 * @return bool
 	 */
@@ -420,20 +467,36 @@ class ItemCollection extends Collection {
 	/**
 	 * Requirements for having a sword
 	 *
-	 * @return bool
-	 */
-	public function hasSword() {
-             return $this->has('ProgressiveSword');
-
-	}
-
-	/**
-	 * Requirements for having an upgraded sword
+	 * @param int $min_level minimum level of sword
 	 *
 	 * @return bool
 	 */
-	public function hasUpgradedSword() {
-		return $this->has('ProgressiveSword', 2);
+	public function hasSword(int $min_level = 1) {
+        return $this->has('ProgressiveSword', $min_level);
+		// switch ($min_level) {
+		// 	case 4:
+		// 		return $this->has('ProgressiveSword', 4)
+		// 			|| $this->has('L4Sword');
+		// 	case 3:
+		// 		return $this->has('ProgressiveSword', 3)
+		// 			|| $this->has('L3Sword')
+		// 			|| $this->has('L4Sword');
+		// 	case 2:
+		// 		return $this->has('ProgressiveSword', 2)
+		// 			|| $this->has('L2Sword')
+		// 			|| $this->has('MasterSword')
+		// 			|| $this->has('L3Sword')
+		// 			|| $this->has('L4Sword');
+		// 	case 1:
+		// 	default:
+		// 		return $this->has('ProgressiveSword')
+		// 			|| $this->has('L1Sword')
+		// 			|| $this->has('L1SwordAndShield')
+		// 			|| $this->has('L2Sword')
+		// 			|| $this->has('MasterSword')
+		// 			|| $this->has('L3Sword')
+		// 			|| $this->has('L4Sword');
+		// }
 	}
 
 	/**

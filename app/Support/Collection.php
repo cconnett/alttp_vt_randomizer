@@ -131,6 +131,16 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate {
 	}
 
 	/**
+	 * Get the next item from the collection based on internal pointer.
+	 *
+	 * @return mixed
+	 */
+	public function next() {
+		return next($this->items) === false ? $this->first() : current($this->items);
+	}
+
+
+	/**
 	 * Get the last item from the collection.
 	 *
 	 * @return mixed
@@ -177,6 +187,33 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate {
 	 */
 	public function shift() {
 		return array_shift($this->items);
+	}
+
+	/**
+	 * Take the first or last {$limit} items.
+	 *
+	 * @param int $limit
+	 *
+	 * @return static
+	 */
+	public function take($limit) {
+		if ($limit < 0) {
+			return $this->slice($limit, abs($limit));
+		}
+
+		return $this->slice(0, $limit);
+	}
+
+	/**
+	 * Slice the underlying collection array.
+	 *
+	 * @param int $offset
+	 * @param int $length
+	 *
+	 * @return static
+	 */
+	public function slice($offset, $length = null) {
+		return new static(array_slice($this->items, $offset, $length, true));
 	}
 
 	/**
@@ -287,7 +324,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate {
 	 * @return bool
 	 */
 	public function offsetExists($offset) {
-		return array_key_exists($offset, $this->items);
+		return isset($this->items[$offset]);
 	}
 
 	/**
@@ -310,7 +347,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate {
 	 * @return void
 	 */
 	public function offsetSet($offset, $value) {
-		if (is_null($offset)) {
+		if ($offset === null) {
 			$this->items[] = $value;
 		} else {
 			$this->items[$offset] = $value;
@@ -355,7 +392,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate {
 	 */
 	protected function getArrayableItems($items) {
 		if ($items instanceof self) {
-			return $items->all();
+			return $items->values();
 		}
 
 		return (array) $items;
