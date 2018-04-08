@@ -1,15 +1,12 @@
 import array
 import ctypes
 import os
-import struct
 
 import mappings
 
 item_location_pairs = [
   ('Bombos', 'LinksUncle')
   ]
-
-structure = struct.Struct('<I')
 
 candidates = set()
 for (item, location) in item_location_pairs:

@@ -158,6 +158,8 @@ int main(int argc, char **argv) {
   spdlog::set_pattern("%L%m%d %H:%M:%S.%f %v");
 #ifndef NDEBUG
   spdlog::set_level(spdlog::level::debug);
+#elif __OPTIMIZE__
+  spdlog::set_level(spdlog::level::err);
 #endif
 
   if (argc == 2) {
