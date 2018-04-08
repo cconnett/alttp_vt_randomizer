@@ -172,6 +172,12 @@ int main(int argc, char **argv) {
     }
     return 0;
   }
+  if (argc == 1) {
+    for (int i = 0; i < 100000; i++) {
+      World w(i);
+    }
+    return 0;
+  }
 
   if (argc != 3) {
     return 2;
