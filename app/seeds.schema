@@ -1,2 +1,3 @@
 CREATE TABLE IF NOT EXISTS assignments (item int, location int, seed int);
 CREATE TABLE IF NOT EXISTS constraints (item int, location int);
+CREATE INDEX IF NOT EXISTS location_item ON assignments (location, item);

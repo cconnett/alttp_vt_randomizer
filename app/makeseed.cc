@@ -2,6 +2,7 @@
 #include <condition_variable>
 #include <cstring>
 #include <experimental/filesystem>
+#include <fstream>
 #include <iostream>
 #include <mutex>
 #include <queue>
@@ -15,6 +16,7 @@
 #include "errors.h"
 #include "items.h"
 #include "locations.h"
+#include "mt_rand.h"
 #include "spdlog/spdlog.h"
 #include "world.h"
 
@@ -24,6 +26,8 @@ using filesystem::path;
 
 #define PRODUCER_THREADS (12)
 #define TRANSACTION_SIZE (1000)
+#define SEED_GOAL (10000)
+#define MAX_QUERY_LENGTH (256)
 
 constexpr long FILE_SIZE_TARGET = 1024 * 1024 * 32;  // 32 MiB
 
@@ -163,6 +167,7 @@ int main(int argc, char **argv) {
 #endif
 
   if (argc == 2) {
+    // Create and print a single seed.
     int seed = atoi(argv[1]);
     try {
       World result(seed);
@@ -173,12 +178,72 @@ int main(int argc, char **argv) {
     return 0;
   }
   if (argc == 1) {
-    for (int i = 0; i < 100000; i++) {
-      World w(i);
+    // Read constraints from seeds.db and generate seeds until there are
+    // N seeds in the DB.
+    sqlite3 *conn;
+    int status = sqlite3_open("results/seeds.db", &conn);
+    if (status != SQLITE_OK) {
+      return status;
     }
+    ifstream schema_file{"./seeds.schema"};
+    string schema{istreambuf_iterator<char>(schema_file),
+                  istreambuf_iterator<char>()};
+    schema_file.close();
+
+    sqlite3_exec(conn, "BEGIN;", nullptr, nullptr, nullptr);
+    sqlite3_exec(conn, schema.c_str(), nullptr, nullptr, nullptr);
+    sqlite3_stmt *get_constraints, *delete_seeds_in_violation;
+    sqlite3_prepare_v2(conn, "SELECT location, item FROM constraints;",
+                       MAX_QUERY_LENGTH, &get_constraints, nullptr);
+    sqlite3_prepare_v2(conn,
+                       "DELETE FROM assignments WHERE seed IN ("
+                       "SELECT DISTINCT seed FROM assignments WHERE location = "
+                       "? AND item != ?);",
+                       MAX_QUERY_LENGTH, &delete_seeds_in_violation, nullptr);
+    while (sqlite3_step(get_constraints) == SQLITE_ROW) {
+      sqlite3_bind_int(delete_seeds_in_violation, 1,
+                       sqlite3_column_int(get_constraints, 0));
+      sqlite3_bind_int(delete_seeds_in_violation, 2,
+                       sqlite3_column_int(get_constraints, 1));
+      sqlite3_step(delete_seeds_in_violation);
+    }
+    sqlite3_exec(conn, "COMMIT; BEGIN;", nullptr, nullptr, nullptr);
+
+    sqlite3_stmt *count_seeds;
+    sqlite3_prepare_v2(conn, "SELECT count(DISTINCT seed) FROM assignments;",
+                       MAX_QUERY_LENGTH, &count_seeds, nullptr);
+    sqlite3_step(count_seeds);
+    int seeds_needed = max(0, SEED_GOAL - sqlite3_column_int(count_seeds, 0));
+
+    sqlite3_stmt *insert_assignment;
+    sqlite3_prepare_v2(conn,
+                       "INSERT OR REPLACE INTO assignments VALUES (?, ?, ?)",
+                       MAX_QUERY_LENGTH, &insert_assignment, nullptr);
+
+    mt_rand generator(time(nullptr));
+
+    while (seeds_needed--) {
+      int seed = generator.rand(1000000000, 0x0fffffff);
+      World w(seed);
+      const Item *assignments_view = w.view_assignments();
+      for (int item = 0; item < (int)Item::NUM_ITEMS; item++) {
+        sqlite3_bind_int(insert_assignment, 1, item);
+        sqlite3_bind_int(insert_assignment, 2, (int)assignments_view[item]);
+        sqlite3_bind_int(insert_assignment, 3, seed);
+        if (sqlite3_step(insert_assignment) != SQLITE_DONE) {
+          cerr << "Uh oh. SQLite wasn't happy." << endl;
+        }
+        sqlite3_reset(insert_assignment);
+      }
+    }
+    sqlite3_exec(conn, "COMMIT;", nullptr, nullptr, nullptr);
+
+    sqlite3_finalize(get_constraints);
+    sqlite3_finalize(delete_seeds_in_violation);
+    sqlite3_finalize(count_seeds);
+    sqlite3_finalize(insert_assignment);
     return 0;
   }
-
   if (argc != 3) {
     return 2;
   }
