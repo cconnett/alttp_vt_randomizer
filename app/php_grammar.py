@@ -317,7 +317,7 @@ methods = GetItemCollectionMethods()
 methods['bottleCount'] = {
     'body': [{
         'return': {
-            'integer': 'this->bottle_count()'
+            'integer': '(bottle_count t)'
         }
     }]
 }
@@ -348,126 +348,6 @@ boss_name_mapping = {
     'TurtleRock': 'Trinexx',
     'GanonsTower': 'Agahnim2',
 }
-
-
-def ExpandToC(d):
-  name, value = next(iter(d.items()))
-  # General C constructs.
-  if name == 'return':
-    return 'return ({});'.format(ExpandToC(value))
-  elif name in ('body',):
-    return '\n'.join(ExpandToC(statement) for statement in value)
-  elif name in ('&&', '||', '*', '+'):
-    return '({})'.format(name.join(ExpandToC(expr) for expr in value))
-  elif name == '!':
-    return '!({})'.format(ExpandToC(value))
-  elif name == 'if':
-    return 'if ({condition}) {{ {body} }} '.format(
-        condition=ExpandToC(value['condition']),
-        body='\n'.join(ExpandToC(stmt) for stmt in value['body']))
-  elif name in ('<', '>=', '=='):
-    return '(({left}){operator}({right}))'.format(
-        left=ExpandToC(value[0]), operator=name, right=ExpandToC(value[1]))
-  elif name == 'ternary':
-    return '(({condition}) ? ({true}) : ({false}))'.format(
-        condition=ExpandToC(value['if']),
-        true=ExpandToC(value['then']),
-        false=ExpandToC(value['else']))
-  elif name == 'boolean':
-    return 'true' if value else 'false'
-  # PHP constructs.
-  elif name == 'var':
-    # The var reference is returned as a formattable string piece.
-    return '{%s}' % value['symbol']
-  elif name == 'integer':
-    return str(value)
-  elif name == 'enum':
-    return 'WeaponMode::' + MakeConstant(value)
-  elif name == 'in_array':
-    if value['member'] == {'var': {'symbol': 'item'}}:
-      return '(' + ' || '.join(
-          'item == Item::' + element for element in value['elements']) + ')'
-    else:
-      return '(' + ' || '.join(
-          '{} == WeaponMode::{}'.format(ExpandToC(value['member']), element)
-          for element in value['elements']) + ')'
-    import pdb
-    pdb.set_trace()
-  # ALTTP specifics.
-  elif name == 'config':
-    return 'CONFIG_OPTION_' + MakeConstant(value['option'])
-  elif name == 'call_to_region_method':
-    return 'return this->{method_name}(Region::{region});'.format(**value)
-  elif name == 'call_builtin':
-    method_param = methods[value['method_name']].get('parameter')
-    method_body = ExpandToC(methods[value['method_name']]['body'][0]['return'])
-    if method_param:
-      parameter_name = method_param['symbol']
-      actual_parameter = value.get('actual_parameter',
-                                   methods[value['method_name']].get('default'))
-      method_body = method_body.format(**{parameter_name: actual_parameter})
-    return method_body
-  elif name == 'boss':
-    return ExpandToC(
-        bosses[boss_name_mapping[value]]['function']['body'][0]['return'])
-  elif name == 'sword_left_to_place':
-    return '(num_unplaced[(int)Item::ProgressiveSword] > 0)'
-  elif name == 'has_item':
-    n = value.get('count', 1)
-    if isinstance(n, dict):
-      n = '{%s}' % n['symbol']
-    return 'this->is_num_reachable({n}, Item::{item})'.format(
-        item=value['item'], n=n)
-  elif name == 'location_has_item':
-    return '(' + ' || '.join(
-        'assignments[(int)Location::{location}] == Item::{item}'.format(
-            location=Smoosh(value['location']), item=Smoosh(item))
-        for item in value['items']) + ')'
-  elif name == 'item_in_locations':
-    return '(' + ' || '.join(
-        'assignments[(int)Location::{location}] == {item}'.format(
-            location=Smoosh(location), item='Item::' + Smoosh(value['item']))
-        for location in value['allowable_locations']) + ')'
-  elif name == 'access_to_region':
-    if value['region'] == '$this':
-      return 'true'
-    else:
-      return 'this->can_enter({})'.format('Region::' + region_name_mapping.get(
-          Smoosh(value['region']), Smoosh(value['region'])))
-  elif name == 'access_to_location':
-    if value['with_what'] == 'all_items':
-      return 'this->can_reach(Location::{})'.format(Smoosh(value['location']))
-    elif value['with_what'] == 'uncle_item_only':
-      # Special casing standard uncle weapons.
-      other_terms = ' || '.join(
-        'assignments[(int)Location::LinksUncle] == Item::{}'.format(weapon)
-        for weapon in [
-          'CaneOfByrna', 'CaneOfSomaria', 'TenBombs', 'Bow',
-          'Hammer', 'FireRod',
-          ])
-      sword_term = '(assignments[(int)Location::LinksUncle] == Item::ProgressiveSword && num_unplaced[(int)Item::ProgressiveSword] == 0)'
-      return '({sword} || {other})'.format(sword=sword_term, other=other_terms)
-    else:
-      raise Exception('Missed a case.')
-  elif name == 'config':
-    default = value['default']
-    if isinstance(default, bool):
-      return ExpandToC({'boolean': default})
-    elif isinstance(default, int):
-      return str(default)
-    else:
-      assert False
-  elif name == 'game_mode':
-    return ExpandToC(value)
-  elif name == 'item_is':
-    return '({})'.format(' || '.join(
-        'item == Item::' + option for option in value['items']))
-  elif name == 'item_is_not':
-    return 'item != Item::{}'.format(value['item'][0])
-  elif name == 'item_is_a':
-    return 'false'  # Massive shortcut!
-  else:
-    raise Error('Unhandled case: {}. Next level: {}'.format(name, value))
 
 
 def ExpandToSMTLIB(d):
@@ -560,7 +440,7 @@ def ExpandToSMTLIB(d):
     if value['region'] == '$this':
       return 'true'
     else:
-      return '(can_enter {} t)'.format('Region::' + region_name_mapping.get(
+      return '(can_enter {} t)'.format(region_name_mapping.get(
           Smoosh(value['region']), Smoosh(value['region'])))
   elif name == 'access_to_location':
     if value['with_what'] == 'all_items':

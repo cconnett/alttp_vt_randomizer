@@ -1,3 +1,4 @@
+#!/usr/bin/python3.6
 """Build an index for ALTTP project."""
 
 from __future__ import print_function
@@ -178,15 +179,10 @@ def ApplyAccessToRegion(code, region):
   return code
 
 
-def CodeFor(methods, namespace='Location::', injection=None):
-  for place in sorted(methods.keys()):
-    yield 'case {namespace}{place}:'.format(namespace=namespace, place=place)
-    if injection:
-      yield injection.format(place=place)
-    yield php_grammar.ExpandToSMTLIB(methods[place])
-    # The previous line should emit a one or more statements that always return,
-    # but in case it doesn't, emit a safety `break`.
-    yield 'break;'
+def CodeFor(method, name):
+  for place in sorted(method.keys()):
+    method_expr = php_grammar.ExpandToSMTLIB(method[place])
+    yield f'\n(assert (= ({name} {place} t) {method_expr}))'
 
 
 def main():
@@ -196,27 +192,27 @@ def main():
   code = open('world_template.cc').read()
   code = re.sub(
       r'^.*// <SUB:can_reach>.*$',
-      ' '.join(CodeFor(can_reach)),
+      ' '.join(CodeFor(can_reach, 'can_reach')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:can_enter>.*$',
-      ' '.join(CodeFor(can_enter, namespace='Region::')),
+      ' '.join(CodeFor(can_enter, 'can_enter')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:can_complete>.*$',
-      ' '.join(CodeFor(can_complete, namespace='Region::')),
+      ' '.join(CodeFor(can_complete, 'can_complete')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:can_fill>.*$',
-      ' '.join(CodeFor(fill_rules)),
+      ' '.join(CodeFor(fill_rules, 'can_fill')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:always_allow>.*$',
-      ' '.join(CodeFor(always_allow)),
+      ' '.join(CodeFor(always_allow, 'always_allow')),
       code,
       flags=re.MULTILINE)
   print(code)
