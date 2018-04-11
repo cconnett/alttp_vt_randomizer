@@ -183,7 +183,7 @@ def CodeFor(methods, namespace='Location::', injection=None):
     yield 'case {namespace}{place}:'.format(namespace=namespace, place=place)
     if injection:
       yield injection.format(place=place)
-    yield php_grammar.ExpandToC(methods[place])
+    yield php_grammar.ExpandToSMTLIB(methods[place])
     # The previous line should emit a one or more statements that always return,
     # but in case it doesn't, emit a safety `break`.
     yield 'break;'

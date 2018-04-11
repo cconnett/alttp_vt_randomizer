@@ -1,3 +1,4 @@
+#!/usr/bin/python3.6
 """Partial grammar for PHP."""
 
 from __future__ import print_function
@@ -463,6 +464,139 @@ def ExpandToC(d):
         'item == Item::' + option for option in value['items']))
   elif name == 'item_is_not':
     return 'item != Item::{}'.format(value['item'][0])
+  elif name == 'item_is_a':
+    return 'false'  # Massive shortcut!
+  else:
+    raise Error('Unhandled case: {}. Next level: {}'.format(name, value))
+
+
+def ExpandToSMTLIB(d):
+  name, value = next(iter(d.items()))
+  # General constructs.
+  if name == 'return':
+    # SMTLIB is value-oriented with no statements. All statements we're
+    # converting are either `if`s or `return`s, and the `if`s are just
+    # conditional `return`s. This translates to `ite` expressions in
+    # SMTLIB. Leading `if`s will emit a partial `ite` expression with condition
+    # and the true case, and leave the false case and closing paren off. It
+    # falls to the final return to emit the false case and the closing paren.
+    return '{}'.format(ExpandToSMTLIB(value))
+  elif name == 'if':
+    return '(ite {condition} {body} '.format(
+        condition=ExpandToSMTLIB(value['condition']),
+        body='\n'.join(ExpandToSMTLIB(stmt) for stmt in value['body']))
+  elif name in ('body',):
+    return '\n'.join(ExpandToSMTLIB(statement) for statement in value)
+  elif name in ('&&', '||', '*', '+'):
+    operator = {'&&': 'and', '||': 'or'}.get(name, name)
+    terms = ' '.join(ExpandToSMTLIB(expr) for expr in value)
+    return f'({operator} {terms})'
+  elif name == '!':
+    return '(not {})'.format(ExpandToSMTLIB(value))
+  elif name in ('<', '>=', '=='):
+    return '({operator} {left} {right})'.format(
+        left=ExpandToSMTLIB(value[0]), operator=name, right=ExpandToSMTLIB(value[1]))
+  elif name == 'ternary':
+    return '(ite {condition} {true} {false})'.format(
+        condition=ExpandToSMTLIB(value['if']),
+        true=ExpandToSMTLIB(value['then']),
+        false=ExpandToSMTLIB(value['else']))
+  elif name == 'boolean':
+    return 'true' if value else 'false'
+  # PHP constructs.
+  elif name == 'var':
+    # The var reference is returned as a formattable string piece.
+    return '{%s}' % value['symbol']
+  elif name == 'integer':
+    return str(value)
+  elif name == 'enum':
+    return 'WeaponMode::' + MakeConstant(value)
+  elif name == 'in_array':
+    if value['member'] == {'var': {'symbol': 'item'}}:
+      return '(or ' + ' '.join(
+          f'(= item {element})' for element in value['elements']) + ')'
+    else:
+      return '(or ' + ' '.join(
+          '(= {} {})'.format(ExpandToSMTLIB(value['member']), element)
+          for element in value['elements']) + ')'
+    import pdb
+    pdb.set_trace()
+  # ALTTP specifics.
+  elif name == 'config':
+    return 'CONFIG_OPTION_' + MakeConstant(value['option'])
+  elif name == 'call_to_region_method':
+    return f'({value["method_name"]} {value["region"]})'
+  elif name == 'call_builtin':
+    method_param = methods[value['method_name']].get('parameter')
+    method_body = ExpandToSMTLIB(methods[value['method_name']]['body'][0]['return'])
+    if method_param:
+      parameter_name = method_param['symbol']
+      actual_parameter = value.get('actual_parameter',
+                                   methods[value['method_name']].get('default'))
+      method_body = method_body.format(**{parameter_name: actual_parameter})
+    return method_body
+  elif name == 'boss':
+    return ExpandToSMTLIB(
+        bosses[boss_name_mapping[value]]['function']['body'][0]['return'])
+  elif name == 'sword_left_to_place':
+    return '(> (num_unplaced ProgressiveSword) 0)'
+  elif name == 'has_item':
+    n = value.get('count', 1)
+    if isinstance(n, dict):
+      n = '{%s}' % n['symbol']
+    return '(is_num_reachable {n} {item} t)'.format(
+        item=value['item'], n=n)
+  elif name == 'location_has_item':
+    return '(or ' + ' '.join(
+        '(at {location} {item})'.format(
+            location=Smoosh(value['location']), item=Smoosh(item))
+        for item in value['items']) + ')'
+  elif name == 'item_in_locations':
+    return '(or ' + ' '.join(
+        '(at {location} {item}'.format(
+            location=Smoosh(location), item=Smoosh(value['item']))
+        for location in value['allowable_locations']) + ')'
+  elif name == 'access_to_region':
+    if value['region'] == '$this':
+      return 'true'
+    else:
+      return '(can_enter {} t)'.format('Region::' + region_name_mapping.get(
+          Smoosh(value['region']), Smoosh(value['region'])))
+  elif name == 'access_to_location':
+    if value['with_what'] == 'all_items':
+      return '(access {} t)'.format(Smoosh(value['location']))
+    elif value['with_what'] == 'uncle_item_only':
+      # Special casing standard uncle weapons.
+      other_terms = '(or ' + ' '.join(
+          f'(at LinksUncle {weapon})'
+          for weapon in [
+              'CaneOfByrna',
+              'CaneOfSomaria',
+              'TenBombs',
+              'Bow',
+              'Hammer',
+              'FireRod',
+          ]) + ')'
+      sword_term = ('(and (at LinksUncle ProgressiveSword) '
+                    '(= (num_unplaced ProgressiveSword) 0))')
+      return f'(or {sword_term} {other_terms})'
+    else:
+      raise Exception('Missed a case.')
+  elif name == 'config':
+    default = value['default']
+    if isinstance(default, bool):
+      return ExpandToSMTLIB({'boolean': default})
+    elif isinstance(default, int):
+      return str(default)
+    else:
+      assert False
+  elif name == 'game_mode':
+    return ExpandToSMTLIB(value)
+  elif name == 'item_is':
+    return '(or {})'.format(' '.join(
+        f'(= item {option})' for option in value['items']))
+  elif name == 'item_is_not':
+    return f'(not (= item {value["item"][0]}))'
   elif name == 'item_is_a':
     return 'false'  # Massive shortcut!
   else:
