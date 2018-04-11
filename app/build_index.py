@@ -192,7 +192,7 @@ def main():
   code = open('world_template.cc').read()
   code = re.sub(
       r'^.*// <SUB:can_reach>.*$',
-      ' '.join(CodeFor(can_reach, 'can_reach')),
+      ' '.join(CodeFor(can_reach, 'access')),
       code,
       flags=re.MULTILINE)
   code = re.sub(

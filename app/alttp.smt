@@ -392,6 +392,31 @@
 		     (TwentyRupees)
 		     (TwentyRupees2))))
 
+(declare-datatypes ((Region 0))
+		   (((HyruleCastleEscape)
+		     (EasternPalace)
+		     (DesertPalace)
+		     (TowerofHera)
+		     (HyruleCastleTower)
+		     (PalaceofDarkness)
+		     (SwampPalace)
+		     (SkullWoods)
+		     (ThievesTown)
+		     (IcePalace)
+		     (MiseryMire)
+		     (TurtleRock)
+		     (GanonsTower)
+		     (LightWorldNorthEast)
+		     (LightWorldNorthWest)
+		     (LightWorldSouth)
+		     (DeathMountainEast)
+		     (DeathMountainWest)
+		     (DarkWorldNorthEast)
+		     (DarkWorldNorthWest)
+		     (DarkWorldSouth)
+		     (DarkWorldDeathMountainEast)
+		     (DarkWorldDeathMountainWest)
+		     (DarkWorldMire))))
 ;; (at l i) At location l is item i.
 (declare-fun at
 	     (Location Item)
@@ -400,7 +425,22 @@
 (declare-fun access
 	     (Location Int)
 	     Bool)
-
+;; (can_enter r t) Can enter region r at time t
+(declare-fun can_enter
+	     (Region Int)
+	     Bool)
+;; (can_complete r t) Can complete region r at time t
+(declare-fun can_complete
+	     (Region Int)
+	     Bool)
+;; (always_allow l i) Always allow in location l item i.
+(declare-fun always_allow
+	     (Location Item)
+	     Bool)
+;; (can_fill l i) Item i is allowed to be filled in location l.
+(declare-fun can_fill
+	     (Location Item)
+	     Bool)
 ;; Once accessible, always accessible
 (assert (forall ((l Location)
 		 (t Int))
