@@ -467,8 +467,11 @@
 (declare-fun access
              (Location Int)
              Bool)
-(declare-fun is_num_reachable
+(declare-fun has_n
              (Int Item Int)
+             Bool)
+(declare-fun has
+             (Item Int)
              Bool)
 (declare-fun num_unplaced
              (Item)
@@ -483,18 +486,25 @@
              Bool)
 ;; (always_allow l i) Always allow in location l item i.
 (declare-fun always_allow
-             (Location Item)
+             (Location Item Int)
              Bool)
-(assert-soft (forall ((l Location)
-                      (i Item))
-                     (not (always_allow l i))))
+;; (assert-soft (forall ((l Location)
+;;                       (i Item)
+;;                       (t Int))
+;;                      (not (always_allow l i t))))
 ;; (can_fill l i) Item i is allowed to be filled in location l.
 (declare-fun can_fill
              (Location Item)
              Bool)
-(assert-soft (forall ((l Location)
-                      (i Item))
-                     (can_fill l i)))
+;; (assert-soft (forall ((l Location)
+;;                       (i Item))
+;;                      (can_fill l i)))
+
+(assert (forall ((item Item)
+                 (t Int))
+                (= (has item t) (exists ((location Location))
+                                        (and (at location item)
+                                             (access location t))))))
 
 ;; Number of bottles accessible at time t
 (declare-fun bottle_count
@@ -531,3 +541,35 @@
                 (=> (access l t)
                     (access l
                             (+ t 1)))))
+;; Each location has only one item.
+(assert (forall ((l Location)
+                 (i1 Item)
+                 (i2 Item))
+                (=> (and (distinct i1 i2)
+                         (at l i1))
+                    (not (at l i2)))))
+;; Every location has something.
+(assert (forall ((l Location))
+                (exists ((i Item))
+                        (at l i))))
+
+;; Fixed item / prize locations.
+(assert (at SkullWoodsPinballRoom KeyD3))
+(assert (at HyruleCastleTowerPrize DefeatAgahnim))
+(assert (at GanonsTowerPrize DefeatAgahnim2))
+(assert (at DarkWorldNorthEastPrize DefeatGanon))
+
+;; TODO: require prizes be at dungeon prize locations.
+(assert (at SkullWoodsPrize Crystal1))
+;; Medallions to open dungeons.
+(assert (or (at MiseryMireMedallion Bombos)
+            (at MiseryMireMedallion Ether)
+            (at MiseryMireMedallion Quake)))
+(assert (or (at TurtleRockMedallion Bombos)
+            (at TurtleRockMedallion Ether)
+            (at TurtleRockMedallion Quake)))
+
+
+;; We must be able to defeat Ganon.
+(assert (exists ((t Int))
+                (has DefeatGanon t)))

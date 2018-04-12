@@ -179,40 +179,44 @@ def ApplyAccessToRegion(code, region):
   return code
 
 
-def CodeFor(method, name, place_type):
-  for place in sorted(method.keys()):
-    method_expr = php_grammar.ExpandToSMTLIB(method[place])
-    yield f'\n(assert (forall ((t Int)) (= ({name} (as {place} {place_type}) t) {method_expr})))'
+def CodeFor(method_cases, canonical_form, cells):
+  for place in sorted(method_cases.keys()):
+    method_expr = php_grammar.ExpandToSMTLIB(method_cases[place])
+    interpolated_case = canonical_form.format(place=place)
+    yield f'\n(assert (forall ({cells}) (= {interpolated_case} {method_expr})))'
 
 
 def main():
   can_reach, can_enter, can_complete, fill_rules, always_allow = BuildIndex()
   del can_reach['Zelda']
+  can_reach['Mushroom'] = '(as Mushroom Location)'
+  del can_reach['Mushroom']
 
   code = open('world_template.cc').read()
   code = re.sub(
       r'^.*// <SUB:can_reach>.*$',
-      ' '.join(CodeFor(can_reach, 'access', 'Location')),
+      ' '.join(CodeFor(can_reach, '(access {place} t)', '(t Int)')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:can_enter>.*$',
-      ' '.join(CodeFor(can_enter, 'can_enter', 'Region')),
+      ' '.join(CodeFor(can_enter, '(can_enter {place} t)', '(t Int)')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:can_complete>.*$',
-      ' '.join(CodeFor(can_complete, 'can_complete', 'Region')),
+      ' '.join(CodeFor(can_complete, '(can_complete {place} t)', '(t Int)')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:can_fill>.*$',
-      ' '.join(CodeFor(fill_rules, 'can_fill', 'Location')),
+      ' '.join(CodeFor(fill_rules, '(can_fill {place} item)', '(item Item)')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:always_allow>.*$',
-      ' '.join(CodeFor(always_allow, 'always_allow', 'Location')),
+      ' '.join(CodeFor(always_allow, '(always_allow {place} item t)',
+                       '(item Item) (t Int)')),
       code,
       flags=re.MULTILINE)
   print(code)

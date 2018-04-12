@@ -422,18 +422,34 @@ def ExpandToSMTLIB(d):
     return ExpandToSMTLIB(
         bosses[boss_name_mapping[value]]['function']['body'][0]['return'])
   elif name == 'sword_left_to_place':
-    return '(> (num_unplaced ProgressiveSword) 0)'
+    # This is used in a can_fill expression to disallow swords at Uncle until
+    # the filler is placing the last one. Since the SMT encoding doesn't care
+    # about fill order, we'll just call this false so that a sword can be placed
+    # on Uncle.
+    return 'false'
   elif name == 'has_item':
     n = value.get('count', 1)
     if isinstance(n, dict):
       n = '{%s}' % n['symbol']
-    return '(is_num_reachable {n} (as {item} Item) (- t 1))'.format(
-        item=value['item'], n=n)
+    item = value['item']
+    if item == 'Mushroom':
+      item = '(as Mushroom Item)'
+    if n == 1:
+      return f'(has {item} (- t 1))'
+    else:
+      return f'(has_n {n} {item} (- t 1))'
   elif name == 'location_has_item':
-    return '(or ' + ' '.join(
-        '(at (as {location} Location) (as {item} Item))'.format(
-            location=Smoosh(value['location']), item=Smoosh(item))
-        for item in value['items']) + ')'
+    location = Smoosh(value['location'])
+    if location == 'Mushroom':
+      location = '(as Mushroom Location)'
+    items = [Smoosh(item) for item in value['items']]
+    items = [item if item != 'Mushroom' else '(as Mushroom Item)'
+             for item in items]
+    if len(items) == 1:
+      return f'(at {location} {items[0]})'
+    else:
+      return ('(or ' + ' '.join(f'(at {location} {item})'
+                                for item in items) + ')')
   elif name == 'item_in_locations':
     return '(or ' + ' '.join(
         '(at {location} {item})'.format(
@@ -450,9 +466,10 @@ def ExpandToSMTLIB(d):
       return '(access (as {} Location) (- t 1))'.format(Smoosh(value['location']))
     elif value['with_what'] == 'uncle_item_only':
       # Special casing standard uncle weapons.
-      other_terms = '(or ' + ' '.join(
+      return '(or ' + ' '.join(
           f'(at LinksUncle {weapon})'
           for weapon in [
+              'ProgressiveSword',
               'CaneOfByrna',
               'CaneOfSomaria',
               'TenBombs',
@@ -460,9 +477,6 @@ def ExpandToSMTLIB(d):
               'Hammer',
               'FireRod',
           ]) + ')'
-      sword_term = ('(and (at LinksUncle ProgressiveSword) '
-                    '(= (num_unplaced ProgressiveSword) 0))')
-      return f'(or {sword_term} {other_terms})'
     else:
       raise Exception('Missed a case.')
   elif name == 'config':
