@@ -179,10 +179,10 @@ def ApplyAccessToRegion(code, region):
   return code
 
 
-def CodeFor(method, name):
+def CodeFor(method, name, place_type):
   for place in sorted(method.keys()):
     method_expr = php_grammar.ExpandToSMTLIB(method[place])
-    yield f'\n(assert (= ({name} {place} t) {method_expr}))'
+    yield f'\n(assert (forall ((t Int)) (= ({name} (as {place} {place_type}) t) {method_expr})))'
 
 
 def main():
@@ -192,27 +192,27 @@ def main():
   code = open('world_template.cc').read()
   code = re.sub(
       r'^.*// <SUB:can_reach>.*$',
-      ' '.join(CodeFor(can_reach, 'access')),
+      ' '.join(CodeFor(can_reach, 'access', 'Location')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:can_enter>.*$',
-      ' '.join(CodeFor(can_enter, 'can_enter')),
+      ' '.join(CodeFor(can_enter, 'can_enter', 'Region')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:can_complete>.*$',
-      ' '.join(CodeFor(can_complete, 'can_complete')),
+      ' '.join(CodeFor(can_complete, 'can_complete', 'Region')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:can_fill>.*$',
-      ' '.join(CodeFor(fill_rules, 'can_fill')),
+      ' '.join(CodeFor(fill_rules, 'can_fill', 'Location')),
       code,
       flags=re.MULTILINE)
   code = re.sub(
       r'^.*// <SUB:always_allow>.*$',
-      ' '.join(CodeFor(always_allow, 'always_allow')),
+      ' '.join(CodeFor(always_allow, 'always_allow', 'Location')),
       code,
       flags=re.MULTILINE)
   print(code)
