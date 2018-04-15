@@ -15,7 +15,7 @@ for (location, item) in location_item_pairs:
     item = mappings.items[item]
   if isinstance(location, str):
     location = mappings.locations[location]
-  print(f'{location} has {item}')
+  print(f'{mappings.locations[location]} has {mappings.items[item]}')
   matches = set()
   for batch in range(1, 7):
     path = f'bigresults/batch{batch}/item{item:03d}-location{location:03d}'
@@ -34,6 +34,7 @@ for (location, item) in location_item_pairs:
     winner = list(candidates)[0]
     subprocess.call('./bazel-bin/makeseed {winner}'.format(winner=winner), shell=True)
     print('Match found: {winner}'.format(winner=winner))
+    print('bazel-bin/makeseed {winner}'.format(winner=winner))
     break
   else:
     print('{} seeds remaining.'.format(len(candidates)))
