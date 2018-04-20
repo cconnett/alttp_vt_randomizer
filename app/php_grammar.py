@@ -446,13 +446,13 @@ def ExpandToSMTLIB(d):
     items = [item if item != 'Mushroom' else '(as Mushroom Item)'
              for item in items]
     if len(items) == 1:
-      return f'(at {location} {items[0]})'
+      return f'(= (at {location}) {items[0]})'
     else:
-      return ('(or ' + ' '.join(f'(at {location} {item})'
+      return ('(or ' + ' '.join(f'(= (at {location}) {item})'
                                 for item in items) + ')')
   elif name == 'item_in_locations':
     return '(or ' + ' '.join(
-        '(at {location} {item})'.format(
+        '(= (at {location}) {item})'.format(
             location=Smoosh(location), item=Smoosh(value['item']))
         for location in value['allowable_locations']) + ')'
   elif name == 'access_to_region':
