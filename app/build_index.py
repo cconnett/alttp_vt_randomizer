@@ -179,51 +179,48 @@ def ApplyAccessToRegion(code, region):
   return code
 
 
-def CodeFor(method_cases, canonical_form, cells):
-  for place in sorted(method_cases.keys()):
-    method_expr = php_grammar.ExpandToSMTLIB(method_cases[place])
-    interpolated_case = canonical_form.format(place=place)
-    yield f'\n(assert (forall ({cells}) (= {interpolated_case} {method_expr})))'
+def CodeFor(method_cases, name, signature, base):
+  variable = signature[2]
+  for key in sorted(method_cases.keys()):
+    method_expr = php_grammar.ExpandToSMTLIB(method_cases[key])
+    yield f'\n(ite (= {variable} {key}) {method_expr}'
+  yield base
+  yield ')' * len(method_cases)
 
 
 def main():
+  code = open('alttp.smt').read()
+  code = re.sub(
+      r'^.*;; <SUB:funs>.*$', ' '.join(Funs()), code, flags=re.MULTILINE)
+  print(code)
+
+def Funs():
   can_reach, can_enter, can_complete, fill_rules, always_allow = BuildIndex()
   del can_reach['Zelda']
   can_reach['Mushroom'] = '(as Mushroom Location)'
   del can_reach['Mushroom']
-
-  code = open('world_template.cc').read()
-  code = re.sub(
-      r'^.*// <SUB:can_reach>.*$',
-      ' '.join(CodeFor(can_reach, '(access {place} t)', '(t Int)')),
-      code,
-      flags=re.MULTILINE)
-  code = re.sub(
-      r'^.*// <SUB:can_enter>.*$',
-      ' '.join(CodeFor(can_enter, '(can_enter {place} t)', '(t Int)')),
-      code,
-      flags=re.MULTILINE)
-  code = re.sub(
-      r'^.*// <SUB:can_complete>.*$',
-      ' '.join(CodeFor(can_complete, '(can_complete {place} t)', '(t Int)')),
-      code,
-      flags=re.MULTILINE)
-  code = re.sub(
-      r'^.*// <SUB:can_fill>.*$',
-      ' '.join(CodeFor(fill_rules, '(can_fill {place} item)', '(item Item)')),
-      code,
-      flags=re.MULTILINE)
-  code = re.sub(
-      r'^.*// <SUB:always_allow>.*$',
-      ' '.join(CodeFor(always_allow, '(always_allow {place} item t)',
-                       '(item Item) (t Int)')),
-      code,
-      flags=re.MULTILINE)
-  print(code)
+  signatures = [
+      (can_reach, 'access', '((l Location) (t Time))', 'false'),
+      (can_enter, 'can_enter', '((r Region) (t Time))', 'false'),
+      (can_complete, 'can_complete', '((r Region) (t Time))', 'false'),
+      (fill_rules, 'can_fill', '((l Location) (i Item))', 'true'),
+      (always_allow, 'always_allow', '((l Location) (i Item) (t Time))',
+       'false'),
+  ]
+  yield '(define-funs-rec ('
+  for cases, name, signature, base in signatures:
+    yield f'({name} {signature} Bool)'
+  yield ')'
+  yield '('
+  for sig in signatures:
+    yield f'\n; {sig[1]}'
+    yield ' '.join(CodeFor(*sig))
+  yield '))'
 
 
 if __name__ == '__main__':
   try:
     main()
   except Exception as e:
+    print(e)
     pdb.post_mortem()

@@ -1,3 +1,4 @@
+(set-option :smt.mbqi false) ; disable model-based quantifier instantiation
 (declare-datatypes ((Location 0))
                    (((AginahsCave)
                      (Blacksmith)
@@ -458,118 +459,191 @@
 (assert (= CONFIG_OPTION_REGION_WILDKEYS KEYSANITY))
 (assert (= CONFIG_OPTION_REGION_WILDBIGKEYS KEYSANITY))
 
+(define-sort Time
+  ()
+  (Int))
 
-;; (at l i) At location l is item i.
+;; (at l) What item is at location l.
 (declare-fun at
-             (Location Item)
-             Bool)
-;; (access l t) Access to location l at time t
-(declare-fun access
-             (Location Int)
-             Bool)
+             (Location)
+             Item)
+
+;; (access l t) Access to location l at time t.
+;; (declare-fun access
+;;              (Location Time)
+;;              Bool)
+;; (has_n n i t) Possession of n instances of i at time t.
 (declare-fun has_n
-             (Int Item Int)
+             ((Int)
+              (Item)
+              (Time))
              Bool)
+;; Convenience partial application of (has_n 1).
 (declare-fun has
-             (Item Int)
+             (Item Time)
              Bool)
-(declare-fun num_unplaced
-             (Item)
-             Int)
-;; (can_enter r t) Can enter region r at time t
-(declare-fun can_enter
-             (Region Int)
-             Bool)
-;; (can_complete r t) Can complete region r at time t
-(declare-fun can_complete
-             (Region Int)
-             Bool)
-;; (always_allow l i) Always allow in location l item i.
-(declare-fun always_allow
-             (Location Item Int)
-             Bool)
-;; (assert-soft (forall ((l Location)
-;;                       (i Item)
-;;                       (t Int))
-;;                      (not (always_allow l i t))))
-;; (can_fill l i) Item i is allowed to be filled in location l.
-(declare-fun can_fill
-             (Location Item)
-             Bool)
-;; (assert-soft (forall ((l Location)
-;;                       (i Item))
-;;                      (can_fill l i)))
-
-(assert (forall ((item Item)
-                 (t Int))
-                (= (has item t) (exists ((location Location))
-                                        (and (at location item)
-                                             (access location t))))))
-
 ;; Number of bottles accessible at time t
 (declare-fun bottle_count
-             (Int)
+             (Time)
              Int)
-(assert (forall ((t Int))
-                (exists ((l1 Location)
-                         (l2 Location)
-                         (l3 Location)
-                         (l4 Location)) ; There exist four locations
-                        (and (distinct l1 l2 l3 l4) ; that are distinct
-                             (at l1 Bottle) ; and all have bottles.
-                             (at l2 Bottle)
-                             (at l3 Bottle)
-                             (at l4 Bottle)
-                             ;; The bottle count is equal to the number of
-                             ;; such locations that are accessible.
-                             (= (bottle_count t) (+ (ite (access l1 t)
-                                                         1
-                                                         0)
-                                                    (ite (access l2 t)
-                                                         1
-                                                         0)
-                                                    (ite (access l3 t)
-                                                         1
-                                                         0)
-                                                    (ite (access l4 t)
-                                                         1
-                                                         0)))))))
 
-;; Once accessible, always accessible
-(assert (forall ((l Location)
-                 (t Int))
-                (=> (access l t)
-                    (access l
-                            (+ t 1)))))
-;; Each location has only one item.
-(assert (forall ((l Location)
-                 (i1 Item)
-                 (i2 Item))
-                (=> (and (distinct i1 i2)
-                         (at l i1))
-                    (not (at l i2)))))
-;; Every location has something.
-(assert (forall ((l Location))
-                (exists ((i Item))
-                        (at l i))))
+;; <SUB:funs>
+
+;; Basic definition of `has`. You have what's at `location` when you have access
+;; to that location. TODO: This doesn't work for multiplicity > 1.
+(assert (forall ((t Time)
+                 (i Item))
+                (! (= (has i t) (exists ((location Location))
+                                        (and (access location t)
+                                             (= i (at location)))))
+                   :pattern ((has i t)))))
+
+(assert (exists ((l1 Location)
+                 (l2 Location)
+                 (l3 Location)
+                 (l4 Location)) ; There exist four locations
+                (and (distinct l1 l2 l3 l4) ; that are distinct
+                     (= (at l1) Bottle) ; and all have bottles.
+                     (= (at l2) Bottle)
+                     (= (at l3) Bottle)
+                     (= (at l4) Bottle)
+                     ;; The bottle count is equal to the number of
+                     ;; such locations that are accessible.
+                     (forall ((t Time))
+                             (! (= (bottle_count t) (+ (ite (access l1 t)
+                                                            1
+                                                            0)
+                                                       (ite (access l2 t)
+                                                            1
+                                                            0)
+                                                       (ite (access l3 t)
+                                                            1
+                                                            0)
+                                                       (ite (access l4 t)
+                                                            1
+                                                            0)))
+                                :pattern (bottle_count t))))))
 
 ;; Fixed item / prize locations.
-(assert (at SkullWoodsPinballRoom KeyD3))
-(assert (at HyruleCastleTowerPrize DefeatAgahnim))
-(assert (at GanonsTowerPrize DefeatAgahnim2))
-(assert (at DarkWorldNorthEastPrize DefeatGanon))
+(assert (= (at SkullWoodsPinballRoom) KeyD3))
+(assert (= (at HyruleCastleTowerPrize) DefeatAgahnim))
+(assert (= (at GanonsTowerPrize) DefeatAgahnim2))
+(assert (= (at DarkWorldNorthEastPrize) DefeatGanon))
 
-;; TODO: require prizes be at dungeon prize locations.
-(assert (at SkullWoodsPrize Crystal1))
+(assert (distinct EasternPalacePrize DesertPalacePrize
+                  TowerofHeraPrize PalaceofDarknessPrize SwampPalacePrize
+                  SkullWoodsPrize ThievesTownPrize IcePalacePrize
+                  MiseryMirePrize TurtleRockPrize))
+(assert (or (= (at EasternPalacePrize) Crystal1)
+            (= (at EasternPalacePrize) Crystal2)
+            (= (at EasternPalacePrize) Crystal3)
+            (= (at EasternPalacePrize) Crystal4)
+            (= (at EasternPalacePrize) Crystal5)
+            (= (at EasternPalacePrize) Crystal6)
+            (= (at EasternPalacePrize) Crystal7)
+            (= (at EasternPalacePrize) PendantOfWisdom)
+            (= (at EasternPalacePrize) PendantOfCourage)
+            (= (at EasternPalacePrize) PendantOfPower)))
+(assert (or (= (at DesertPalacePrize) Crystal1)
+            (= (at DesertPalacePrize) Crystal2)
+            (= (at DesertPalacePrize) Crystal3)
+            (= (at DesertPalacePrize) Crystal4)
+            (= (at DesertPalacePrize) Crystal5)
+            (= (at DesertPalacePrize) Crystal6)
+            (= (at DesertPalacePrize) Crystal7)
+            (= (at DesertPalacePrize) PendantOfWisdom)
+            (= (at DesertPalacePrize) PendantOfCourage)
+            (= (at DesertPalacePrize) PendantOfPower)))
+(assert (or (= (at TowerofHeraPrize) Crystal1)
+            (= (at TowerofHeraPrize) Crystal2)
+            (= (at TowerofHeraPrize) Crystal3)
+            (= (at TowerofHeraPrize) Crystal4)
+            (= (at TowerofHeraPrize) Crystal5)
+            (= (at TowerofHeraPrize) Crystal6)
+            (= (at TowerofHeraPrize) Crystal7)
+            (= (at TowerofHeraPrize) PendantOfWisdom)
+            (= (at TowerofHeraPrize) PendantOfCourage)
+            (= (at TowerofHeraPrize) PendantOfPower)))
+(assert (or (= (at PalaceofDarknessPrize) Crystal1)
+            (= (at PalaceofDarknessPrize) Crystal2)
+            (= (at PalaceofDarknessPrize) Crystal3)
+            (= (at PalaceofDarknessPrize) Crystal4)
+            (= (at PalaceofDarknessPrize) Crystal5)
+            (= (at PalaceofDarknessPrize) Crystal6)
+            (= (at PalaceofDarknessPrize) Crystal7)
+            (= (at PalaceofDarknessPrize) PendantOfWisdom)
+            (= (at PalaceofDarknessPrize) PendantOfCourage)
+            (= (at PalaceofDarknessPrize) PendantOfPower)))
+(assert (or (= (at SwampPalacePrize) Crystal1)
+            (= (at SwampPalacePrize) Crystal2)
+            (= (at SwampPalacePrize) Crystal3)
+            (= (at SwampPalacePrize) Crystal4)
+            (= (at SwampPalacePrize) Crystal5)
+            (= (at SwampPalacePrize) Crystal6)
+            (= (at SwampPalacePrize) Crystal7)
+            (= (at SwampPalacePrize) PendantOfWisdom)
+            (= (at SwampPalacePrize) PendantOfCourage)
+            (= (at SwampPalacePrize) PendantOfPower)))
+(assert (or (= (at SkullWoodsPrize) Crystal1)
+            (= (at SkullWoodsPrize) Crystal2)
+            (= (at SkullWoodsPrize) Crystal3)
+            (= (at SkullWoodsPrize) Crystal4)
+            (= (at SkullWoodsPrize) Crystal5)
+            (= (at SkullWoodsPrize) Crystal6)
+            (= (at SkullWoodsPrize) Crystal7)
+            (= (at SkullWoodsPrize) PendantOfWisdom)
+            (= (at SkullWoodsPrize) PendantOfCourage)
+            (= (at SkullWoodsPrize) PendantOfPower)))
+(assert (or (= (at ThievesTownPrize) Crystal1)
+            (= (at ThievesTownPrize) Crystal2)
+            (= (at ThievesTownPrize) Crystal3)
+            (= (at ThievesTownPrize) Crystal4)
+            (= (at ThievesTownPrize) Crystal5)
+            (= (at ThievesTownPrize) Crystal6)
+            (= (at ThievesTownPrize) Crystal7)
+            (= (at ThievesTownPrize) PendantOfWisdom)
+            (= (at ThievesTownPrize) PendantOfCourage)
+            (= (at ThievesTownPrize) PendantOfPower)))
+(assert (or (= (at IcePalacePrize) Crystal1)
+            (= (at IcePalacePrize) Crystal2)
+            (= (at IcePalacePrize) Crystal3)
+            (= (at IcePalacePrize) Crystal4)
+            (= (at IcePalacePrize) Crystal5)
+            (= (at IcePalacePrize) Crystal6)
+            (= (at IcePalacePrize) Crystal7)
+            (= (at IcePalacePrize) PendantOfWisdom)
+            (= (at IcePalacePrize) PendantOfCourage)
+            (= (at IcePalacePrize) PendantOfPower)))
+(assert (or (= (at MiseryMirePrize) Crystal1)
+            (= (at MiseryMirePrize) Crystal2)
+            (= (at MiseryMirePrize) Crystal3)
+            (= (at MiseryMirePrize) Crystal4)
+            (= (at MiseryMirePrize) Crystal5)
+            (= (at MiseryMirePrize) Crystal6)
+            (= (at MiseryMirePrize) Crystal7)
+            (= (at MiseryMirePrize) PendantOfWisdom)
+            (= (at MiseryMirePrize) PendantOfCourage)
+            (= (at MiseryMirePrize) PendantOfPower)))
+(assert (or (= (at TurtleRockPrize) Crystal1)
+            (= (at TurtleRockPrize) Crystal2)
+            (= (at TurtleRockPrize) Crystal3)
+            (= (at TurtleRockPrize) Crystal4)
+            (= (at TurtleRockPrize) Crystal5)
+            (= (at TurtleRockPrize) Crystal6)
+            (= (at TurtleRockPrize) Crystal7)
+            (= (at TurtleRockPrize) PendantOfWisdom)
+            (= (at TurtleRockPrize) PendantOfCourage)
+            (= (at TurtleRockPrize) PendantOfPower)))
 ;; Medallions to open dungeons.
-(assert (or (at MiseryMireMedallion Bombos)
-            (at MiseryMireMedallion Ether)
-            (at MiseryMireMedallion Quake)))
-(assert (or (at TurtleRockMedallion Bombos)
-            (at TurtleRockMedallion Ether)
-            (at TurtleRockMedallion Quake)))
+(assert (or (= (at MiseryMireMedallion) Bombos)
+            (= (at MiseryMireMedallion) Ether)
+            (= (at MiseryMireMedallion) Quake)))
+(assert (or (= (at TurtleRockMedallion) Bombos)
+            (= (at TurtleRockMedallion) Ether)
+            (= (at TurtleRockMedallion) Quake)))
 
 
-;; We must be able to defeat Ganon.
-(assert (exists ((t Int))
-                (has DefeatGanon t)))
+;; We must be able to defeat Ganon (in some arbitrary and presumed-sufficient
+;; amount of time).
+(assert (has DefeatGanon 100))
+(check-sat)

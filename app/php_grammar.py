@@ -397,7 +397,7 @@ def ExpandToSMTLIB(d):
   elif name == 'in_array':
     if value['member'] == {'var': {'symbol': 'item'}}:
       return '(or ' + ' '.join(
-          f'(= item {element})' for element in value['elements']) + ')'
+          f'(= i {element})' for element in value['elements']) + ')'
     else:
       return '(or ' + ' '.join(
           '(= {} {})'.format(ExpandToSMTLIB(value['member']), element)
@@ -466,17 +466,15 @@ def ExpandToSMTLIB(d):
       return '(access (as {} Location) (- t 1))'.format(Smoosh(value['location']))
     elif value['with_what'] == 'uncle_item_only':
       # Special casing standard uncle weapons.
-      return '(or ' + ' '.join(
-          f'(at LinksUncle {weapon})'
-          for weapon in [
-              'ProgressiveSword',
-              'CaneOfByrna',
-              'CaneOfSomaria',
-              'TenBombs',
-              'Bow',
-              'Hammer',
-              'FireRod',
-          ]) + ')'
+      return '(or ' + ' '.join(f'(= (at LinksUncle) {weapon})' for weapon in [
+          'ProgressiveSword',
+          'CaneOfByrna',
+          'CaneOfSomaria',
+          'TenBombs',
+          'Bow',
+          'Hammer',
+          'FireRod',
+      ]) + ')'
     else:
       raise Exception('Missed a case.')
   elif name == 'config':
@@ -491,9 +489,9 @@ def ExpandToSMTLIB(d):
     return ExpandToSMTLIB(value)
   elif name == 'item_is':
     return '(or {})'.format(' '.join(
-        f'(= item {option})' for option in value['items']))
+        f'(= i {option})' for option in value['items']))
   elif name == 'item_is_not':
-    return f'(not (= item {value["item"][0]}))'
+    return f'(not (= i {value["item"][0]}))'
   elif name == 'item_is_a':
     return 'false'  # Massive shortcut!
   else:
