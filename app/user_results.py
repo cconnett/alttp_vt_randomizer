@@ -10,12 +10,12 @@ location_item_pairs = [
 
 candidates = set()
 for (location, item) in location_item_pairs:
-  print(location, item)
   if isinstance(item, str):
     item = mappings.items[item]
   if isinstance(location, str):
     location = mappings.locations[location]
   print(f'{mappings.locations[location]} has {mappings.items[item]}')
+  # print(location, item)
   matches = set()
   for batch in range(1, 7):
     path = f'bigresults/batch{batch}/item{item:03d}-location{location:03d}'
@@ -25,11 +25,17 @@ for (location, item) in location_item_pairs:
         a.fromfile(open(os.path.join(path, filename), 'rb'), 8 * 1024 * 1024)
       except EOFError:
         pass
-      matches |= set(a)
+      if candidates:
+        matches |= candidates & set(a)
+      else:
+        matches |= set(a)
   if not candidates:
     candidates = matches
   else:
     candidates &= matches
+    if not candidates:
+      print('Went bust.')
+      break
   if len(candidates) == 1:
     winner = list(candidates)[0]
     subprocess.call('./bazel-bin/makeseed {winner}'.format(winner=winner), shell=True)
