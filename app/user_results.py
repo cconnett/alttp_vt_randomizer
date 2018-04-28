@@ -10,6 +10,8 @@ location_item_pairs = [
 
 candidates = set()
 for (location, item) in location_item_pairs:
+  if not item or not location:
+    continue
   if isinstance(item, str):
     item = mappings.items[item]
   if isinstance(location, str):
