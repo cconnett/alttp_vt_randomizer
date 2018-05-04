@@ -9,6 +9,20 @@ import numpy
 import mappings
 
 location_item_pairs = [
+  ('LinksHouse', ''),
+  ('LinksUncle', ''),
+  ('SecretPassage', ''),
+  ('HyruleCastleMapChest', ''),
+  ('HyruleCastleBoomerangChest', ''),
+  ('HyruleCastleZeldasCell', ''),
+  ('SewersDarkCross', ''),
+  ('SewersSecretRoomLeft', ''),
+  ('SewersSecretRoomMiddle', ''),
+  ('SewersSecretRoomRight', ''),
+  ('Sanctuary', ''),
+  ('Mushroom', ''),
+  ('LostWoodsHideout', ''),
+  ('', ''),
   ]
 
 @functools.total_ordering
