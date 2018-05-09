@@ -7,8 +7,6 @@ root = sys.argv[1]
 
 for item in range(1, 157):
   for location in range(1, 235):
-    if item < 64  or item == 64 and location < 84:
-      continue
     print(f'Building {item} x {location}.')
     acc = numpy.array([], dtype='uint32')
     for batch in range(1, 8):
