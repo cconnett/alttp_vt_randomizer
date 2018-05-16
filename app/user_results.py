@@ -20,6 +20,7 @@ location_item_pairs = [
   ('SewersSecretRoomMiddle', ''),
   ('SewersSecretRoomRight', ''),
   ('Sanctuary', ''),
+  ('LumberjackTree', ''),
   ('Mushroom', ''),
   ('LostWoodsHideout', ''),
   ('', ''),
@@ -91,7 +92,6 @@ for stream in streams:
     break
   elif len(matches) == 1:
     winner = list(matches)[0]
-    # subprocess.call('./bazel-bin/makeseed {winner}'.format(winner=winner), shell=True)
     print('Match found: {winner}'.format(winner=winner))
     print('bazel-bin/makeseed {winner} | grep BigKeyA2'.format(winner=winner))
     break
