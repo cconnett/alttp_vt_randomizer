@@ -85,17 +85,20 @@ streams = streams[2:]
 matches = sorted(set(a.stream) & set(b.stream))
 
 for stream in streams:
-  print('{} seeds remaining.'.format(len(matches)))
   matches = [seed for seed in matches if stream.advance_to(seed) == seed]
   if not matches:
     print('Went bust.')
     break
   elif len(matches) == 1:
     winner = list(matches)[0]
-    print('Match found: {winner}'.format(winner=winner))
-    print('bazel-bin/makeseed {winner} | grep BigKeyA2'.format(winner=winner))
-    break
-else:
+    print('One seed remaining. Verifying against other observations...')
+  else:
+    print('{} seeds remaining.'.format(len(matches)))
+
+if len(matches) == 1:
+  winner = list(matches)[0]
+  print('Match found: {winner}'.format(winner=winner))
+  print('bazel-bin/makeseed {winner} | grep BigKeyA2'.format(winner=winner))
+elif len(matches) <= 10:
   print('{} seeds remaining.'.format(len(matches)))
-  if len(matches) <= 10:
-    print(matches)
+  print(matches)
