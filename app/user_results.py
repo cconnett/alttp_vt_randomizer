@@ -100,5 +100,4 @@ if len(matches) == 1:
   print('Match found: {winner}'.format(winner=winner))
   print('bazel-bin/makeseed {winner} | grep BigKeyA2'.format(winner=winner))
 elif len(matches) <= 10:
-  print('{} seeds remaining.'.format(len(matches)))
   print(matches)
