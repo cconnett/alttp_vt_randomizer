@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
   }
   if (argc == 1) {
     // Read constraints from seeds.db and generate seeds until there are
-    // N seeds in the DB.
+    // SEED_GOAL seeds in the DB.
     sqlite3 *conn;
     int status = sqlite3_open("results/seeds.db", &conn);
     if (status != SQLITE_OK) {
