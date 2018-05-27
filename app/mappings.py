@@ -404,3 +404,4 @@ items.update({value: name for (name, value) in items.items()})
 counter = itertools.count()
 locations = dict(zip(locations, counter))
 locations.update({value: name for (name, value) in locations.items()})
+locations['GroveCave'] = locations['Cave45']
