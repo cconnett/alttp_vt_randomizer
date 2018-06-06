@@ -434,10 +434,7 @@ def ExpandToSMTLIB(d):
     item = value['item']
     if item == 'Mushroom':
       item = '(as Mushroom Item)'
-    if n == 1:
-      return f'(has {item} (- t 1))'
-    else:
-      return f'(has_n {n} {item} (- t 1))'
+    return f'(has_{n} {item} (- t 1))'
   elif name == 'location_has_item':
     location = Smoosh(value['location'])
     if location == 'Mushroom':
@@ -463,7 +460,8 @@ def ExpandToSMTLIB(d):
           Smoosh(value['region']), Smoosh(value['region'])))
   elif name == 'access_to_location':
     if value['with_what'] == 'all_items':
-      return '(access (as {} Location) (- t 1))'.format(Smoosh(value['location']))
+      return '(access (as {} Location) (- t 1))'.format(
+          Smoosh(value['location']))
     elif value['with_what'] == 'uncle_item_only':
       # Special casing standard uncle weapons.
       return '(or ' + ' '.join(f'(= (at LinksUncle) {weapon})' for weapon in [

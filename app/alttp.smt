@@ -467,62 +467,146 @@
 (declare-fun at
              (Location)
              Item)
+;; (where_is i) List of locations with item i.
+;; (declare-fun where_is
+;;              (Item)
+;;              (Array Location Bool))
 
-;; (access l t) Access to location l at time t.
-;; (declare-fun access
-;;              (Location Time)
-;;              Bool)
-;; (has_n n i t) Possession of n instances of i at time t.
-(declare-fun has_n
-             ((Int)
-              (Item)
-              (Time))
-             Bool)
-;; Convenience partial application of (has_n 1).
-(declare-fun has
-             (Item Time)
-             Bool)
-;; Number of bottles accessible at time t
-(declare-fun bottle_count
+
+;; (access t) Array of accessibility at time t.
+(declare-fun access
              (Time)
-             Int)
+             (Array Location Bool))
+
+;; (has_1 i t) Possession of n instances of i at time t.
+(define-fun has_1
+  ((i Item)
+   (t Time))
+  Bool
+  (exists ((l1 Location))
+          (and (= (at l1) i)
+               (select (access t)
+                       l1))))
+(define-fun has_2
+  ((i Item)
+   (t Time))
+  Bool
+  (exists ((l1 Location)
+           (l2 Location))
+          (and (distinct l1 l2)
+               (= (at l1) i)
+               (= (at l2) i)
+               (select (access t)
+                       l1)
+               (select (access t)
+                       l2))))
+(define-fun has_3
+  ((i Item)
+   (t Time))
+  Bool
+  (exists ((l1 Location)
+           (l2 Location)
+           (l3 Location))
+          (and (distinct l1 l2 l3)
+               (= (at l1) i)
+               (= (at l2) i)
+               (= (at l3) i)
+               (select (access t)
+                       l1)
+               (select (access t)
+                       l2)
+               (select (access t)
+                       l3))))
+
+(define-fun has_4
+  ((i Item)
+   (t Time))
+  Bool
+  (exists ((l1 Location)
+           (l2 Location)
+           (l3 Location)
+           (l4 Location))
+          (and (distinct l1 l2 l3 l4)
+               (= (at l1) i)
+               (= (at l2) i)
+               (= (at l3) i)
+               (= (at l4) i)
+               (select (access t)
+                       l1)
+               (select (access t)
+                       l2)
+               (select (access t)
+                       l3)
+               (select (access t)
+                       l4))))
+
+(define-fun has_5
+  ((i Item)
+   (t Time))
+  Bool
+  (exists ((l1 Location)
+           (l2 Location)
+           (l3 Location)
+           (l4 Location)
+           (l5 Location))
+          (and (distinct l1 l2 l3 l4 l5)
+               (= (at l1) i)
+               (= (at l2) i)
+               (= (at l3) i)
+               (= (at l4) i)
+               (= (at l5) i)
+               (select (access t)
+                       l1)
+               (select (access t)
+                       l2)
+               (select (access t)
+                       l3)
+               (select (access t)
+                       l4)
+               (select (access t)
+                       l5))))
+
+(define-fun has_6
+  ((i Item)
+   (t Time))
+  Bool
+  (exists ((l1 Location)
+           (l2 Location)
+           (l3 Location)
+           (l4 Location)
+           (l5 Location)
+           (l6 Location))
+          (and (distinct l1 l2 l3 l4 l5 l6)
+               (= (at l1) i)
+               (= (at l2) i)
+               (= (at l3) i)
+               (= (at l4) i)
+               (= (at l5) i)
+               (= (at l6) i)
+               (select (access t)
+                       l1)
+               (select (access t)
+                       l2)
+               (select (access t)
+                       l3)
+               (select (access t)
+                       l4)
+               (select (access t)
+                       l5)
+               (select (access t)
+                       l6))))
+
+;; Number of bottles accessible at time t
+(define-fun bottle_count
+  ((t Time))
+  Int
+  (ite (has_2 Bottle t)
+       2
+       (ite (has_1 Bottle t)
+            1
+            0)))
 
 ;; <SUB:funs>
-
-;; Basic definition of `has`. You have what's at `location` when you have access
-;; to that location. TODO: This doesn't work for multiplicity > 1.
-(assert (forall ((t Time)
-                 (i Item))
-                (! (= (has i t) (exists ((location Location))
-                                        (and (access location t)
-                                             (= i (at location)))))
-                   :pattern ((has i t)))))
-
-(assert (exists ((l1 Location)
-                 (l2 Location)
-                 (l3 Location)
-                 (l4 Location)) ; There exist four locations
-                (and (distinct l1 l2 l3 l4) ; that are distinct
-                     (= (at l1) Bottle) ; and all have bottles.
-                     (= (at l2) Bottle)
-                     (= (at l3) Bottle)
-                     (= (at l4) Bottle)
-                     ;; The bottle count is equal to the number of
-                     ;; such locations that are accessible.
-                     (forall ((t Time))
-                             (! (= (bottle_count t) (+ (ite (access l1 t)
-                                                            1
-                                                            0)
-                                                       (ite (access l2 t)
-                                                            1
-                                                            0)
-                                                       (ite (access l3 t)
-                                                            1
-                                                            0)
-                                                       (ite (access l4 t)
-                                                            1
-                                                            0)))
-                                :pattern (bottle_count t))))))
 
 ;; Fixed item / prize locations.
 (assert (= (at SkullWoodsPinballRoom) KeyD3))
@@ -642,8 +726,16 @@
             (= (at TurtleRockMedallion) Ether)
             (= (at TurtleRockMedallion) Quake)))
 
+;; Enforce the proper distributions of items.
+;; TODO
+
+;; Enforce dungeon items appear in their dungeons.
+;; TODO
 
 ;; We must be able to defeat Ganon (in some arbitrary and presumed-sufficient
 ;; amount of time).
-(assert (has DefeatGanon 100))
+(assert (has_1 DefeatGanon 100))
+
+;; Check satisfiability and report on values in the model.
 (check-sat)
+(get-value ((at TurtleRockPrize)))
