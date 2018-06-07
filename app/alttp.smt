@@ -233,7 +233,7 @@
                      (TurtleRockTrinexx)
                      (WaterfallFairyLeft)
                      (WaterfallFairyRight)
-                     (ZorasLedge))))
+                     (ZorasLedge)))) ;; 234 total locations
 
 (declare-datatypes ((Item 0))
                    (((Arrow)
@@ -391,7 +391,7 @@
                      (Triforce)
                      (TriforcePiece)
                      (TwentyRupees)
-                     (TwentyRupees2))))
+                     (TwentyRupees2)))) ;; 156 distinct items
 
 (declare-datatypes ((Region 0))
                    (((HyruleCastleEscape)
@@ -614,10 +614,16 @@
 (assert (= (at GanonsTowerPrize) DefeatAgahnim2))
 (assert (= (at DarkWorldNorthEastPrize) DefeatGanon))
 
-(assert (distinct EasternPalacePrize DesertPalacePrize
-                  TowerofHeraPrize PalaceofDarknessPrize SwampPalacePrize
-                  SkullWoodsPrize ThievesTownPrize IcePalacePrize
-                  MiseryMirePrize TurtleRockPrize))
+(assert (distinct (at EasternPalacePrize)
+                  (at DesertPalacePrize)
+                  (at TowerofHeraPrize)
+                  (at PalaceofDarknessPrize)
+                  (at SwampPalacePrize)
+                  (at SkullWoodsPrize)
+                  (at ThievesTownPrize)
+                  (at IcePalacePrize)
+                  (at MiseryMirePrize)
+                  (at TurtleRockPrize)))
 (assert (or (= (at EasternPalacePrize) Crystal1)
             (= (at EasternPalacePrize) Crystal2)
             (= (at EasternPalacePrize) Crystal3)
@@ -729,6 +735,42 @@
 ;; Enforce the proper distributions of items.
 ;; TODO
 
+(define-fun oneof
+  ((i Item))
+  Bool
+  (exists ((l1 Location))
+          (and (= (at l1) i)
+               (forall ((l2 Location))
+                       (=> (not (= l1 l2))
+                           (not (= (at l2) i)))))))
+(assert (oneof Hookshot))
+(assert (oneof Bow))
+(assert (oneof Lamp))
+(assert (oneof FireRod))
+(assert (oneof IceRod))
+(assert (oneof Boomerang))
+(assert (oneof RedBoomerang))
+(assert (oneof BombUpgrade10))
+(assert (oneof (as Mushroom Item)))
+(assert (oneof Bombos))
+(assert (oneof Ether))
+(assert (oneof Quake))
+(assert (oneof Hammer))
+(assert (oneof BugCatchingNet))
+(assert (oneof BookOfMudora))
+(assert (oneof CaneOfSomaria))
+(assert (oneof CaneOfByrna))
+(assert (oneof Cape))
+(assert (oneof MagicMirror))
+(assert (oneof Arrow))
+(assert (oneof PegasusBoots))
+(assert (oneof Flippers))
+(assert (oneof MoonPearl))
+(assert (oneof OcarinaInactive))
+(assert (oneof Powder))
+(assert (oneof Shovel))
+(assert (oneof HalfMagic))
+
 ;; Enforce dungeon items appear in their dungeons.
 ;; TODO
 
@@ -738,4 +780,5 @@
 
 ;; Check satisfiability and report on values in the model.
 (check-sat)
-(get-value ((at TurtleRockPrize)))
+;;(get-value ((at TurtleRockPrize)))
+(get-model)
