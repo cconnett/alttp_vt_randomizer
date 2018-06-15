@@ -189,10 +189,12 @@ def CodeFor(method_cases, name, signature, base):
 
 
 def main():
-  code = open('alttp.smt').read()
-  code = re.sub(
-      r'^.*;; <SUB:funs>.*$', ' '.join(Funs()), code, flags=re.MULTILINE)
+  # code = open('alttp.smt').read()
+  # code = re.sub(
+  #     r'^.*;; <SUB:funs>.*$', ' '.join(Funs()), code, flags=re.MULTILINE)
+  code = ' '.join(Funs())
   print(code)
+
 
 def Funs():
   can_reach, can_enter, can_complete, fill_rules, always_allow = BuildIndex()
