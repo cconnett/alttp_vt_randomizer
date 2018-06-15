@@ -316,8 +316,8 @@
                      (Hookshot)
                      (IceRod)
                      (Key)
-                     (KeyA1)
-                     (KeyA2)
+                     (KeyA1) ;; Aga1
+                     (KeyA2) ;; GT
                      (KeyD1)
                      (KeyD2)
                      (KeyD3)
@@ -325,8 +325,8 @@
                      (KeyD5)
                      (KeyD6)
                      (KeyD7)
-                     (KeyH1)
-                     (KeyH2)
+                     (KeyH1) ;; Castle, I guess
+                     (KeyH2) ;; Sewers
                      (KeyP1)
                      (KeyP2)
                      (KeyP3)
