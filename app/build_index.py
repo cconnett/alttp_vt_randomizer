@@ -203,7 +203,7 @@ def Funs():
   del can_reach['Mushroom']
   signatures = [
       (can_reach, 'access', '((l Location) (t Time))', 'false'),
-      (can_enter, 'can_enter', '((r Region) (t Time))', 'false'),
+      (can_enter, 'can_enter', '((r Region) (t Time))', 'true'),
       (can_complete, 'can_complete', '((r Region) (t Time))', 'false'),
       (fill_rules, 'can_fill', '((l Location) (i Item))', 'true'),
       (always_allow, 'always_allow', '((l Location) (i Item) (t Time))',
