@@ -443,15 +443,14 @@ def ExpandToSMTLIB(d):
     items = [item if item != 'Mushroom' else '(as Mushroom Item)'
              for item in items]
     if len(items) == 1:
-      return f'(= (at {location}) {items[0]})'
+      return f'(assigned {location} {items[0]})'
     else:
-      return ('(or ' + ' '.join(f'(= (at {location}) {item})'
-                                for item in items) + ')')
+      return ('(or ' +
+              ' '.join(f'(assigned {location} {item})' for item in items) + ')')
   elif name == 'item_in_locations':
-    return '(or ' + ' '.join(
-        '(= (at {location}) {item})'.format(
-            location=Smoosh(location), item=Smoosh(value['item']))
-        for location in value['allowable_locations']) + ')'
+    return '(or ' + ' '.join('(assigned {location} {item})'.format(
+        location=Smoosh(location), item=Smoosh(value['item']))
+                             for location in value['allowable_locations']) + ')'
   elif name == 'access_to_region':
     if value['region'] == '$this':
       return 'true'
@@ -464,7 +463,7 @@ def ExpandToSMTLIB(d):
           Smoosh(value['location']))
     elif value['with_what'] == 'uncle_item_only':
       # Special casing standard uncle weapons.
-      return '(or ' + ' '.join(f'(= (at LinksUncle) {weapon})' for weapon in [
+      return '(or ' + ' '.join(f'(assigned LinksUncle {weapon})' for weapon in [
           'ProgressiveSword',
           'CaneOfByrna',
           'CaneOfSomaria',
